@@ -137,6 +137,35 @@ export async function initializeDatabase() {
     )
   `;
 
+  // Inwards base table
+  await db`
+    CREATE TABLE IF NOT EXISTS inwards (
+      id SERIAL PRIMARY KEY,
+      inward_no VARCHAR(50) UNIQUE,
+      gp_no VARCHAR(50) UNIQUE,
+      sr_no VARCHAR(50) UNIQUE,
+      ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
+      vehicle_no VARCHAR(100),
+      driver_name VARCHAR(100),
+      date DATE NOT NULL,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Inward details (items)
+  await db`
+    CREATE TABLE IF NOT EXISTS inward_items (
+      id SERIAL PRIMARY KEY,
+      inward_id INTEGER REFERENCES inwards(id) ON DELETE CASCADE,
+      item_id INTEGER REFERENCES items(id) ON DELETE RESTRICT,
+      measurement INTEGER NOT NULL CHECK (measurement IN (15, 22)),
+      quantity DECIMAL(15,2) NOT NULL DEFAULT 0
+    )
+  `;
+
   // Activity log table
   await db`
     CREATE TABLE IF NOT EXISTS activity_log (

@@ -67,6 +67,34 @@ export interface Item {
   updated_at: string;
 }
 
+export interface InwardItem {
+  id: number;
+  inward_id: number;
+  item_id: number;
+  item_name?: string;
+  measurement: 15 | 22;
+  quantity: number;
+}
+
+export interface Inward {
+  id: number;
+  inward_no: string;
+  gp_no: string;
+  sr_no: string;
+  ms_party_id: number;
+  ms_party_name?: string;
+  from_party_id: number;
+  from_party_name?: string;
+  vehicle_no?: string;
+  driver_name?: string;
+  date: string;
+  total_qty?: number;
+  status: string;
+  items?: InwardItem[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AssetCategory {
   id: number;
   name: string;
@@ -220,6 +248,32 @@ export const itemsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('items.delete', { id }),
+};
+
+// ─── Inwards API ─────────────────────────────────────────────────
+
+export const inwardsApi = {
+  list: (filters?: { ms_party_id?: number, inward_no?: string, gp_no?: string, from_date?: string, to_date?: string }) => {
+    const params: Record<string, string> = {};
+    if (filters?.ms_party_id) params.ms_party_id = String(filters.ms_party_id);
+    if (filters?.inward_no) params.inward_no = filters.inward_no;
+    if (filters?.gp_no) params.gp_no = filters.gp_no;
+    if (filters?.from_date) params.from_date = filters.from_date;
+    if (filters?.to_date) params.to_date = filters.to_date;
+    return coreRequest<Inward[]>('inwards.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<Inward>('inwards.get', { id }),
+  
+  create: (data: Omit<Inward, 'id' | 'inward_no' | 'gp_no' | 'sr_no' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Inward>('inwards.create', data),
+  
+  update: (id: number, data: Partial<Inward>) => 
+    coreRequest<Inward>('inwards.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('inwards.delete', { id }),
 };
 
 // ─── Asset Categories API ────────────────────────────────────────

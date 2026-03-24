@@ -4,6 +4,7 @@ import { msPartiesService, type MsParty } from './_lib/services/ms-parties.js';
 import { fromPartiesService, type FromParty } from './_lib/services/from-parties.js';
 import { vendorsService, type Vendor } from './_lib/services/vendors.js';
 import { itemsService, type Item } from './_lib/services/items.js';
+import { inwardsService, type Inward } from './_lib/services/inwards.js';
 import { assetsService, type Asset, type AssetCategory } from './_lib/services/assets.js';
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 
@@ -150,6 +151,29 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for items`);
       }
 
+    // ─── Inwards ───────────────────────────────────────────────
+    case 'inwards':
+      switch (operation) {
+        case 'list':
+          return inwardsService.list(
+            query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id,
+            (query.inward_no as string) || data.inward_no,
+            (query.gp_no as string) || data.gp_no,
+            (query.from_date as string) || data.from_date,
+            (query.to_date as string) || data.to_date
+          );
+        case 'get':
+          return inwardsService.getById(Number(query.id || data.id));
+        case 'create':
+          return inwardsService.create(data as Inward);
+        case 'update':
+          return inwardsService.update(Number(data.id), data);
+        case 'delete':
+          return inwardsService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for inwards`);
+      }
+
     // ─── Asset Categories ──────────────────────────────────────
     case 'asset_categories':
       switch (operation) {
@@ -229,6 +253,6 @@ async function routeAction(
       }
 
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, asset_categories, assets, expense_categories, expenses`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses`);
   }
 }
