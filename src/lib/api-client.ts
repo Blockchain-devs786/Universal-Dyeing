@@ -59,6 +59,14 @@ export interface Vendor {
   updated_at: string;
 }
 
+export interface Item {
+  id: number;
+  name: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AssetCategory {
   id: number;
   name: string;
@@ -189,6 +197,29 @@ export const vendorsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('vendors.delete', { id }),
+};
+
+// ─── Items API ───────────────────────────────────────────────────
+
+export const itemsApi = {
+  list: (search?: string, status?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    if (status) params.status = status;
+    return coreRequest<Item[]>('items.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<Item>('items.get', { id }),
+  
+  create: (data: Omit<Item, 'id' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Item>('items.create', data),
+  
+  update: (id: number, data: Partial<Item>) => 
+    coreRequest<Item>('items.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('items.delete', { id }),
 };
 
 // ─── Asset Categories API ────────────────────────────────────────

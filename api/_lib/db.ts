@@ -83,6 +83,17 @@ export async function initializeDatabase() {
     )
   `;
 
+  // Items table
+  await db`
+    CREATE TABLE IF NOT EXISTS items (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
   // Assets table
   await db`
     CREATE TABLE IF NOT EXISTS assets (

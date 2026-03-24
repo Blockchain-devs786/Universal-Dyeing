@@ -9,6 +9,7 @@ import UserManagement from "@/pages/UserManagement";
 import MsParties from "@/pages/define/MsParties";
 import FromParties from "@/pages/define/FromParties";
 import Vendors from "@/pages/define/Vendors";
+import Items from "@/pages/define/Items";
 import Assets from "@/pages/define/Assets";
 import Expenses from "@/pages/define/Expenses";
 import Inward from "@/pages/data-entry/Inward";
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/define/ms-parties" element={<LayoutWrapper><MsParties /></LayoutWrapper>} />
           <Route path="/define/from-parties" element={<LayoutWrapper><FromParties /></LayoutWrapper>} />
           <Route path="/define/vendors" element={<LayoutWrapper><Vendors /></LayoutWrapper>} />
+          <Route path="/define/items" element={<LayoutWrapper><Items /></LayoutWrapper>} />
           <Route path="/define/assets" element={<LayoutWrapper><Assets /></LayoutWrapper>} />
           <Route path="/define/expenses" element={<LayoutWrapper><Expenses /></LayoutWrapper>} />
           <Route path="/data-entry/inward" element={<LayoutWrapper><Inward /></LayoutWrapper>} />

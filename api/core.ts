@@ -3,6 +3,7 @@ import { initializeDatabase } from './_lib/db.js';
 import { msPartiesService, type MsParty } from './_lib/services/ms-parties.js';
 import { fromPartiesService, type FromParty } from './_lib/services/from-parties.js';
 import { vendorsService, type Vendor } from './_lib/services/vendors.js';
+import { itemsService, type Item } from './_lib/services/items.js';
 import { assetsService, type Asset, type AssetCategory } from './_lib/services/assets.js';
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 
@@ -129,6 +130,26 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for vendors`);
       }
 
+    // ─── Items ─────────────────────────────────────────────────
+    case 'items':
+      switch (operation) {
+        case 'list':
+          return itemsService.list(
+            (query.search as string) || data.search,
+            (query.status as string) || data.status
+          );
+        case 'get':
+          return itemsService.getById(Number(query.id || data.id));
+        case 'create':
+          return itemsService.create(data as Item);
+        case 'update':
+          return itemsService.update(Number(data.id), data);
+        case 'delete':
+          return itemsService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for items`);
+      }
+
     // ─── Asset Categories ──────────────────────────────────────
     case 'asset_categories':
       switch (operation) {
@@ -208,6 +229,6 @@ async function routeAction(
       }
 
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, asset_categories, assets, expense_categories, expenses`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, asset_categories, assets, expense_categories, expenses`);
   }
 }
