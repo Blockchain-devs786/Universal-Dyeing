@@ -1,8 +1,14 @@
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = process.env.DATABASE_URL!;
-
-export const sql = neon(DATABASE_URL);
+export const sql = (strings: TemplateStringsArray, ...values: any[]) => {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!url) {
+    // If running in development and .env is not loaded properly, we need a clear error
+    throw new Error("DATABASE_URL is not set. Please ensure you have a .env file or Vercel Environment Variables configured.");
+  }
+  const db = neon(url);
+  return db(strings, ...values);
+};
 
 /**
  * Initialize all database tables.
