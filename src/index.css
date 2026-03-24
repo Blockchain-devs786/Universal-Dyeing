@@ -109,4 +109,10 @@
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
   }
+
+  @media print {
+    .overflow-auto, .overflow-hidden, .overflow-x-auto, .overflow-y-auto {
+      overflow: visible !important;
+    }
+  }
 }
