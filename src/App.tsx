@@ -23,6 +23,10 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -30,28 +34,22 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route element={<DashboardLayout><Routes><Route path="/" element={<Dashboard />} /></Routes></DashboardLayout>} path="/" />
-          <Route path="/*" element={
-            <DashboardLayout>
-              <Routes>
-                <Route path="/user-management" element={<UserManagement />} />
-                <Route path="/define/ms-parties" element={<MsParties />} />
-                <Route path="/define/vendors" element={<Vendors />} />
-                <Route path="/define/assets" element={<Assets />} />
-                <Route path="/define/expenses" element={<Expenses />} />
-                <Route path="/data-entry/inward" element={<Inward />} />
-                <Route path="/data-entry/outward" element={<Outward />} />
-                <Route path="/data-entry/transfer" element={<Transfer />} />
-                <Route path="/data-entry/transfer-by-name" element={<TransferByName />} />
-                <Route path="/data-entry/invoice" element={<Invoice />} />
-                <Route path="/reports/stocks" element={<Stocks />} />
-                <Route path="/reports/stock-ledger" element={<StockLedger />} />
-                <Route path="/reports/cash-ledger" element={<CashLedger />} />
-                <Route path="/reports/vouchers" element={<Vouchers />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </DashboardLayout>
-          } />
+          <Route path="/" element={<LayoutWrapper><Dashboard /></LayoutWrapper>} />
+          <Route path="/user-management" element={<LayoutWrapper><UserManagement /></LayoutWrapper>} />
+          <Route path="/define/ms-parties" element={<LayoutWrapper><MsParties /></LayoutWrapper>} />
+          <Route path="/define/vendors" element={<LayoutWrapper><Vendors /></LayoutWrapper>} />
+          <Route path="/define/assets" element={<LayoutWrapper><Assets /></LayoutWrapper>} />
+          <Route path="/define/expenses" element={<LayoutWrapper><Expenses /></LayoutWrapper>} />
+          <Route path="/data-entry/inward" element={<LayoutWrapper><Inward /></LayoutWrapper>} />
+          <Route path="/data-entry/outward" element={<LayoutWrapper><Outward /></LayoutWrapper>} />
+          <Route path="/data-entry/transfer" element={<LayoutWrapper><Transfer /></LayoutWrapper>} />
+          <Route path="/data-entry/transfer-by-name" element={<LayoutWrapper><TransferByName /></LayoutWrapper>} />
+          <Route path="/data-entry/invoice" element={<LayoutWrapper><Invoice /></LayoutWrapper>} />
+          <Route path="/reports/stocks" element={<LayoutWrapper><Stocks /></LayoutWrapper>} />
+          <Route path="/reports/stock-ledger" element={<LayoutWrapper><StockLedger /></LayoutWrapper>} />
+          <Route path="/reports/cash-ledger" element={<LayoutWrapper><CashLedger /></LayoutWrapper>} />
+          <Route path="/reports/vouchers" element={<LayoutWrapper><Vouchers /></LayoutWrapper>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
