@@ -114,5 +114,14 @@
     .overflow-auto, .overflow-hidden, .overflow-x-auto, .overflow-y-auto {
       overflow: visible !important;
     }
+    table {
+      border-collapse: collapse !important;
+    }
+    th, td {
+      border: 1px solid #cbd5e1 !important;
+    }
+    thead th {
+      border-bottom: 2px solid #94a3b8 !important;
+    }
   }
 }
