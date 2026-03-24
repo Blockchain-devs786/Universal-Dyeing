@@ -100,7 +100,15 @@ export const fromPartiesService = {
     if (checkDefault[0]?.is_default) {
       throw new Error("The default Dyeing party cannot be deleted.");
     }
-    const rows = await sql`DELETE FROM from_parties WHERE id = ${id} RETURNING id, name`;
+    let rows;
+    try {
+      rows = await sql`DELETE FROM from_parties WHERE id = ${id} RETURNING id, name`;
+    } catch (err: any) {
+      if (err.message?.includes('foreign key constraint')) {
+        throw new Error('Cannot delete this party because it is linked to existing Inward/Outward records. Please disable it instead.');
+      }
+      throw err;
+    }
     if (rows.length === 0) throw new Error('From Party not found');
     await logActivity('from_parties', id, 'delete', { name: rows[0].name });
     return { success: true, deleted: rows[0] };

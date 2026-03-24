@@ -126,7 +126,15 @@ export const msPartiesService = {
 
   async delete(id: number) {
     const sql = getDb();
-    const rows = await sql`DELETE FROM ms_parties WHERE id = ${id} RETURNING id, name`;
+    let rows;
+    try {
+      rows = await sql`DELETE FROM ms_parties WHERE id = ${id} RETURNING id, name`;
+    } catch (err: any) {
+      if (err.message?.includes('foreign key constraint')) {
+        throw new Error('Cannot delete this party because it is linked to existing Inward/Outward records. Please disable it instead.');
+      }
+      throw err;
+    }
     if (rows.length === 0) throw new Error('MS Party not found');
 
     // Automatically sync delete to from_parties based on exact name match
@@ -134,6 +142,7 @@ export const msPartiesService = {
     try {
       await sql`DELETE FROM from_parties WHERE name = ${deletedName}`;
     } catch (e) {
+      // If the from_party delete fails due to foreign key constraints, we just ignore it for the sync
       console.error('[Sync Error] Failed to delete from_parties sync', e);
     }
 
