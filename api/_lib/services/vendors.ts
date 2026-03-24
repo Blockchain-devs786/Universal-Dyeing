@@ -1,0 +1,90 @@
+import { sql, logActivity } from '../db';
+
+export interface Vendor {
+  id?: number;
+  name: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  opening_balance?: number;
+  status?: string;
+}
+
+export const vendorsService = {
+  async list(search?: string, status?: string) {
+    if (search && status) {
+      return sql`
+        SELECT * FROM vendors 
+        WHERE (name ILIKE ${'%' + search + '%'} OR city ILIKE ${'%' + search + '%'})
+        AND status = ${status}
+        ORDER BY name ASC
+      `;
+    }
+    if (search) {
+      return sql`
+        SELECT * FROM vendors 
+        WHERE name ILIKE ${'%' + search + '%'} OR city ILIKE ${'%' + search + '%'}
+        ORDER BY name ASC
+      `;
+    }
+    if (status) {
+      return sql`SELECT * FROM vendors WHERE status = ${status} ORDER BY name ASC`;
+    }
+    return sql`SELECT * FROM vendors ORDER BY name ASC`;
+  },
+
+  async getById(id: number) {
+    const rows = await sql`SELECT * FROM vendors WHERE id = ${id}`;
+    return rows[0] || null;
+  },
+
+  async create(data: Vendor) {
+    const existing = await sql`SELECT id FROM vendors WHERE LOWER(name) = LOWER(${data.name})`;
+    if (existing.length > 0) {
+      throw new Error(`Vendor with name "${data.name}" already exists`);
+    }
+
+    const rows = await sql`
+      INSERT INTO vendors (name, phone, address, city, opening_balance, status)
+      VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
+              ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'})
+      RETURNING *
+    `;
+    await logActivity('vendors', rows[0].id, 'create', { name: data.name });
+    return rows[0];
+  },
+
+  async update(id: number, data: Partial<Vendor>) {
+    if (data.name) {
+      const existing = await sql`
+        SELECT id FROM vendors WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}
+      `;
+      if (existing.length > 0) {
+        throw new Error(`Vendor with name "${data.name}" already exists`);
+      }
+    }
+
+    const rows = await sql`
+      UPDATE vendors SET
+        name = COALESCE(${data.name ?? null}, name),
+        phone = COALESCE(${data.phone ?? null}, phone),
+        address = COALESCE(${data.address ?? null}, address),
+        city = COALESCE(${data.city ?? null}, city),
+        opening_balance = COALESCE(${data.opening_balance ?? null}, opening_balance),
+        status = COALESCE(${data.status ?? null}, status),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    if (rows.length === 0) throw new Error('Vendor not found');
+    await logActivity('vendors', id, 'update', data);
+    return rows[0];
+  },
+
+  async delete(id: number) {
+    const rows = await sql`DELETE FROM vendors WHERE id = ${id} RETURNING id, name`;
+    if (rows.length === 0) throw new Error('Vendor not found');
+    await logActivity('vendors', id, 'delete', { name: rows[0].name });
+    return { success: true, deleted: rows[0] };
+  },
+};
