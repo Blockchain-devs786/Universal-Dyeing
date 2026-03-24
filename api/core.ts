@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeDatabase } from './_lib/db';
-import { msPartiesService, type MsParty } from './_lib/services/ms-parties';
-import { vendorsService, type Vendor } from './_lib/services/vendors';
-import { assetsService, type Asset } from './_lib/services/assets';
-import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses';
+import { initializeDatabase } from './_lib/db.js';
+import { msPartiesService, type MsParty } from './_lib/services/ms-parties.js';
+import { vendorsService, type Vendor } from './_lib/services/vendors.js';
+import { assetsService, type Asset } from './_lib/services/assets.js';
+import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 
 let dbInitialized = false;
 
