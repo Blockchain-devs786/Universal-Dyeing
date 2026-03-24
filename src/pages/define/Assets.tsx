@@ -1,5 +1,306 @@
-import PlaceholderPage from "@/components/PlaceholderPage";
-import { HardDrive } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { HardDrive, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { assetsApi, type Asset } from "@/lib/api-client";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 export default function Assets() {
-  return <PlaceholderPage title="Assets" description="Track and manage organizational assets." icon={HardDrive} />;
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    category: "",
+    value: 0,
+    location: "",
+    purchase_date: "",
+    status: "active",
+  });
+
+  // Fetch
+  const { data: assets = [], isLoading } = useQuery({
+    queryKey: ["assets", search],
+    queryFn: () => assetsApi.list(search),
+  });
+
+  // Create
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<Asset, 'id' | 'created_at' | 'updated_at'>) => assetsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      toast.success("Asset created successfully");
+      closeDialog();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Update
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Asset> }) => assetsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      toast.success("Asset updated successfully");
+      closeDialog();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Delete
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => assetsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      toast.success("Asset deleted successfully");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Handlers
+  const handleOpenDialog = (asset?: Asset) => {
+    if (asset) {
+      setEditingAsset(asset);
+      setFormData({
+        name: asset.name,
+        description: asset.description || "",
+        category: asset.category || "",
+        value: asset.value || 0,
+        location: asset.location || "",
+        purchase_date: asset.purchase_date ? asset.purchase_date.split('T')[0] : "",
+        status: asset.status || "active",
+      });
+    } else {
+      setEditingAsset(null);
+      setFormData({
+        name: "",
+        description: "",
+        category: "",
+        value: 0,
+        location: "",
+        purchase_date: "",
+        status: "active",
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingAsset(null);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name) return toast.error("Name is required");
+
+    if (editingAsset) {
+      updateMutation.mutate({ id: editingAsset.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleStatusToggle = (asset: Asset, checked: boolean) => {
+    const newStatus = checked ? "active" : "inactive";
+    updateMutation.mutate({ id: asset.id, data: { status: newStatus } });
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl">
+            <HardDrive className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Assets</h1>
+            <p className="text-white/80 mt-1">Track company machinery and equipment.</p>
+          </div>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => handleOpenDialog()} className="bg-white text-primary hover:bg-white/90 shadow-md transition-all">
+              <Plus className="mr-2 h-4 w-4" /> Add Asset
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={handleSubmit}>
+              <DialogHeader>
+                <DialogTitle>{editingAsset ? "Edit Asset" : "Add New Asset"}</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input 
+                    id="name" 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    placeholder="E.g. Boiler Machine" 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input 
+                    id="category" 
+                    value={formData.category} 
+                    onChange={e => setFormData({...formData, category: e.target.value})} 
+                    placeholder="E.g. Machinery" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input 
+                    id="location" 
+                    value={formData.location} 
+                    onChange={e => setFormData({...formData, location: e.target.value})} 
+                    placeholder="Factory area" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="value">Value</Label>
+                    <Input 
+                      id="value" 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.value} 
+                      onChange={e => setFormData({...formData, value: parseFloat(e.target.value) || 0})} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_date">Purchase Date</Label>
+                    <Input 
+                      id="purchase_date" 
+                      type="date" 
+                      value={formData.purchase_date} 
+                      onChange={e => setFormData({...formData, purchase_date: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Label htmlFor="status">Status</Label>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">{formData.status === 'active' ? 'Active' : 'Inactive'}</span>
+                    <Switch 
+                      id="status" 
+                      checked={formData.status === "active"}
+                      onCheckedChange={(c) => setFormData({...formData, status: c ? "active" : "inactive"})}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingAsset ? "Save Changes" : "Create Asset"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="bg-card shadow-card rounded-2xl overflow-hidden border">
+        <div className="p-4 border-b bg-muted/30">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search specific asset..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-white"
+            />
+          </div>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Asset Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead className="text-right">Value</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Loading assets...</TableCell>
+              </TableRow>
+            ) : assets.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No assets found.</TableCell>
+              </TableRow>
+            ) : (
+              assets.map((asset) => (
+                <TableRow key={asset.id} className="transition-colors hover:bg-muted/50 group">
+                  <TableCell className="font-medium text-primary">{asset.name}</TableCell>
+                  <TableCell>
+                    {asset.category ? (
+                      <span className="bg-secondary/50 text-secondary-foreground px-2 py-1 rounded-md text-xs font-medium">
+                        {asset.category}
+                      </span>
+                    ) : "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{asset.location || "-"}</TableCell>
+                  <TableCell className="text-right font-medium text-emerald-600">
+                    Rs {Number(asset.value || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Switch 
+                      checked={asset.status === "active"} 
+                      onCheckedChange={(c) => handleStatusToggle(asset, c)}
+                      disabled={updateMutation.isPending}
+                    />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenDialog(asset)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                        if(confirm('Are you sure you want to delete this asset?')) {
+                          deleteMutation.mutate(asset.id);
+                        }
+                      }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
 }
