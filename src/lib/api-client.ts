@@ -95,6 +95,36 @@ export interface Inward {
   updated_at: string;
 }
 
+export interface OutwardItem {
+  id: number;
+  outward_id: number;
+  item_id: number;
+  item_name?: string;
+  measurement: 15 | 22;
+  quantity: number;
+}
+
+export interface Outward {
+  id: number;
+  outward_no: string;
+  gp_no: string;
+  sr_no: string;
+  ms_party_id: number;
+  ms_party_name?: string;
+  from_party_id: number;
+  from_party_name?: string;
+  outward_to_party_id: number;
+  outward_to_party_name?: string;
+  vehicle_no?: string;
+  driver_name?: string;
+  date: string;
+  total_qty?: number;
+  status: string;
+  items?: OutwardItem[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StockReportRow {
   item_id: number;
   item_name: string;
@@ -299,6 +329,32 @@ export const inwardsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('inwards.delete', { id }),
+};
+
+// ─── Outwards API ────────────────────────────────────────────────
+
+export const outwardsApi = {
+  list: (filters?: { ms_party_id?: number, outward_no?: string, gp_no?: string, from_date?: string, to_date?: string }) => {
+    const params: Record<string, string> = {};
+    if (filters?.ms_party_id) params.ms_party_id = String(filters.ms_party_id);
+    if (filters?.outward_no) params.outward_no = filters.outward_no;
+    if (filters?.gp_no) params.gp_no = filters.gp_no;
+    if (filters?.from_date) params.from_date = filters.from_date;
+    if (filters?.to_date) params.to_date = filters.to_date;
+    return coreRequest<Outward[]>('outwards.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<Outward>('outwards.get', { id }),
+  
+  create: (data: Omit<Outward, 'id' | 'outward_no' | 'gp_no' | 'sr_no' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Outward>('outwards.create', data),
+  
+  update: (id: number, data: Partial<Outward>) => 
+    coreRequest<Outward>('outwards.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('outwards.delete', { id }),
 };
 
 // ─── Asset Categories API ────────────────────────────────────────

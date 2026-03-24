@@ -18,29 +18,57 @@ export const reportsService = {
   async getStockReport(ms_party_id?: number, item_id?: number) {
     const sql = getDb();
     
-    // For now, Outward, Transfer, Transfer IN, Transfer OUT are stubbed to 0
-    // since those modules don't exist yet, but the aggregation structure is ready.
+    // Calculate total inward per item/msr/party
     const query = await sql`
+      WITH inward_totals AS (
+        SELECT 
+          ii.item_id,
+          ii.measurement as msr, 
+          i.ms_party_id,
+          SUM(ii.quantity) as total_inward
+        FROM inward_items ii
+        JOIN inwards i ON ii.inward_id = i.id
+        GROUP BY ii.item_id, ii.measurement, i.ms_party_id
+      ),
+      outward_totals AS (
+        SELECT 
+          oi.item_id,
+          oi.measurement as msr, 
+          o.ms_party_id,
+          SUM(oi.quantity) as total_outward
+        FROM outward_items oi
+        JOIN outwards o ON oi.outward_id = o.id
+        GROUP BY oi.item_id, oi.measurement, o.ms_party_id
+      ),
+      combined AS (
+        SELECT 
+          COALESCE(i.item_id, o.item_id) as item_id,
+          COALESCE(i.msr, o.msr) as msr,
+          COALESCE(i.ms_party_id, o.ms_party_id) as ms_party_id,
+          COALESCE(i.total_inward, 0) as total_inward,
+          COALESCE(o.total_outward, 0) as total_outward
+        FROM inward_totals i
+        FULL OUTER JOIN outward_totals o 
+          ON i.item_id = o.item_id AND i.msr = o.msr AND i.ms_party_id = o.ms_party_id
+      )
       SELECT 
         it.id as item_id,
         it.name as item_name, 
-        ii.measurement as msr, 
-        i.ms_party_id as ms_party_id,
+        c.msr, 
+        c.ms_party_id as ms_party_id,
         m.name as ms_party_name,
-        SUM(ii.quantity) as total_inward,
-        0 as total_outward,
+        c.total_inward,
+        c.total_outward,
         0 as total_transfer,
         0 as transfer_in,
         0 as transfer_out,
-        SUM(ii.quantity) as remaining
-      FROM inward_items ii
-      JOIN inwards i ON ii.inward_id = i.id
-      JOIN items it ON ii.item_id = it.id
-      JOIN ms_parties m ON i.ms_party_id = m.id
+        (c.total_inward - c.total_outward) as remaining
+      FROM combined c
+      JOIN items it ON c.item_id = it.id
+      JOIN ms_parties m ON c.ms_party_id = m.id
       WHERE 
-        (${ms_party_id || null}::integer IS NULL OR i.ms_party_id = ${ms_party_id || null}::integer)
-        AND (${item_id || null}::integer IS NULL OR ii.item_id = ${item_id || null}::integer)
-      GROUP BY ii.item_id, it.id, it.name, ii.measurement, i.ms_party_id, m.name
+        (${ms_party_id || null}::integer IS NULL OR c.ms_party_id = ${ms_party_id || null}::integer)
+        AND (${item_id || null}::integer IS NULL OR c.item_id = ${item_id || null}::integer)
       ORDER BY it.name ASC, m.name ASC
     `;
 
