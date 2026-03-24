@@ -88,10 +88,17 @@ export const inwardsService = {
     
     const inwardId = inwardRows[0].id;
     
-    // Auto-generate numbers based on ID
+    // Auto-generate numbers based on ID for INW and GP
     const inwardNo = `INW-${String(inwardId).padStart(5, '0')}`;
     const gpNo = `GP-${String(inwardId).padStart(5, '0')}`;
-    const srNo = `${inwardId}`;
+    
+    // Auto-generate sr_no per ms_party
+    const maxSrRow = await sql`
+      SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(sr_no, '[^0-9]', '', 'g'), '') AS INTEGER)), 0) + 1 AS next_sr_no
+      FROM inwards 
+      WHERE ms_party_id = ${data.ms_party_id}
+    `;
+    const srNo = String(maxSrRow[0].next_sr_no);
 
     await sql`
       UPDATE inwards 
