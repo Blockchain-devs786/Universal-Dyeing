@@ -1,4 +1,4 @@
-import { sql, logActivity } from '../db';
+import { getDb } from '../db';
 
 export interface MsParty {
   id?: number;
@@ -10,8 +10,14 @@ export interface MsParty {
   status?: string;
 }
 
+async function logActivity(entityType: string, entityId: number | null, action: string, details: Record<string, unknown> = {}) {
+  const sql = getDb();
+  await sql`INSERT INTO activity_log (entity_type, entity_id, action, details) VALUES (${entityType}, ${entityId}, ${action}, ${JSON.stringify(details)})`;
+}
+
 export const msPartiesService = {
   async list(search?: string, status?: string) {
+    const sql = getDb();
     if (search && status) {
       return sql`
         SELECT * FROM ms_parties 
@@ -34,17 +40,17 @@ export const msPartiesService = {
   },
 
   async getById(id: number) {
+    const sql = getDb();
     const rows = await sql`SELECT * FROM ms_parties WHERE id = ${id}`;
     return rows[0] || null;
   },
 
   async create(data: MsParty) {
-    // Check for duplicate name
+    const sql = getDb();
     const existing = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = LOWER(${data.name})`;
     if (existing.length > 0) {
       throw new Error(`MS Party with name "${data.name}" already exists`);
     }
-
     const rows = await sql`
       INSERT INTO ms_parties (name, phone, address, city, opening_balance, status)
       VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
@@ -56,16 +62,13 @@ export const msPartiesService = {
   },
 
   async update(id: number, data: Partial<MsParty>) {
-    // Check for duplicate name if name is being changed
+    const sql = getDb();
     if (data.name) {
-      const existing = await sql`
-        SELECT id FROM ms_parties WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}
-      `;
+      const existing = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}`;
       if (existing.length > 0) {
         throw new Error(`MS Party with name "${data.name}" already exists`);
       }
     }
-
     const rows = await sql`
       UPDATE ms_parties SET
         name = COALESCE(${data.name ?? null}, name),
@@ -84,6 +87,7 @@ export const msPartiesService = {
   },
 
   async delete(id: number) {
+    const sql = getDb();
     const rows = await sql`DELETE FROM ms_parties WHERE id = ${id} RETURNING id, name`;
     if (rows.length === 0) throw new Error('MS Party not found');
     await logActivity('ms_parties', id, 'delete', { name: rows[0].name });

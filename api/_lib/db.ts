@@ -1,22 +1,27 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 
-export const sql = (strings: TemplateStringsArray, ...values: any[]) => {
-  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-  if (!url) {
-    // If running in development and .env is not loaded properly, we need a clear error
-    throw new Error("DATABASE_URL is not set. Please ensure you have a .env file or Vercel Environment Variables configured.");
+let _sql: NeonQueryFunction<false, false> | null = null;
+
+function getDb(): NeonQueryFunction<false, false> {
+  if (!_sql) {
+    const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    if (!url) {
+      throw new Error("DATABASE_URL is not set. Please ensure Vercel Environment Variables are configured.");
+    }
+    _sql = neon(url);
   }
-  const db = neon(url);
-  return db(strings, ...values);
-};
+  return _sql;
+}
 
 /**
  * Initialize all database tables.
  * Called on first request to ensure schema is ready.
  */
 export async function initializeDatabase() {
+  const db = getDb();
+
   // MS Parties table
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS ms_parties (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
@@ -33,7 +38,7 @@ export async function initializeDatabase() {
   `;
 
   // Vendors table
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS vendors (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
@@ -50,7 +55,7 @@ export async function initializeDatabase() {
   `;
 
   // Assets table
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS assets (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
@@ -66,7 +71,7 @@ export async function initializeDatabase() {
   `;
 
   // Expense categories table
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS expense_categories (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
@@ -78,7 +83,7 @@ export async function initializeDatabase() {
   `;
 
   // Expenses table (linked to categories, unique name per category)
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS expenses (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -92,7 +97,7 @@ export async function initializeDatabase() {
   `;
 
   // Activity log table
-  await sql`
+  await db`
     CREATE TABLE IF NOT EXISTS activity_log (
       id SERIAL PRIMARY KEY,
       entity_type VARCHAR(50) NOT NULL,
@@ -106,16 +111,15 @@ export async function initializeDatabase() {
 }
 
 /**
- * Log an activity
+ * Execute a SQL query using the Neon serverless driver.
+ * Use this as a tagged template: sql`SELECT * FROM table`
  */
-export async function logActivity(
-  entityType: string,
-  entityId: number | null,
-  action: string,
-  details: Record<string, unknown> = {}
-) {
-  await sql`
-    INSERT INTO activity_log (entity_type, entity_id, action, details)
-    VALUES (${entityType}, ${entityId}, ${action}, ${JSON.stringify(details)})
-  `;
-}
+export { getDb as getDb };
+
+// Re-export a simple sql tagged template helper
+export const sql = {
+  query: (strings: TemplateStringsArray, ...values: any[]) => {
+    const db = getDb();
+    return db(strings, ...values);
+  }
+};

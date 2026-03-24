@@ -1,4 +1,4 @@
-import { sql, logActivity } from '../db';
+import { getDb } from '../db';
 
 export interface Vendor {
   id?: number;
@@ -10,8 +10,14 @@ export interface Vendor {
   status?: string;
 }
 
+async function logActivity(entityType: string, entityId: number | null, action: string, details: Record<string, unknown> = {}) {
+  const sql = getDb();
+  await sql`INSERT INTO activity_log (entity_type, entity_id, action, details) VALUES (${entityType}, ${entityId}, ${action}, ${JSON.stringify(details)})`;
+}
+
 export const vendorsService = {
   async list(search?: string, status?: string) {
+    const sql = getDb();
     if (search && status) {
       return sql`
         SELECT * FROM vendors 
@@ -34,16 +40,17 @@ export const vendorsService = {
   },
 
   async getById(id: number) {
+    const sql = getDb();
     const rows = await sql`SELECT * FROM vendors WHERE id = ${id}`;
     return rows[0] || null;
   },
 
   async create(data: Vendor) {
+    const sql = getDb();
     const existing = await sql`SELECT id FROM vendors WHERE LOWER(name) = LOWER(${data.name})`;
     if (existing.length > 0) {
       throw new Error(`Vendor with name "${data.name}" already exists`);
     }
-
     const rows = await sql`
       INSERT INTO vendors (name, phone, address, city, opening_balance, status)
       VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
@@ -55,15 +62,13 @@ export const vendorsService = {
   },
 
   async update(id: number, data: Partial<Vendor>) {
+    const sql = getDb();
     if (data.name) {
-      const existing = await sql`
-        SELECT id FROM vendors WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}
-      `;
+      const existing = await sql`SELECT id FROM vendors WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}`;
       if (existing.length > 0) {
         throw new Error(`Vendor with name "${data.name}" already exists`);
       }
     }
-
     const rows = await sql`
       UPDATE vendors SET
         name = COALESCE(${data.name ?? null}, name),
@@ -82,6 +87,7 @@ export const vendorsService = {
   },
 
   async delete(id: number) {
+    const sql = getDb();
     const rows = await sql`DELETE FROM vendors WHERE id = ${id} RETURNING id, name`;
     if (rows.length === 0) throw new Error('Vendor not found');
     await logActivity('vendors', id, 'delete', { name: rows[0].name });
