@@ -143,7 +143,7 @@ export async function initializeDatabase() {
       id SERIAL PRIMARY KEY,
       inward_no VARCHAR(50) UNIQUE,
       gp_no VARCHAR(50) UNIQUE,
-      sr_no VARCHAR(50) UNIQUE,
+      sr_no VARCHAR(50),
       ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
       from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
       vehicle_no VARCHAR(100),

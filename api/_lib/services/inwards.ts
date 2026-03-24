@@ -122,8 +122,22 @@ export const inwardsService = {
   async update(id: number, data: Partial<Inward>) {
     const sql = getDb();
     
+    // Check if ms_party_id changed to generate new sr_no
+    let newSrNo: string | undefined = undefined;
+    if (data.ms_party_id) {
+       const existingRow = await sql`SELECT ms_party_id FROM inwards WHERE id = ${id}`;
+       if (existingRow.length > 0 && existingRow[0].ms_party_id !== data.ms_party_id) {
+           const maxSrRow = await sql`
+             SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(sr_no, '[^0-9]', '', 'g'), '') AS INTEGER)), 0) + 1 AS next_sr_no
+             FROM inwards 
+             WHERE ms_party_id = ${data.ms_party_id}
+           `;
+           newSrNo = String(maxSrRow[0].next_sr_no);
+       }
+    }
+
     // Only update core fields if they are provided
-    if (data.ms_party_id || data.from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date) {
+    if (data.ms_party_id || data.from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
       await sql`
         UPDATE inwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
@@ -131,6 +145,7 @@ export const inwardsService = {
           vehicle_no = COALESCE(${data.vehicle_no ?? null}, vehicle_no),
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),
+          sr_no = COALESCE(${newSrNo ?? null}, sr_no),
           updated_at = NOW()
         WHERE id = ${id}
       `;
