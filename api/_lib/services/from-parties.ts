@@ -8,6 +8,7 @@ export interface FromParty {
   city?: string;
   opening_balance?: number;
   status?: string;
+  is_default?: boolean;
 }
 
 async function logActivity(entityType: string, entityId: number | null, action: string, details: Record<string, unknown> = {}) {
@@ -69,6 +70,13 @@ export const fromPartiesService = {
         throw new Error(`From Party with name "${data.name}" already exists`);
       }
     }
+    
+    if (data.status === 'inactive') {
+      const checkDefault = await sql`SELECT is_default FROM from_parties WHERE id = ${id}`;
+      if (checkDefault[0]?.is_default) {
+        throw new Error("The default Dyeing party cannot be disabled.");
+      }
+    }
     const rows = await sql`
       UPDATE from_parties SET
         name = COALESCE(${data.name ?? null}, name),
@@ -88,6 +96,10 @@ export const fromPartiesService = {
 
   async delete(id: number) {
     const sql = getDb();
+    const checkDefault = await sql`SELECT is_default FROM from_parties WHERE id = ${id}`;
+    if (checkDefault[0]?.is_default) {
+      throw new Error("The default Dyeing party cannot be deleted.");
+    }
     const rows = await sql`DELETE FROM from_parties WHERE id = ${id} RETURNING id, name`;
     if (rows.length === 0) throw new Error('From Party not found');
     await logActivity('from_parties', id, 'delete', { name: rows[0].name });

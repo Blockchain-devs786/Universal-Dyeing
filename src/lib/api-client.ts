@@ -41,6 +41,7 @@ export interface FromParty {
   debit?: number;
   credit?: number;
   status: string;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }

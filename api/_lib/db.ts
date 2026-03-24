@@ -66,10 +66,24 @@ export async function initializeDatabase() {
       debit DECIMAL(15,2) DEFAULT 0,
       credit DECIMAL(15,2) DEFAULT 0,
       status VARCHAR(20) DEFAULT 'active',
+      is_default BOOLEAN DEFAULT false,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safe alter for existing tables without the is_default column
+  try {
+    await db`ALTER TABLE from_parties ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false`;
+    await db`
+      INSERT INTO from_parties (name, is_default) 
+      SELECT 'Dyeing', true 
+      WHERE NOT EXISTS (SELECT 1 FROM from_parties WHERE is_default = true)
+      ON CONFLICT (name) DO NOTHING
+    `;
+  } catch (err) {
+    console.error("Migration error for from_parties:", err);
+  }
 
   // Asset categories table
   await db`

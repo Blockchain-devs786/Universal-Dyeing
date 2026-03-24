@@ -169,10 +169,12 @@ export default function OutwardPage() {
 
   const handleProceedToForm = () => {
     if (!selectedPartyIdForNew) return toast.error("Please select an MS Party first");
+    const defaultFromParty = fromParties.find((p: any) => p.is_default);
+    
     setEditingOutward(null);
     setFormData({
       ms_party_id: selectedPartyIdForNew,
-      from_party_id: "",
+      from_party_id: defaultFromParty ? String(defaultFromParty.id) : "",
       outward_to_party_id: "",
       vehicle_no: "",
       driver_name: "",
@@ -586,38 +588,12 @@ export default function OutwardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>From Party *</Label>
-                  <Popover open={fromPartyOpen} onOpenChange={setFromPartyOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-                        <span className="truncate">{selectedFromPartyObj ? selectedFromPartyObj.name : "Select From Party..."}</span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search from party..." />
-                        <CommandList>
-                          <CommandEmpty>No records found.</CommandEmpty>
-                          <CommandGroup>
-                            {fromParties.map((party) => (
-                              <CommandItem
-                                key={party.id}
-                                value={party.name}
-                                onSelect={() => {
-                                  setFormData({...formData, from_party_id: String(party.id)});
-                                  setFromPartyOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", formData.from_party_id === String(party.id) ? "opacity-100" : "opacity-0")} />
-                                {party.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <Label>From Party (Default) *</Label>
+                  <Input 
+                    value={fromParties.find(p => String(p.id) === formData.from_party_id)?.name || ""} 
+                    disabled 
+                    className="bg-muted cursor-not-allowed font-medium text-slate-700"
+                  />
                 </div>
 
                 <div className="space-y-2">
