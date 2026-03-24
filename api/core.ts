@@ -1,8 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeDatabase } from './_lib/db.js';
 import { msPartiesService, type MsParty } from './_lib/services/ms-parties.js';
+import { fromPartiesService, type FromParty } from './_lib/services/from-parties.js';
 import { vendorsService, type Vendor } from './_lib/services/vendors.js';
-import { assetsService, type Asset } from './_lib/services/assets.js';
+import { assetsService, type Asset, type AssetCategory } from './_lib/services/assets.js';
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 
 let dbInitialized = false;
@@ -88,6 +89,26 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for ms_parties`);
       }
 
+    // ─── From Parties ──────────────────────────────────────────
+    case 'from_parties':
+      switch (operation) {
+        case 'list':
+          return fromPartiesService.list(
+            (query.search as string) || data.search,
+            (query.status as string) || data.status
+          );
+        case 'get':
+          return fromPartiesService.getById(Number(query.id || data.id));
+        case 'create':
+          return fromPartiesService.create(data as FromParty);
+        case 'update':
+          return fromPartiesService.update(Number(data.id), data);
+        case 'delete':
+          return fromPartiesService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for from_parties`);
+      }
+
     // ─── Vendors ───────────────────────────────────────────────
     case 'vendors':
       switch (operation) {
@@ -108,23 +129,41 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for vendors`);
       }
 
+    // ─── Asset Categories ──────────────────────────────────────
+    case 'asset_categories':
+      switch (operation) {
+        case 'list':
+          return assetsService.listCategories(
+            (query.search as string) || data.search
+          );
+        case 'get':
+          return assetsService.getCategoryById(Number(query.id || data.id));
+        case 'create':
+          return assetsService.createCategory(data as AssetCategory);
+        case 'update':
+          return assetsService.updateCategory(Number(data.id), data);
+        case 'delete':
+          return assetsService.deleteCategory(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for asset_categories`);
+      }
+
     // ─── Assets ────────────────────────────────────────────────
     case 'assets':
       switch (operation) {
         case 'list':
-          return assetsService.list(
-            (query.search as string) || data.search,
-            (query.status as string) || data.status,
-            (query.category as string) || data.category
+          return assetsService.listAssets(
+            query.category_id ? Number(query.category_id) : data.category_id,
+            (query.search as string) || data.search
           );
         case 'get':
-          return assetsService.getById(Number(query.id || data.id));
+          return assetsService.getAssetById(Number(query.id || data.id));
         case 'create':
-          return assetsService.create(data as Asset);
+          return assetsService.createAsset(data as Asset);
         case 'update':
-          return assetsService.update(Number(data.id), data);
+          return assetsService.updateAsset(Number(data.id), data);
         case 'delete':
-          return assetsService.delete(Number(query.id || data.id));
+          return assetsService.deleteAsset(Number(query.id || data.id));
         default:
           throw new Error(`Unknown operation: ${operation} for assets`);
       }
@@ -169,6 +208,6 @@ async function routeAction(
       }
 
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, vendors, assets, expense_categories, expenses`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, asset_categories, assets, expense_categories, expenses`);
   }
 }

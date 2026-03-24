@@ -57,12 +57,30 @@ export const msPartiesService = {
               ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'})
       RETURNING *
     `;
+    
+    // Automatically sync to from_parties module
+    try {
+      await sql`
+        INSERT INTO from_parties (name, phone, address, city, opening_balance, status)
+        VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
+                ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'})
+        ON CONFLICT (name) DO NOTHING
+      `;
+    } catch (e) {
+      console.error('[Sync Error] Failed to auto-sync ms_party to from_parties', e);
+    }
+
     await logActivity('ms_parties', rows[0].id, 'create', { name: data.name });
     return rows[0];
   },
 
   async update(id: number, data: Partial<MsParty>) {
     const sql = getDb();
+
+    // Get old name for syncing
+    const oldRecord = await sql`SELECT name FROM ms_parties WHERE id = ${id}`;
+    const oldName = oldRecord.length > 0 ? oldRecord[0].name : null;
+
     if (data.name) {
       const existing = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = LOWER(${data.name}) AND id != ${id}`;
       if (existing.length > 0) {
@@ -82,6 +100,26 @@ export const msPartiesService = {
       RETURNING *
     `;
     if (rows.length === 0) throw new Error('MS Party not found');
+
+    // Automatically sync updates to from_parties based on exact old name match
+    if (oldName) {
+      try {
+        await sql`
+          UPDATE from_parties SET
+            name = COALESCE(${data.name ?? null}, name),
+            phone = COALESCE(${data.phone ?? null}, phone),
+            address = COALESCE(${data.address ?? null}, address),
+            city = COALESCE(${data.city ?? null}, city),
+            opening_balance = COALESCE(${data.opening_balance ?? null}, opening_balance),
+            status = COALESCE(${data.status ?? null}, status),
+            updated_at = NOW()
+          WHERE name = ${oldName}
+        `;
+      } catch (e) {
+        console.error('[Sync Error] Failed to update from_parties sync', e);
+      }
+    }
+
     await logActivity('ms_parties', id, 'update', data);
     return rows[0];
   },
@@ -90,7 +128,16 @@ export const msPartiesService = {
     const sql = getDb();
     const rows = await sql`DELETE FROM ms_parties WHERE id = ${id} RETURNING id, name`;
     if (rows.length === 0) throw new Error('MS Party not found');
-    await logActivity('ms_parties', id, 'delete', { name: rows[0].name });
+
+    // Automatically sync delete to from_parties based on exact name match
+    const deletedName = rows[0].name;
+    try {
+      await sql`DELETE FROM from_parties WHERE name = ${deletedName}`;
+    } catch (e) {
+      console.error('[Sync Error] Failed to delete from_parties sync', e);
+    }
+
+    await logActivity('ms_parties', id, 'delete', { name: deletedName });
     return { success: true, deleted: rows[0] };
   },
 };

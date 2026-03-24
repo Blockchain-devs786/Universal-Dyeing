@@ -54,19 +54,49 @@ export async function initializeDatabase() {
     )
   `;
 
+  // From Parties table (synced with MS Parties occasionally or manually managed)
+  await db`
+    CREATE TABLE IF NOT EXISTS from_parties (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      phone VARCHAR(50),
+      address TEXT,
+      city VARCHAR(100),
+      opening_balance DECIMAL(15,2) DEFAULT 0,
+      debit DECIMAL(15,2) DEFAULT 0,
+      credit DECIMAL(15,2) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Asset categories table
+  await db`
+    CREATE TABLE IF NOT EXISTS asset_categories (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      description TEXT,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
   // Assets table
   await db`
     CREATE TABLE IF NOT EXISTS assets (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL UNIQUE,
+      name VARCHAR(255) NOT NULL,
       description TEXT,
-      category VARCHAR(100),
+      category_id INTEGER REFERENCES asset_categories(id) ON DELETE SET NULL,
       value DECIMAL(15,2) DEFAULT 0,
       location VARCHAR(255),
       status VARCHAR(20) DEFAULT 'active',
       purchase_date DATE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(name, category_id)
     )
   `;
 

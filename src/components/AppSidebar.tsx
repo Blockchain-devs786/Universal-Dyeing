@@ -43,6 +43,7 @@ import {
 
 const defineItems = [
   { title: "MS Parties", url: "/define/ms-parties", icon: Building2 },
+  { title: "From Parties", url: "/define/from-parties", icon: Building2 },
   { title: "Vendors", url: "/define/vendors", icon: Truck },
   { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },

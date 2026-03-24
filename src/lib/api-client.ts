@@ -31,6 +31,20 @@ export interface MsParty {
   updated_at: string;
 }
 
+export interface FromParty {
+  id: number;
+  name: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  opening_balance?: number;
+  debit?: number;
+  credit?: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Vendor {
   id: number;
   name: string;
@@ -45,11 +59,21 @@ export interface Vendor {
   updated_at: string;
 }
 
-export interface Asset {
+export interface AssetCategory {
   id: number;
   name: string;
   description?: string;
-  category?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Asset {
+  id: number;
+  name: string;
+  category_id?: number | null;
+  category_name?: string;
+  description?: string;
   value?: number;
   location?: string;
   status: string;
@@ -121,6 +145,29 @@ export const msPartiesApi = {
     coreRequest<{ success: boolean }>('ms_parties.delete', { id }),
 };
 
+// ─── From Parties API ────────────────────────────────────────────
+
+export const fromPartiesApi = {
+  list: (search?: string, status?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    if (status) params.status = status;
+    return coreRequest<FromParty[]>('from_parties.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<FromParty>('from_parties.get', { id }),
+  
+  create: (data: Omit<FromParty, 'id' | 'debit' | 'credit' | 'created_at' | 'updated_at'>) => 
+    coreRequest<FromParty>('from_parties.create', data),
+  
+  update: (id: number, data: Partial<FromParty>) => 
+    coreRequest<FromParty>('from_parties.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('from_parties.delete', { id }),
+};
+
 // ─── Vendors API ─────────────────────────────────────────────────
 
 export const vendorsApi = {
@@ -144,21 +191,42 @@ export const vendorsApi = {
     coreRequest<{ success: boolean }>('vendors.delete', { id }),
 };
 
+// ─── Asset Categories API ────────────────────────────────────────
+
+export const assetCategoriesApi = {
+  list: (search?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    return coreRequest<AssetCategory[]>('asset_categories.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<AssetCategory>('asset_categories.get', { id }),
+  
+  create: (data: Omit<AssetCategory, 'id' | 'created_at' | 'updated_at'>) => 
+    coreRequest<AssetCategory>('asset_categories.create', data),
+  
+  update: (id: number, data: Partial<AssetCategory>) => 
+    coreRequest<AssetCategory>('asset_categories.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('asset_categories.delete', { id }),
+};
+
 // ─── Assets API ──────────────────────────────────────────────────
 
 export const assetsApi = {
-  list: (search?: string, status?: string, category?: string) => {
+  list: (categoryId?: number, search?: string) => {
     const params: Record<string, string> = {};
+    if (categoryId) params.category_id = String(categoryId);
     if (search) params.search = search;
-    if (status) params.status = status;
-    if (category) params.category = category;
     return coreRequest<Asset[]>('assets.list', {}, params);
   },
   
   getById: (id: number) => 
     coreRequest<Asset>('assets.get', { id }),
   
-  create: (data: Omit<Asset, 'id' | 'created_at' | 'updated_at'>) => 
+  create: (data: Omit<Asset, 'id' | 'category_name' | 'created_at' | 'updated_at'>) => 
     coreRequest<Asset>('assets.create', data),
   
   update: (id: number, data: Partial<Asset>) => 
