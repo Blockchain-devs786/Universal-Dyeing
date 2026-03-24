@@ -230,8 +230,8 @@ export default function StockReport() {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* KPI Cards Grid (Hidden in Print) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 print:hidden">
         <KPICard title="TOTAL INWARD" value={aggregates.total_inward} numeralColor="text-blue-600" />
         <KPICard title="TOTAL OUTWARD" value={aggregates.total_outward} numeralColor="text-orange-500" />
         <KPICard title="TOTAL TRANSFER" value={aggregates.total_transfer} numeralColor="text-purple-500" />
@@ -240,6 +240,33 @@ export default function StockReport() {
         <div className="bg-white p-5 rounded-xl shadow-sm border-2 border-blue-500/80 flex flex-col items-center justify-center text-center">
           <span className="text-xs font-semibold text-muted-foreground tracking-widest mb-3 uppercase">Net Remaining</span>
           <span className="text-3xl font-bold tracking-tight text-blue-600">{aggregates.net_remaining.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Print-Only Summary Box (Hidden on Screen) */}
+      <div className="hidden print:block mb-6 space-y-4">
+        <div className="flex justify-between items-end border-b border-border/60 pb-2">
+           <div className="flex gap-8">
+             <p className="text-sm font-semibold text-slate-600">
+               MS Party: <span className="font-bold text-black">{filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}</span>
+             </p>
+             <p className="text-sm font-semibold text-slate-600">
+               Search Item: <span className="font-bold text-black">{filterItemId === "all" ? "All Items" : selectedItemObj?.name}</span>
+             </p>
+           </div>
+           <p className="text-xs text-slate-500">Printed on: {new Date().toLocaleString()}</p>
+        </div>
+        
+        <div className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 font-semibold shadow-sm text-center">
+           <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total Inward</span><span className="text-blue-600 text-base">{aggregates.total_inward.toLocaleString()}</span></div>
+           <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total Outward</span><span className="text-orange-500 text-base">{aggregates.total_outward.toLocaleString()}</span></div>
+           <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total Transfer</span><span className="text-purple-500 text-base">{aggregates.total_transfer.toLocaleString()}</span></div>
+           <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Transfer IN</span><span className="text-emerald-500 text-base">{aggregates.transfer_in.toLocaleString()}</span></div>
+           <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Transfer OUT</span><span className="text-red-500 text-base">{aggregates.transfer_out.toLocaleString()}</span></div>
+           <div className="border-l border-slate-300 pl-4 py-1">
+             <span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Net Remaining</span>
+             <span className="text-blue-700 font-bold text-lg">{aggregates.net_remaining.toLocaleString()}</span>
+           </div>
         </div>
       </div>
 
