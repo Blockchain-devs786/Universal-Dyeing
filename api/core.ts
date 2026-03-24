@@ -8,6 +8,8 @@ import { inwardsService, type Inward } from './_lib/services/inwards.js';
 import { assetsService, type Asset, type AssetCategory } from './_lib/services/assets.js';
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 
+import { reportsService } from './_lib/services/reports.js';
+
 let dbInitialized = false;
 
 /**
@@ -252,7 +254,19 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for expenses`);
       }
 
+    // ─── Reports ───────────────────────────────────────────────
+    case 'reports':
+      switch (operation) {
+        case 'stock':
+          return reportsService.getStockReport(
+            query.ms_party_id ? Number(query.ms_party_id) : undefined,
+            query.item_id ? Number(query.item_id) : undefined
+          );
+        default:
+          throw new Error(`Unknown operation: ${operation} for reports`);
+      }
+
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports`);
   }
 }

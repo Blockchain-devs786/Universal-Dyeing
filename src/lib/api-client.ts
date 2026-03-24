@@ -95,6 +95,20 @@ export interface Inward {
   updated_at: string;
 }
 
+export interface StockReportRow {
+  item_id: number;
+  item_name: string;
+  msr: number;
+  ms_party_id: number;
+  ms_party_name: string;
+  total_inward: number;
+  total_outward: number;
+  total_transfer: number;
+  transfer_in: number;
+  transfer_out: number;
+  remaining: number;
+}
+
 export interface AssetCategory {
   id: number;
   name: string;
@@ -248,6 +262,17 @@ export const itemsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('items.delete', { id }),
+};
+
+// ─── Reports API ─────────────────────────────────────────────────
+
+export const reportsApi = {
+  getStock: (ms_party_id?: string | number, item_id?: string | number) => {
+    const params: Record<string, string> = {};
+    if (ms_party_id && ms_party_id !== "all") params.ms_party_id = String(ms_party_id);
+    if (item_id && item_id !== "all") params.item_id = String(item_id);
+    return coreRequest<StockReportRow[]>('reports.stock', {}, params);
+  }
 };
 
 // ─── Inwards API ─────────────────────────────────────────────────

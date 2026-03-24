@@ -1,5 +1,307 @@
-import PlaceholderPage from "@/components/PlaceholderPage";
-import { Package } from "lucide-react";
-export default function Stocks() {
-  return <PlaceholderPage title="Stocks" description="View current stock levels and inventory status." icon={Package} />;
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { 
+  RefreshCw, 
+  Printer, 
+  Search, 
+  Check, 
+  ChevronsUpDown,
+  Filter
+} from "lucide-react";
+import {
+  reportsApi,
+  msPartiesApi,
+  itemsApi,
+  type StockReportRow,
+} from "@/lib/api-client";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+export default function StockReport() {
+  const [filterMsPartyId, setFilterMsPartyId] = useState<string>("all");
+  const [filterItemId, setFilterItemId] = useState<string>("all");
+
+  const [msPartyOpen, setMsPartyOpen] = useState(false);
+  const [itemOpen, setItemOpen] = useState(false);
+
+  // Data Queries
+  const { data: stocks = [], isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["reports_stock", filterMsPartyId, filterItemId],
+    queryFn: () => reportsApi.getStock(filterMsPartyId, filterItemId),
+  });
+
+  const { data: msParties = [] } = useQuery({
+    queryKey: ["ms_parties"],
+    queryFn: () => msPartiesApi.list(),
+  });
+
+  const { data: items = [] } = useQuery({
+    queryKey: ["items"],
+    queryFn: () => itemsApi.list(),
+  });
+
+  // Calculate Aggregates for KPI cards
+  const aggregates = stocks.reduce(
+    (acc, row) => {
+      acc.total_inward += row.total_inward;
+      acc.total_outward += row.total_outward;
+      acc.total_transfer += row.total_transfer;
+      acc.transfer_in += row.transfer_in;
+      acc.transfer_out += row.transfer_out;
+      acc.net_remaining += row.remaining;
+      return acc;
+    },
+    {
+      total_inward: 0,
+      total_outward: 0,
+      total_transfer: 0,
+      transfer_in: 0,
+      transfer_out: 0,
+      net_remaining: 0,
+    }
+  );
+
+  const selectedMsPartyObj = msParties.find(p => String(p.id) === filterMsPartyId);
+  const selectedItemObj = items.find(i => String(i.id) === filterItemId);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Stock Report</h1>
+          <p className="text-muted-foreground mt-1">Monitor inventory levels across all MS Parties and items.</p>
+        </div>
+        
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()} 
+            disabled={isFetching}
+            className="shadow-sm bg-white"
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} /> 
+            Refresh
+          </Button>
+          <Button 
+            onClick={handlePrint} 
+            className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+          >
+            <Printer className="mr-2 h-4 w-4" /> 
+            Print Report
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-border/50">
+        <div className="flex items-center gap-2 mb-4 text-blue-600">
+          <Filter className="h-4 w-4" />
+          <h2 className="font-semibold text-sm">Filters</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">MS Party</Label>
+            <Popover open={msPartyOpen} onOpenChange={setMsPartyOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={msPartyOpen}
+                  className="w-full justify-between font-normal bg-slate-50/50 h-10"
+                >
+                  <span className="truncate">{filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name || "All Parties"}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search ms party..." />
+                  <CommandList>
+                    <CommandEmpty>No records found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setFilterMsPartyId("all");
+                          setMsPartyOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filterMsPartyId === "all" ? "opacity-100" : "opacity-0")} />
+                        All Parties
+                      </CommandItem>
+                      {msParties.map((party) => (
+                        <CommandItem
+                          key={party.id}
+                          value={party.name}
+                          onSelect={() => {
+                            setFilterMsPartyId(String(party.id));
+                            setMsPartyOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filterMsPartyId === String(party.id) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {party.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Search Item</Label>
+            <Popover open={itemOpen} onOpenChange={setItemOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={itemOpen}
+                  className="w-full justify-between font-normal bg-slate-50/50 h-10"
+                >
+                  <span className="truncate">{filterItemId === "all" ? "All Items" : selectedItemObj?.name || "All Items"}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search items..." />
+                  <CommandList>
+                    <CommandEmpty>No records found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setFilterItemId("all");
+                          setItemOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filterItemId === "all" ? "opacity-100" : "opacity-0")} />
+                        All Items
+                      </CommandItem>
+                      {items.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={item.name}
+                          onSelect={() => {
+                            setFilterItemId(String(item.id));
+                            setItemOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filterItemId === String(item.id) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {item.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KPICard title="TOTAL INWARD" value={aggregates.total_inward} numeralColor="text-blue-600" />
+        <KPICard title="TOTAL OUTWARD" value={aggregates.total_outward} numeralColor="text-orange-500" />
+        <KPICard title="TOTAL TRANSFER" value={aggregates.total_transfer} numeralColor="text-purple-500" />
+        <KPICard title="TRANSFER IN" value={aggregates.transfer_in} numeralColor="text-emerald-500" />
+        <KPICard title="TRANSFER OUT" value={aggregates.transfer_out} numeralColor="text-red-500" />
+        <div className="bg-white p-5 rounded-xl shadow-sm border-2 border-blue-500/80 flex flex-col items-center justify-center text-center">
+          <span className="text-xs font-semibold text-muted-foreground tracking-widest mb-3 uppercase">Net Remaining</span>
+          <span className="text-3xl font-bold tracking-tight text-blue-600">{aggregates.net_remaining.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <div className="bg-white shadow-sm rounded-xl overflow-hidden border">
+        <Table>
+          <TableHeader className="bg-slate-50 border-b">
+            <TableRow>
+              <TableHead className="py-4 font-semibold text-slate-600">Item Name</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">MSR</TableHead>
+              <TableHead className="font-semibold text-slate-600">MS Party</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">Total Inward</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">Total Outward</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">Total Transfer</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">Transfer IN</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center">Transfer OUT</TableHead>
+              <TableHead className="font-semibold text-blue-600 bg-blue-50/50 text-center">Remaining</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Loading stock report...</TableCell>
+              </TableRow>
+            ) : stocks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  No stock records found matching your filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              stocks.map((row, idx) => (
+                <TableRow key={idx} className="transition-colors hover:bg-slate-50/80 group">
+                  <TableCell className="font-medium text-slate-800 py-3">{row.item_name}</TableCell>
+                  <TableCell className="text-center font-medium">{row.msr}</TableCell>
+                  <TableCell className="font-medium text-slate-600">{row.ms_party_name}</TableCell>
+                  <TableCell className="text-center font-semibold text-blue-600/80">{row.total_inward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-orange-500/80">{row.total_outward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-purple-500/80">{row.total_transfer || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-emerald-500/80">{row.transfer_in || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-red-500/80">{row.transfer_out || '-'}</TableCell>
+                  <TableCell className="text-center font-bold text-blue-700 bg-blue-50/30">
+                    {row.remaining}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+    </div>
+  );
+}
+
+function KPICard({ title, value, numeralColor }: { title: string, value: number, numeralColor: string }) {
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-sm border border-border/60 flex flex-col items-center justify-center text-center transition-all hover:shadow-md">
+      <span className="text-xs font-semibold text-muted-foreground tracking-widest mb-3 uppercase">{title}</span>
+      <span className={`text-3xl font-bold tracking-tight ${numeralColor}`}>
+        {value.toLocaleString()}
+      </span>
+    </div>
+  );
 }
