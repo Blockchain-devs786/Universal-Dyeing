@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-4 border-b border-border bg-card px-4 sticky top-0 z-10">
+          <header className="h-14 flex items-center gap-4 border-b border-border bg-card px-4 sticky top-0 z-10 print:hidden">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="flex items-center gap-2 text-sm">
               {breadcrumbs.map((crumb, i) => (
@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               ))}
             </div>
           </header>
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 print:p-0">
             {children}
           </main>
         </div>

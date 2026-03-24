@@ -84,25 +84,25 @@ export default function StockReport() {
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800">Stock Report</h1>
-          <p className="text-muted-foreground mt-1">Monitor inventory levels across all MS Parties and items.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Stock Report</h1>
+          <p className="text-white/80 mt-1">Monitor inventory levels across all MS Parties and items.</p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex gap-3 print:hidden">
           <Button 
             variant="outline" 
             onClick={() => refetch()} 
             disabled={isFetching}
-            className="shadow-sm bg-white"
+            className="shadow-sm bg-white text-slate-800"
           >
-            <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} /> 
+            <RefreshCw className={cn("mr-2 h-4 w-4 text-slate-800", isFetching && "animate-spin")} /> 
             Refresh
           </Button>
           <Button 
             onClick={handlePrint} 
-            className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+            className="bg-white hover:bg-white/90 text-primary shadow-sm"
           >
             <Printer className="mr-2 h-4 w-4" /> 
             Print Report
@@ -111,7 +111,7 @@ export default function StockReport() {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-border/50">
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-border/50 print:hidden">
         <div className="flex items-center gap-2 mb-4 text-blue-600">
           <Filter className="h-4 w-4" />
           <h2 className="font-semibold text-sm">Filters</h2>
