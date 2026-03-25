@@ -47,19 +47,19 @@ export const generateAndPrintHTML = (
   const CSS = `
     @page { size: A4 portrait; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; font-size: 12px; background: white; padding: 5mm; color: #1a1a1a; }
-    .page { width: 200mm; page-break-after: always; margin: 0 auto; }
+    body { font-family: Arial, sans-serif; font-size: 11px; background: white; padding: 2mm; color: #1a1a1a; margin: 0; }
+    .page { width: 210mm; height: 297mm; page-break-after: always; overflow: hidden; position: relative; display: flex; flex-direction: column; padding: 5mm; }
     .page:last-child { page-break-after: auto; }
-    .form { width: 100%; border: 1px solid #000; padding: 8mm; margin-bottom: 2mm; page-break-inside: avoid; overflow: hidden; min-height: 138mm; display: flex; flex-direction: column; }
+    .form { width: 100%; border: 1px solid #000; padding: 6mm; margin-bottom: 2mm; page-break-inside: avoid; flex: 1; display: flex; flex-direction: column; max-height: 140mm; }
     .form:last-child { margin-bottom: 0; }
-    .cut-line { border-top: 1px dashed #666; margin: 1mm 0; width: 100%; page-break-inside: avoid; }
-    .header { text-align: center; margin-bottom: 4mm; position: relative; min-height: 35mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .logo { position: absolute; right: 0; top: 0; width: 150px; height: 150px; }
+    .cut-line { border-top: 1px dashed #666; margin: 2mm 0; width: 100%; page-break-inside: avoid; height: 0; min-height: 0; }
+    .header { text-align: center; margin-bottom: 2mm; position: relative; min-height: 30mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .logo { position: absolute; right: 0; top: 0; width: 130px; height: 130px; }
     .logo img { width: 100%; height: 100%; object-fit: contain; }
     .company-name { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 1mm; color: #0066cc; }
-    .owner-info { text-align: center; font-size: 11px; margin-bottom: 1mm; color: #333333; }
-    .subtitle { text-align: center; font-size: 16px; font-weight: bold; margin: 3mm 0; text-decoration: underline; color: #cc0000; }
-    .meta-info { margin-bottom: 5mm; }
+    .owner-info { text-align: center; font-size: 10px; margin-bottom: 1mm; color: #333333; }
+    .subtitle { text-align: center; font-size: 15px; font-weight: bold; margin: 2mm 0; text-decoration: underline; color: #cc0000; }
+    .meta-info { margin-bottom: 4mm; }
     .meta-row { display: flex; justify-content: space-between; margin-bottom: 2mm; font-size: 11px; }
     .meta-item { flex: 1; margin-right: 5mm; }
     .meta-item:last-child { margin-right: 0; }
