@@ -40,16 +40,49 @@ export const reportsService = {
         JOIN outwards o ON oi.outward_id = o.id
         GROUP BY oi.item_id, oi.measurement, o.ms_party_id
       ),
+      transfer_out_totals AS (
+        SELECT 
+          ti.item_id,
+          ti.measurement as msr, 
+          t.ms_party_id,
+          SUM(ti.quantity) as transfer_out
+        FROM transfer_items ti
+        JOIN transfers t ON ti.transfer_id = t.id
+        GROUP BY ti.item_id, ti.measurement, t.ms_party_id
+      ),
+      transfer_in_totals AS (
+        SELECT 
+          ti.item_id,
+          ti.measurement as msr, 
+          t.transfer_to_party_id as ms_party_id,
+          SUM(ti.quantity) as transfer_in
+        FROM transfer_items ti
+        JOIN transfers t ON ti.transfer_id = t.id
+        GROUP BY ti.item_id, ti.measurement, t.transfer_to_party_id
+      ),
+      all_keys AS (
+        SELECT item_id, msr, ms_party_id FROM inward_totals
+        UNION
+        SELECT item_id, msr, ms_party_id FROM outward_totals
+        UNION
+        SELECT item_id, msr, ms_party_id FROM transfer_out_totals
+        UNION
+        SELECT item_id, msr, ms_party_id FROM transfer_in_totals
+      ),
       combined AS (
         SELECT 
-          COALESCE(i.item_id, o.item_id) as item_id,
-          COALESCE(i.msr, o.msr) as msr,
-          COALESCE(i.ms_party_id, o.ms_party_id) as ms_party_id,
+          k.item_id,
+          k.msr,
+          k.ms_party_id,
           COALESCE(i.total_inward, 0) as total_inward,
-          COALESCE(o.total_outward, 0) as total_outward
-        FROM inward_totals i
-        FULL OUTER JOIN outward_totals o 
-          ON i.item_id = o.item_id AND i.msr = o.msr AND i.ms_party_id = o.ms_party_id
+          COALESCE(o.total_outward, 0) as total_outward,
+          COALESCE(tout.transfer_out, 0) as transfer_out,
+          COALESCE(tin.transfer_in, 0) as transfer_in
+        FROM all_keys k
+        LEFT JOIN inward_totals i ON k.item_id = i.item_id AND k.msr = i.msr AND k.ms_party_id = i.ms_party_id
+        LEFT JOIN outward_totals o ON k.item_id = o.item_id AND k.msr = o.msr AND k.ms_party_id = o.ms_party_id
+        LEFT JOIN transfer_out_totals tout ON k.item_id = tout.item_id AND k.msr = tout.msr AND k.ms_party_id = tout.ms_party_id
+        LEFT JOIN transfer_in_totals tin ON k.item_id = tin.item_id AND k.msr = tin.msr AND k.ms_party_id = tin.ms_party_id
       )
       SELECT 
         it.id as item_id,
@@ -59,10 +92,10 @@ export const reportsService = {
         m.name as ms_party_name,
         c.total_inward,
         c.total_outward,
-        0 as total_transfer,
-        0 as transfer_in,
-        0 as transfer_out,
-        (c.total_inward - c.total_outward) as remaining
+        c.transfer_out as total_transfer,
+        c.transfer_in,
+        c.transfer_out,
+        (c.total_inward + c.transfer_in - c.total_outward - c.transfer_out) as remaining
       FROM combined c
       JOIN items it ON c.item_id = it.id
       JOIN ms_parties m ON c.ms_party_id = m.id

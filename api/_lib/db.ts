@@ -210,6 +210,36 @@ export async function initializeDatabase() {
     )
   `;
 
+  // Transfers base table
+  await db`
+    CREATE TABLE IF NOT EXISTS transfers (
+      id SERIAL PRIMARY KEY,
+      transfer_no VARCHAR(50) UNIQUE,
+      gp_no VARCHAR(50) UNIQUE,
+      sr_no VARCHAR(50),
+      ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
+      transfer_to_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      vehicle_no VARCHAR(100),
+      driver_name VARCHAR(100),
+      date DATE NOT NULL,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Transfer details (items)
+  await db`
+    CREATE TABLE IF NOT EXISTS transfer_items (
+      id SERIAL PRIMARY KEY,
+      transfer_id INTEGER REFERENCES transfers(id) ON DELETE CASCADE,
+      item_id INTEGER REFERENCES items(id) ON DELETE RESTRICT,
+      measurement INTEGER NOT NULL CHECK (measurement IN (15, 22)),
+      quantity DECIMAL(15,2) NOT NULL DEFAULT 0
+    )
+  `;
+
   // Activity log table
   await db`
     CREATE TABLE IF NOT EXISTS activity_log (
