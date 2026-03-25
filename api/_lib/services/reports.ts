@@ -178,39 +178,42 @@ export const reportsService = {
         -- OUTWARDS (Credit)
         SELECT 
           o.id, o.date, 'Outward' as type, o.outward_no as ref_no, o.ms_party_id,
-          o.outward_to_party_name as particulars, oi.item_id, it.name as item_name, oi.measurement,
+          fp_to.name as particulars, oi.item_id, it.name as item_name, oi.measurement,
           0 as debit, oi.quantity as credit,
           COALESCE(o.gp_no, '') || ' ' || COALESCE(o.sr_no, '') as description,
           o.created_at
         FROM outwards o
         JOIN outward_items oi ON o.id = oi.outward_id
         JOIN items it ON oi.item_id = it.id
+        LEFT JOIN from_parties fp_to ON o.outward_to_party_id = fp_to.id
 
         UNION ALL
         
         -- TRANSFERS (Credit)
         SELECT 
           t.id, t.date, 'Transfer' as type, t.transfer_no as ref_no, t.ms_party_id,
-          t.transfer_to_party_name as particulars, ti.item_id, it.name as item_name, ti.measurement,
+          fp_to.name as particulars, ti.item_id, it.name as item_name, ti.measurement,
           0 as debit, ti.quantity as credit,
           COALESCE(t.gp_no, '') || ' ' || COALESCE(t.sr_no, '') as description,
           t.created_at
         FROM transfers t
         JOIN transfer_items ti ON t.id = ti.transfer_id
         JOIN items it ON ti.item_id = it.id
+        LEFT JOIN from_parties fp_to ON t.transfer_to_party_id = fp_to.id
 
         UNION ALL
         
         -- TBN (OUT/Credit)
         SELECT 
           tbn.id, tbn.date, 'Transfer BN OUT' as type, tbn.tbn_no as ref_no, tbn.ms_party_id,
-          tbn.transfer_to_party_name as particulars, ti.item_id, it.name as item_name, ti.measurement,
+          mp_receive.name as particulars, ti.item_id, it.name as item_name, ti.measurement,
           0 as debit, ti.quantity as credit,
           COALESCE(tbn.gp_no, '') || ' ' || COALESCE(tbn.sr_no, '') as description,
           tbn.created_at
         FROM transfer_by_names tbn
         JOIN transfer_bn_items ti ON tbn.id = ti.tbn_id
         JOIN items it ON ti.item_id = it.id
+        LEFT JOIN ms_parties mp_receive ON tbn.transfer_to_party_id = mp_receive.id
 
         UNION ALL
         
@@ -224,7 +227,7 @@ export const reportsService = {
         FROM transfer_by_names tbn
         JOIN transfer_bn_items ti ON tbn.id = ti.tbn_id
         JOIN items it ON ti.item_id = it.id
-        JOIN ms_parties mp_sender ON tbn.ms_party_id = mp_sender.id
+        LEFT JOIN ms_parties mp_sender ON tbn.ms_party_id = mp_sender.id
       )
       SELECT 
         l.*,

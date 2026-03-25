@@ -75,10 +75,19 @@ export async function initializeDatabase() {
   // Safe alter for existing tables without the is_default column
   try {
     await db`ALTER TABLE from_parties ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false`;
+    // Seed default from_party
     await db`
       INSERT INTO from_parties (name, is_default) 
       SELECT 'Dyeing', true 
       WHERE NOT EXISTS (SELECT 1 FROM from_parties WHERE is_default = true)
+      ON CONFLICT (name) DO NOTHING
+    `;
+
+    // Seed default ms_party (UNIVERSAL DYEING)
+    await db`
+      INSERT INTO ms_parties (name) 
+      SELECT 'UNIVERSAL DYEING (UD)' 
+      WHERE NOT EXISTS (SELECT 1 FROM ms_parties WHERE name LIKE '%UNIVERSAL DYEING%')
       ON CONFLICT (name) DO NOTHING
     `;
   } catch (err) {
