@@ -16,13 +16,13 @@ export const vouchersService = {
         (SELECT json_agg(ve.*) FROM voucher_entries ve WHERE ve.voucher_id = v.id) as entries
       FROM vouchers v
       WHERE 
-        (${type}::text IS NULL OR v.type = ${type})
-        AND (${fromDate}::date IS NULL OR v.date >= ${fromDate})
-        AND (${toDate}::date IS NULL OR v.date <= ${toDate})
+        (${type}::text IS NULL OR v.type = ${type}::text)
+        AND (${fromDate}::date IS NULL OR v.date >= ${fromDate}::date)
+        AND (${toDate}::date IS NULL OR v.date <= ${toDate}::date)
         AND (
           ${search}::text IS NULL 
-          OR v.voucher_no ILIKE ${searchPattern} 
-          OR v.description ILIKE ${searchPattern}
+          OR v.voucher_no ILIKE ${searchPattern}::text 
+          OR v.description ILIKE ${searchPattern}::text
         )
       ORDER BY v.date DESC, v.id DESC
     `;
