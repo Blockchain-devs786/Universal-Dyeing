@@ -12,6 +12,7 @@ import Vendors from "@/pages/define/Vendors";
 import Items from "@/pages/define/Items";
 import Assets from "@/pages/define/Assets";
 import Expenses from "@/pages/define/Expenses";
+import Accounts from "@/pages/define/Accounts";
 import Inward from "@/pages/data-entry/Inward";
 import Outward from "@/pages/data-entry/Outward";
 import Transfer from "@/pages/data-entry/Transfer";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/define/items" element={<LayoutWrapper><Items /></LayoutWrapper>} />
           <Route path="/define/assets" element={<LayoutWrapper><Assets /></LayoutWrapper>} />
           <Route path="/define/expenses" element={<LayoutWrapper><Expenses /></LayoutWrapper>} />
+          <Route path="/define/accounts" element={<LayoutWrapper><Accounts /></LayoutWrapper>} />
           <Route path="/data-entry/inward" element={<LayoutWrapper><Inward /></LayoutWrapper>} />
           <Route path="/data-entry/outward" element={<LayoutWrapper><Outward /></LayoutWrapper>} />
           <Route path="/data-entry/transfer" element={<LayoutWrapper><Transfer /></LayoutWrapper>} />

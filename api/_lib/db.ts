@@ -319,6 +319,22 @@ export async function initializeDatabase() {
       UNIQUE(outward_id)
     )
   `;
+
+  // Accounts table
+  await db`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      type VARCHAR(50) NOT NULL CHECK (type IN ('Cash', 'Bank')),
+      account_no VARCHAR(100),
+      bank_name VARCHAR(100),
+      opening_balance DECIMAL(15,2) DEFAULT 0,
+      current_balance DECIMAL(15,2) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
 }
 
 /**
