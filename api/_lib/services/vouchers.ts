@@ -3,27 +3,22 @@ import { getDb } from "../db.js";
 export const vouchersService = {
   async list(filters: any = {}) {
     const db = getDb();
-    let query = db`
+    
+    return await db`
       SELECT v.*, 
         (SELECT json_agg(ve.*) FROM voucher_entries ve WHERE ve.voucher_id = v.id) as entries
       FROM vouchers v
-      WHERE 1=1
+      WHERE 
+        (${filters.type || null}::text IS NULL OR v.type = ${filters.type || null}::text)
+        AND (${filters.from_date || null}::date IS NULL OR v.date >= ${filters.from_date || null}::date)
+        AND (${filters.to_date || null}::date IS NULL OR v.date <= ${filters.to_date || null}::date)
+        AND (
+          ${filters.search || null}::text IS NULL 
+          OR v.voucher_no ILIKE ${'%' + filters.search + '%'} 
+          OR v.description ILIKE ${'%' + filters.search + '%'}
+        )
+      ORDER BY v.date DESC, v.id DESC
     `;
-
-    if (filters.type) {
-      query = db`${query} AND v.type = ${filters.type}`;
-    }
-    if (filters.from_date) {
-      query = db`${query} AND v.date >= ${filters.from_date}`;
-    }
-    if (filters.to_date) {
-      query = db`${query} AND v.date <= ${filters.to_date}`;
-    }
-    if (filters.search) {
-      query = db`${query} AND (v.voucher_no ILIKE ${'%' + filters.search + '%'} OR v.description ILIKE ${'%' + filters.search + '%'})`;
-    }
-
-    return await db`${query} ORDER BY v.date DESC, v.id DESC`;
   },
 
   async create(data: any) {
