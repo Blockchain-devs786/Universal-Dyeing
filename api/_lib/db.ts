@@ -254,10 +254,13 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS transfer_by_names (
       id SERIAL PRIMARY KEY,
       tbn_no VARCHAR(50) UNIQUE,
+      gp_no VARCHAR(50) UNIQUE,
       sr_no VARCHAR(50),
       ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
       from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
       transfer_to_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      vehicle_no VARCHAR(100),
+      driver_name VARCHAR(100),
       date DATE NOT NULL,
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
