@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Module - Form Tracking</title>
+    <link rel="stylesheet" href="/static/css/audit.css">
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>📋 Audit Module - Form Tracking</h1>
+            <div class="subtitle">View, audit, and compare all forms and vouchers in the system</div>
+        </div>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+    </div>
+    
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search by form number, party, or user...">
+        <select id="formTypeFilter">
+            <option value="">All Form Types</option>
+            <option value="inward">Inward</option>
+            <option value="outward">Outward</option>
+            <option value="transfer">Transfer</option>
+            <option value="transfer_bn">Transfer by Name</option>
+            <option value="invoice">Invoice</option>
+            <option value="voucher_cp">Voucher CP</option>
+            <option value="voucher_cr">Voucher CR</option>
+            <option value="voucher_jv">Voucher JV</option>
+        </select>
+        <button onclick="loadForms()">Refresh</button>
+    </div>
+    
+    <div id="errorContainer"></div>
+    
+    <div class="table-container">
+        <div id="loading" class="loading">Loading forms...</div>
+        <table id="formsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('entry_num')">Entry #</th>
+                    <th onclick="sortTable('form_type')">Form Type</th>
+                    <th onclick="sortTable('form_number')">Form #</th>
+                    <th onclick="sortTable('ms_party')">MS Party</th>
+                    <th onclick="sortTable('created_by')">Created By</th>
+                    <th onclick="sortTable('edited_by')">Edited By</th>
+                    <th onclick="sortTable('document_date')">Date</th>
+                </tr>
+            </thead>
+            <tbody id="formsTableBody">
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="pagination" id="pagination" style="display: none;">
+        <button id="prevBtn" onclick="changePage(-1)">Previous</button>
+        <span class="page-info" id="pageInfo"></span>
+        <button id="nextBtn" onclick="changePage(1)">Next</button>
+    </div>
+    
+    <script src="/static/js/audit.js"></script>
+</body>
+</html>

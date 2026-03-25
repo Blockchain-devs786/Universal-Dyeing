@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Detail - Audit Module</title>
+    <link rel="stylesheet" href="/static/css/detail.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Form Detail - Audit View</h1>
+        <div class="header-actions">
+            <a href="/audit" class="back-btn">← Back to List</a>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+    
+    <div id="errorContainer"></div>
+    <div id="loading" class="loading">Loading form details...</div>
+    <div id="formContainer"></div>
+    
+    <script src="/static/js/detail.js"></script>
+</body>
+</html>

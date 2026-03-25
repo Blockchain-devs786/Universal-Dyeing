@@ -53,7 +53,9 @@ export const generateAndPrintHTML = (
     .form { width: 100%; border: 1px solid #000; padding: 8mm; margin-bottom: 5mm; }
     .form:last-child { margin-bottom: 0; }
     .cut-line { border-top: 2px dashed #666; margin: 5mm 0; width: 100%; }
-    .header { text-align: center; margin-bottom: 6mm; position: relative; min-height: 30mm; }
+    .header { text-align: center; margin-bottom: 6mm; position: relative; min-height: 45mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .logo { position: absolute; right: 0; top: 0; width: 170px; height: 170px; }
+    .logo img { width: 100%; height: 100%; object-fit: contain; }
     .company-name { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 3mm; color: #0066cc; }
     .owner-info { text-align: center; font-size: 11px; margin-bottom: 2mm; color: #333333; }
     .subtitle { text-align: center; font-size: 16px; font-weight: bold; margin: 5mm 0; text-decoration: underline; color: #cc0000; }
@@ -100,6 +102,7 @@ export const generateAndPrintHTML = (
     return (
       '<div class="form">' +
         '<div class="header">' +
+          '<div class="logo"><img src="/logo.png" alt="logo"></div>' +
           '<div class="company-name">MOMINA LACE DYEING</div>' +
           '<div class="owner-info">Owner : GHULAM MUSTAFA<br>GM &nbsp;&nbsp;: Shahid, Naveed</div>' +
         '</div>' +
@@ -168,6 +171,7 @@ export const generateAndPrintHTML = (
 
   const fullHtml =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Print</title>' +
+    '<base href="' + window.location.origin + '/">' +
     '<style>' + CSS + '</style>' +
     '</head><body>' +
     bodyHtml +
