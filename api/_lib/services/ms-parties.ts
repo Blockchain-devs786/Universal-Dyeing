@@ -126,6 +126,13 @@ export const msPartiesService = {
 
   async delete(id: number) {
     const sql = getDb();
+    
+    // Protect default Dyeing party
+    const target = await sql`SELECT name FROM ms_parties WHERE id = ${id}`;
+    if (target.length > 0 && target[0].name.toLowerCase() === 'dyeing') {
+      throw new Error('Deletion of the default Dyeing Unit ledger is prohibited.');
+    }
+
     let rows;
     try {
       rows = await sql`DELETE FROM ms_parties WHERE id = ${id} RETURNING id, name`;
@@ -139,6 +146,11 @@ export const msPartiesService = {
 
     // Automatically sync delete to from_parties based on exact name match
     const deletedName = rows[0].name;
+    if (deletedName.toLowerCase() === 'dyeing') {
+      await logActivity('ms_parties', id, 'delete', { name: deletedName });
+      return { success: true, deleted: rows[0] };
+    }
+
     try {
       await sql`DELETE FROM from_parties WHERE name = ${deletedName}`;
     } catch (e) {

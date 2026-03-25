@@ -83,11 +83,11 @@ export async function initializeDatabase() {
       ON CONFLICT (name) DO NOTHING
     `;
 
-    // Seed default ms_party (UNIVERSAL DYEING)
+    // Seed default ms_party (Dyeing)
     await db`
       INSERT INTO ms_parties (name) 
-      SELECT 'UNIVERSAL DYEING (UD)' 
-      WHERE NOT EXISTS (SELECT 1 FROM ms_parties WHERE name LIKE '%UNIVERSAL DYEING%')
+      SELECT 'Dyeing' 
+      WHERE NOT EXISTS (SELECT 1 FROM ms_parties WHERE name = 'Dyeing' OR name LIKE '%UNIVERSAL DYEING%')
       ON CONFLICT (name) DO NOTHING
     `;
   } catch (err) {

@@ -106,8 +106,7 @@ export default function StockLedger() {
   useEffect(() => {
     if (msParties.length > 0 && msPartyId === "all") {
        const defaultParty = msParties.find(p => 
-          p.name.toLowerCase().includes('dyeing') || 
-          p.name.toLowerCase().includes('ud')
+          p.name.toLowerCase() === 'dyeing'
        );
        if (defaultParty) {
           setMsPartyId(String(defaultParty.id));
