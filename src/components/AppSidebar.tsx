@@ -18,6 +18,7 @@ import {
   Receipt,
   PenLine,
   BarChart3,
+  Landmark,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -48,6 +49,7 @@ const defineItems = [
   { title: "Items", url: "/define/items", icon: Package },
   { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },
+  { title: "Accounts", url: "/define/accounts", icon: Landmark },
 ];
 
 const dataEntryItems = [

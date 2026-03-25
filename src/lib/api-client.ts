@@ -259,6 +259,19 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface Account {
+  id: number;
+  name: string;
+  type: 'Cash' | 'Bank';
+  account_number?: string;
+  bank_name?: string;
+  opening_balance: number;
+  current_balance: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InvoiceItem {
   outward_id: number;
   outward_no: string;
@@ -654,6 +667,29 @@ export const invoicesApi = {
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('invoices.delete', { id }),
 };
+
+// ─── Accounts API ────────────────────────────────────────────────
+
+export const accountsApi = {
+  list: (search?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    return coreRequest<Account[]>('accounts.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<Account>('accounts.get', { id }),
+  
+  create: (data: Omit<Account, 'id' | 'current_balance' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Account>('accounts.create', data),
+  
+  update: (id: number, data: Partial<Account>) => 
+    coreRequest<Account>('accounts.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('accounts.delete', { id }),
+};
+
 
 // ─── Health Check ────────────────────────────────────────────────
 
