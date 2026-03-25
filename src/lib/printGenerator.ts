@@ -50,7 +50,7 @@ export const generateAndPrintHTML = (
     body { font-family: Arial, sans-serif; font-size: 12px; background: white; padding: 10mm; color: #1a1a1a; }
     .page { width: 190mm; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
-    .form { width: 100%; border: 1px solid #000; padding: 5mm; margin-bottom: 2mm; page-break-inside: avoid; overflow: hidden; }
+    .form { width: 100%; border: 1px solid #000; padding: 5mm; margin-bottom: 2mm; page-break-inside: avoid; overflow: hidden; min-height: 138mm; display: flex; flex-direction: column; }
     .form:last-child { margin-bottom: 0; }
     .cut-line { border-top: 1px dashed #666; margin: 2mm 0; width: 100%; page-break-inside: avoid; }
     .header { text-align: center; margin-bottom: 2mm; position: relative; min-height: 35mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -65,12 +65,13 @@ export const generateAndPrintHTML = (
     .meta-item:last-child { margin-right: 0; }
     .meta-label { font-weight: bold; display: inline-block; min-width: 80px; color: #0066cc; }
     .meta-value { border-bottom: 1px solid #333; display: inline-block; min-width: 100px; padding: 0 2mm; color: #cc0000; font-weight: 500; }
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; flex-grow: 1; }
+    .items-table tbody tr { height: 8mm; }
     .items-table th, .items-table td { border: 1px solid #333; padding: 1.5mm; text-align: center; font-size: 11px; }
     .items-table th { background-color: #e6f2ff; font-weight: bold; color: #0066cc; }
     .items-table td { color: #1a1a1a; }
     .items-table tbody tr:nth-child(even) td { background-color: #f9f9f9; }
-    .footer { margin-top: 2mm; font-size: 9px; line-height: 1.2; }
+    .footer { margin-top: auto; font-size: 9px; line-height: 1.2; padding-top: 2mm; }
     .site-info { text-align: center; margin-top: 3mm; font-size: 10px; color: #006600; font-weight: 500; }
     .contacts { text-align: center; margin-top: 1mm; font-size: 10px; color: #cc6600; font-weight: 500; }
     @media print {
