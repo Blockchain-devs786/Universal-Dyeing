@@ -536,9 +536,10 @@ export default function Invoice() {
       <div id="invoice-print" className="hidden print:block bg-white text-black p-0">
           {selectedInvoicesForPrint.map((invoice, idx) => (
             <div key={invoice.id} className={cn(
-               "p-10 h-[285mm] relative font-sans border-[4px] border-blue-600 rounded-xl mx-auto my-2",
+               "w-[210mm] h-[297mm] p-[10mm] mx-auto box-border bg-white",
                idx < selectedInvoicesForPrint.length - 1 && "page-break-after-always"
             )}>
+              <div className="w-full h-full border-[4px] border-blue-600 rounded-xl p-10 relative font-sans box-border">
                 {/* Logo Area */}
                 <div className="absolute top-12 right-12 w-32 h-32 opacity-90 rotate-12">
                    <img src="/logo.png" className="w-full" />
@@ -642,6 +643,7 @@ export default function Invoice() {
                     <p className="text-[9px] font-black text-blue-800 uppercase">SITE: <span className="text-slate-500 font-medium">Small Industrial State, Sargodha Road, Faisalabad</span></p>
                     <p className="text-[9px] font-black text-blue-800 uppercase">CONTACTS: <span className="text-slate-500 font-medium">0321-7651815, 0300-8651815, 0304-6166663, 0300-8636129</span></p>
                 </div>
+              </div>
             </div>
           ))}
       </div>
@@ -652,7 +654,7 @@ export default function Invoice() {
           #invoice-print, #invoice-print * { visibility: visible; }
           #invoice-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
           .page-break-after-always { page-break-after: always; display: block; }
-          @page { margin: 5mm; size: A4; }
+          @page { margin: 0; size: A4; }
         }
       `}} />
 
