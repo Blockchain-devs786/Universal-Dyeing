@@ -156,6 +156,36 @@ export interface Transfer {
   updated_at: string;
 }
 
+export interface TransferByNameItem {
+  id: number;
+  tbn_id: number;
+  item_id: number;
+  item_name?: string;
+  measurement: 15 | 22;
+  quantity: number;
+}
+
+export interface TransferByName {
+  id: number;
+  tbn_no: string;
+  gp_no: string;
+  sr_no: string;
+  ms_party_id: number;
+  ms_party_name?: string;
+  from_party_id: number;
+  from_party_name?: string;
+  transfer_to_party_id: number;
+  transfer_to_party_name?: string;
+  vehicle_no?: string;
+  driver_name?: string;
+  date: string;
+  total_qty?: number;
+  status: string;
+  items?: TransferByNameItem[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StockReportRow {
   item_id: number;
   item_name: string;
@@ -412,6 +442,32 @@ export const inwardsApi = {
     
     delete: (id: number) => 
       coreRequest<{ success: boolean }>('transfers.delete', { id }),
+  };
+
+  // ─── Transfer By Names API ─────────────────────────────────────────────────
+  
+  export const transferByNamesApi = {
+    list: (filters?: { ms_party_id?: number, tbn_no?: string, gp_no?: string, from_date?: string, to_date?: string }) => {
+      const params: Record<string, string> = {};
+      if (filters?.ms_party_id) params.ms_party_id = String(filters.ms_party_id);
+      if (filters?.tbn_no) params.tbn_no = filters.tbn_no;
+      if (filters?.gp_no) params.gp_no = filters.gp_no;
+      if (filters?.from_date) params.from_date = filters.from_date;
+      if (filters?.to_date) params.to_date = filters.to_date;
+      return coreRequest<TransferByName[]>('transfer_by_names.list', {}, params);
+    },
+    
+    getById: (id: number) => 
+      coreRequest<TransferByName>('transfer_by_names.get', { id }),
+    
+    create: (data: Omit<TransferByName, 'id' | 'tbn_no' | 'gp_no' | 'sr_no' | 'created_at' | 'updated_at'>) => 
+      coreRequest<TransferByName>('transfer_by_names.create', data),
+    
+    update: (id: number, data: Partial<TransferByName>) => 
+      coreRequest<TransferByName>('transfer_by_names.update', { ...data, id }),
+    
+    delete: (id: number) => 
+      coreRequest<{ success: boolean }>('transfer_by_names.delete', { id }),
   };
 
 // ─── Asset Categories API ────────────────────────────────────────

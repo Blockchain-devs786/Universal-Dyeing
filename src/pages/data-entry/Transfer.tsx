@@ -292,7 +292,7 @@ export default function TransferPage() {
   
   const filterMsPartyObj = msParties.find(p => String(p.id) === filterMsPartyId);
   const selectedFromPartyObj = fromParties.find(p => String(p.id) === formData.from_party_id);
-  const selectedTransferToPartyObj = msParties.find(p => String(p.id) === formData.transfer_to_party_id);
+  const selectedTransferToPartyObj = fromParties.find(p => String(p.id) === formData.transfer_to_party_id);
 
   // Derive unique items and measurements available for current MS party
   const availableItems = useMemo(() => {
@@ -611,7 +611,7 @@ export default function TransferPage() {
                         <CommandList>
                           <CommandEmpty>No records found.</CommandEmpty>
                           <CommandGroup>
-                            {msParties.map((party) => (
+                            {fromParties.map((party) => (
                               <CommandItem
                                 key={party.id}
                                 value={party.name}

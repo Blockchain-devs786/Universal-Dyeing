@@ -9,6 +9,7 @@ import { assetsService, type Asset, type AssetCategory } from './_lib/services/a
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 import { outwardsService, type Outward } from './_lib/services/outwards.js';
 import { transfersService, type Transfer } from './_lib/services/transfers.js';
+import { transferByNamesService, type TransferByName } from './_lib/services/transfer_by_names.js';
 import { reportsService } from './_lib/services/reports.js';
 
 let dbInitialized = false;
@@ -221,6 +222,29 @@ async function routeAction(
           return transfersService.delete(Number(query.id || data.id));
         default:
           throw new Error(`Unknown operation: ${operation} for transfers`);
+      }
+
+    // ─── Transfer By Names ───────────────────────────────────────────
+    case 'transfer_by_names':
+      switch (operation) {
+        case 'list':
+          return transferByNamesService.list(
+            query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id,
+            (query.tbn_no as string) || data.tbn_no,
+            (query.gp_no as string) || data.gp_no,
+            (query.from_date as string) || data.from_date,
+            (query.to_date as string) || data.to_date
+          );
+        case 'get':
+          return transferByNamesService.getById(Number(query.id || data.id));
+        case 'create':
+          return transferByNamesService.create(data as TransferByName);
+        case 'update':
+          return transferByNamesService.update(Number(data.id), data);
+        case 'delete':
+          return transferByNamesService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for transfer_by_names`);
       }
 
     // ─── Asset Categories ──────────────────────────────────────
