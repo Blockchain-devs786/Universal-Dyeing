@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown } from "lucide-react";
+import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -11,6 +11,7 @@ import {
   type Inward,
   type InwardItem,
 } from "@/lib/api-client";
+import { generateAndPrintHTML } from "@/lib/printGenerator";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,9 @@ export default function Inward() {
   const [filterGpNo, setFilterGpNo] = useState("");
   const [filterFromDate, setFilterFromDate] = useState("");
   const [filterToDate, setFilterToDate] = useState("");
+
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingInward, setEditingInward] = useState<Inward | null>(null);
@@ -138,6 +142,36 @@ export default function Inward() {
   });
 
   // Handlers
+  const handlePrintSelected = async () => {
+    if (selectedRows.size === 0) return;
+    setIsPrinting(true);
+    try {
+      const documentsToPrint = [];
+      for (const id of Array.from(selectedRows)) {
+        const fullDoc = await inwardsApi.getById(id);
+        documentsToPrint.push(fullDoc);
+      }
+      generateAndPrintHTML('inward', documentsToPrint);
+      setSelectedRows(new Set());
+    } catch (err) {
+      toast.error("Failed to generate print document");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintSingle = async (id: number) => {
+    setIsPrinting(true);
+    try {
+      const fullDoc = await inwardsApi.getById(id);
+      generateAndPrintHTML('inward', [fullDoc]);
+    } catch (err) {
+      toast.error("Failed to generate print document");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   const handleOpenDialog = () => {
     setEditingInward(null);
     setFormData({
@@ -243,6 +277,21 @@ export default function Inward() {
   const selectedFromPartyObj = fromParties.find(p => String(p.id) === formData.from_party_id);
   const filterMsPartyObj = msParties.find(p => String(p.id) === filterMsPartyId);
 
+  const toggleSelectAll = () => {
+    if (selectedRows.size === inwards.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(inwards.map(i => i.id!)));
+    }
+  };
+
+  const toggleSelectRow = (id: number) => {
+    const newSet = new Set(selectedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedRows(newSet);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
@@ -256,9 +305,16 @@ export default function Inward() {
           </div>
         </div>
         
-        <Button onClick={handleOpenDialog} className="bg-white hover:bg-white/90 text-primary shadow-md transition-all">
-          <Plus className="mr-2 h-4 w-4" /> Add Inward
-        </Button>
+        <div className="flex gap-2">
+          {selectedRows.size > 0 && (
+            <Button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white/20 hover:bg-white/30 text-white border-0 shadow-sm backdrop-blur-sm transition-all duration-300 rounded-xl">
+              <Printer className="mr-2 h-4 w-4" /> Print Selected ({selectedRows.size})
+            </Button>
+          )}
+          <Button onClick={handleOpenDialog} className="bg-white hover:bg-white/90 text-primary shadow-md transition-all">
+            <Plus className="mr-2 h-4 w-4" /> Add Inward
+          </Button>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -369,6 +425,14 @@ export default function Inward() {
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
+              <TableHead className="w-[50px]">
+                <input 
+                  type="checkbox" 
+                  checked={inwards.length > 0 && selectedRows.size === inwards.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                />
+              </TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Inward No</TableHead>
               <TableHead>GP No</TableHead>
@@ -382,11 +446,11 @@ export default function Inward() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">Loading inward entries...</TableCell>
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Loading inward entries...</TableCell>
               </TableRow>
             ) : inwards.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <ArrowDownToLine className="h-8 w-8 text-muted-foreground/40" />
                     <span>No inward entries found.</span>
@@ -396,6 +460,14 @@ export default function Inward() {
             ) : (
               inwards.map((inward) => (
                 <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
+                  <TableCell>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedRows.has(inward.id!)}
+                      onChange={() => toggleSelectRow(inward.id!)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                    />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {format(new Date(inward.date), "MMM dd, yyyy")}
                   </TableCell>
@@ -409,6 +481,9 @@ export default function Inward() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
+                        <Printer className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(inward.id!)}>
                         <Pencil className="h-4 w-4" />
                       </Button>

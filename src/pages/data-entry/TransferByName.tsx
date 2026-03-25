@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpFromLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown } from "lucide-react";
+import { ArrowUpFromLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,8 @@ import {
   type TransferByName,
   type TransferByNameItem,
 } from "@/lib/api-client";
+
+import { generateAndPrintHTML } from "@/lib/printGenerator";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +52,9 @@ export default function TransferByNamePage() {
   const [filterGpNo, setFilterGpNo] = useState("");
   const [filterFromDate, setFilterFromDate] = useState("");
   const [filterToDate, setFilterToDate] = useState("");
+
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const [isPartyDialogOpen, setIsPartyDialogOpen] = useState(false);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -162,6 +167,37 @@ export default function TransferByNamePage() {
   });
 
   // Handlers
+  const handlePrintSelected = async () => {
+    if (selectedRows.size === 0) return;
+    setIsPrinting(true);
+    try {
+      const documentsToPrint = [];
+      for (const id of Array.from(selectedRows)) {
+        const fullDoc = await transferByNamesApi.getById(id);
+        documentsToPrint.push(fullDoc);
+      }
+      generateAndPrintHTML('transfer_by_name', documentsToPrint);
+      setSelectedRows(new Set());
+    } catch (err) {
+      toast.error("Failed to generate print document");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintSingle = async (id: number) => {
+    setIsPrinting(true);
+    try {
+      const fullDoc = await transferByNamesApi.getById(id);
+      generateAndPrintHTML('transfer_by_name', [fullDoc]);
+    } catch (err) {
+      toast.error("Failed to generate print document");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+
   const handleOpenPartySelection = () => {
     setSelectedPartyIdForNew("");
     setIsPartyDialogOpen(true);
@@ -301,6 +337,22 @@ export default function TransferByNamePage() {
     return items.filter(it => itemIds.has(it.id));
   }, [items, currentPartyStocks, editingTransferByName]);
 
+  
+  const toggleSelectAll = () => {
+    if (selectedRows.size === transferByNames.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(transferByNames.map(i => i.id!)));
+    }
+  };
+
+  const toggleSelectRow = (id: number) => {
+    const newSet = new Set(selectedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedRows(newSet);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
@@ -314,9 +366,16 @@ export default function TransferByNamePage() {
           </div>
         </div>
         
-        <Button onClick={handleOpenPartySelection} className="bg-white hover:bg-white/90 text-primary shadow-md transition-all">
-          <Plus className="mr-2 h-4 w-4" /> Add Transfer By Name
-        </Button>
+        <div className="flex gap-2">
+          {selectedRows.size > 0 && (
+            <Button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white/20 hover:bg-white/30 text-white border-0 shadow-sm backdrop-blur-sm transition-all duration-300 rounded-xl">
+              <Printer className="mr-2 h-4 w-4" /> Print Selected ({selectedRows.size})
+            </Button>
+          )}
+          <Button onClick={handleOpenPartySelection} className="bg-white hover:bg-white/90 text-primary shadow-md transition-all">
+            <Plus className="mr-2 h-4 w-4" /> Add Transfer By Name
+          </Button>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -427,6 +486,14 @@ export default function TransferByNamePage() {
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
+              <TableHead className="w-[50px]">
+                <input 
+                  type="checkbox" 
+                  checked={transferByNames.length > 0 && selectedRows.size === transferByNames.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                />
+              </TableHead>
               <TableHead>Date</TableHead>
               <TableHead>T.BN No</TableHead>
               <TableHead>GP No</TableHead>
@@ -443,11 +510,11 @@ export default function TransferByNamePage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-10 text-muted-foreground">Loading Transfer BN entries...</TableCell>
+                <TableCell colSpan={12} className="text-center py-10 text-muted-foreground">Loading Transfer BN entries...</TableCell>
               </TableRow>
             ) : transferByNames.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <ArrowUpFromLine className="h-8 w-8 text-muted-foreground/40" />
                     <span>No Transfer BN entries found.</span>
@@ -457,6 +524,14 @@ export default function TransferByNamePage() {
             ) : (
               transferByNames.map((trans) => (
                 <TableRow key={trans.id} className="transition-colors hover:bg-muted/50 group">
+                  <TableCell>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedRows.has(trans.id!)}
+                      onChange={() => toggleSelectRow(trans.id!)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                    />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {format(new Date(trans.date), "MMM dd, yyyy")}
                   </TableCell>
@@ -473,7 +548,10 @@ export default function TransferByNamePage() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(trans.id!)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(trans.id!)} disabled={isPrinting}>
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(trans.id!)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
