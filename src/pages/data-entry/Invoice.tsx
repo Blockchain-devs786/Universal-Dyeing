@@ -12,7 +12,8 @@ import {
   FileSearch,
   Receipt,
   Pencil,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -47,7 +48,10 @@ export default function Invoice() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  
+  // States for printing
+  const [selectedInvoicesForPrint, setSelectedInvoicesForPrint] = useState<any[]>([]);
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<number[]>([]);
 
   // Form State for Creation
   const [step, setStep] = useState(1);
@@ -60,6 +64,7 @@ export default function Invoice() {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   // Edit State
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [editRate15, setEditRate15] = useState(0);
   const [editRate22, setEditRate22] = useState(0);
   const [editDiscountPercent, setEditDiscountPercent] = useState(0);
@@ -164,7 +169,7 @@ export default function Invoice() {
       rate_15: rate15,
       rate_22: rate22,
       outward_ids: selectedOutwardIds,
-      created_by: 'Momin' // Placeholder for auth user
+      created_by: 'Momin'
     });
   };
 
@@ -194,9 +199,27 @@ export default function Invoice() {
 
   const handlePrint = async (invoice: any) => {
       const full = await invoicesApi.getById(invoice.id);
-      setSelectedInvoice(full);
+      setSelectedInvoicesForPrint([full]);
       setIsPrintOpen(true);
       setTimeout(() => window.print(), 500);
+  };
+
+  const handleBulkPrint = async () => {
+     if (bulkSelectedIds.length === 0) return;
+     const fullInvoices = await Promise.all(
+        bulkSelectedIds.map(id => invoicesApi.getById(id))
+     );
+     setSelectedInvoicesForPrint(fullInvoices);
+     setIsPrintOpen(true);
+     setTimeout(() => window.print(), 500);
+  };
+
+  const toggleSelectAll = () => {
+    if (bulkSelectedIds.length === invoices.length) {
+      setBulkSelectedIds([]);
+    } else {
+      setBulkSelectedIds(invoices.map((i: any) => i.id));
+    }
   };
 
   return (
@@ -214,6 +237,11 @@ export default function Invoice() {
           </div>
         </div>
         <div className="flex gap-3">
+          {bulkSelectedIds.length > 0 && (
+            <Button onClick={handleBulkPrint} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg font-bold">
+               <Printer className="h-4 w-4 mr-2" /> Print Selected ({bulkSelectedIds.length})
+            </Button>
+          )}
           <Button variant="outline" onClick={() => refetch()} className="bg-slate-800 border-slate-700 hover:bg-slate-700">
              <RefreshCw className="h-4 w-4 mr-2" /> Refresh
           </Button>
@@ -234,6 +262,9 @@ export default function Invoice() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                 <Checkbox checked={bulkSelectedIds.length > 0 && bulkSelectedIds.length === invoices.length} onCheckedChange={toggleSelectAll} />
+              </TableHead>
               <TableHead>Invoice #</TableHead>
               <TableHead>MS Party</TableHead>
               <TableHead className="text-center">No. of Items</TableHead>
@@ -245,11 +276,16 @@ export default function Invoice() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-               <TableRow><TableCell colSpan={7} className="text-center py-20 text-slate-400">Loading invoices...</TableCell></TableRow>
+               <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">Loading invoices...</TableCell></TableRow>
             ) : invoices.length === 0 ? (
-               <TableRow><TableCell colSpan={7} className="text-center py-20 text-slate-400">No invoices found.</TableCell></TableRow>
+               <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">No invoices found.</TableCell></TableRow>
             ) : invoices.map((invoice: any) => (
               <TableRow key={invoice.id} className="group transition-colors hover:bg-slate-50">
+                <TableCell>
+                   <Checkbox checked={bulkSelectedIds.includes(invoice.id)} onCheckedChange={() => {
+                      setBulkSelectedIds(prev => prev.includes(invoice.id) ? prev.filter(id => id !== invoice.id) : [...prev, invoice.id]);
+                   }} />
+                </TableCell>
                 <TableCell className="font-bold">{invoice.invoice_no}</TableCell>
                 <TableCell className="font-medium">{invoice.ms_party_name}</TableCell>
                 <TableCell className="text-center">{invoice.item_count}</TableCell>
@@ -275,7 +311,8 @@ export default function Invoice() {
         </Table>
       </div>
 
-      {/* Creation Wizard Dialog */}
+      {/* Wizard and Edit Dialogs (Keeping them همان طور) ... */}
+      {/* (Creation Wizard Dialog) */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
            <DialogHeader>
@@ -291,7 +328,7 @@ export default function Invoice() {
                    <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">1. Select MS Party</Label>
                    <Popover open={msPartyOpen} onOpenChange={setMsPartyOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between h-12 bg-slate-50 shadow-inner">
+                      <Button variant="outline" className="w-full justify-between h-12 bg-slate-50 shadow-inner text-left">
                          {msPartyId === "all" ? "Choose MS Party..." : msParties.find(p => String(p.id) === msPartyId)?.name}
                          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                       </Button>
@@ -438,8 +475,7 @@ export default function Invoice() {
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-6">
-                   <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
+                <div className="flex justify-end pt-6">
                    <Button onClick={handleCreateSubmit} disabled={createMutation.isPending} className="px-12 h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg font-black text-lg">
                       {createMutation.isPending ? <RefreshCw className="h-5 w-5 animate-spin" /> : "Save & Generate Invoice"}
                    </Button>
@@ -449,7 +485,6 @@ export default function Invoice() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl">
            <DialogHeader>
@@ -498,121 +533,128 @@ export default function Invoice() {
       </Dialog>
 
       {/* ─── PRINT TEMPLATE ─────────────────────────────────────────── */}
-      <div id="invoice-print" className="hidden print:block fixed inset-0 bg-white p-0 text-black leading-tight">
-          <div className="border-[3px] border-blue-600 rounded-lg p-12 h-screen max-h-[297mm] overflow-hidden flex flex-col relative font-sans">
-              
-              {/* Logo Area */}
-              <div className="absolute top-12 right-12 w-32 h-32 opacity-80 rotate-12">
-                 <img src="/logo.png" className="w-full grayscale opacity-40 mix-blend-multiply" />
-              </div>
-
-              {/* Header */}
-              <div className="text-center space-y-4 mb-20 relative z-10">
-                 <h1 className="text-4xl font-black tracking-tighter text-blue-700 uppercase">MOMINA LACE DYEING</h1>
-                 <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Owner: GHULAM MUSTAFA</p>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">GM : Shahid, Naveed</p>
-                 </div>
-                 <h2 className="inline-block text-xl font-black border-b-2 border-red-600 text-red-600 px-6 py-1 mx-auto uppercase mt-4">INVOICE</h2>
-              </div>
-
-              {/* Meta Grid */}
-              <div className="grid grid-cols-2 gap-x-20 mb-16 px-10">
-                 <div className="space-y-3">
-                    <div className="grid grid-cols-[100px_1fr] items-center">
-                       <span className="text-[10px] font-black text-blue-700 uppercase">Invoice #:</span>
-                       <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{selectedInvoice?.invoice_no}</span>
-                    </div>
-                    <div className="grid grid-cols-[100px_1fr] items-center">
-                       <span className="text-[10px] font-black text-blue-700 uppercase">MS Party:</span>
-                       <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{selectedInvoice?.ms_party_name}</span>
-                    </div>
-                    <div className="grid grid-cols-[100px_1fr] items-center">
-                       <span className="text-[10px] font-black text-blue-700 uppercase">Date:</span>
-                       <span className="text-sm font-bold border-b border-slate-900 pb-0.5">
-                         {selectedInvoice?.date ? format(new Date(selectedInvoice.date), 'yyyy-MM-dd') : ''}
-                       </span>
-                    </div>
-                 </div>
-                 <div className="space-y-3">
-                    <div className="grid grid-cols-[100px_1fr] items-center">
-                       <span className="text-[10px] font-black text-blue-700 uppercase">Created By:</span>
-                       <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{selectedInvoice?.created_by || 'momin'}</span>
-                    </div>
-                    <div className="grid grid-cols-[100px_1fr] items-center">
-                       <span className="text-[10px] font-black text-blue-700 uppercase">Edited By:</span>
-                       <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{selectedInvoice?.edited_by || 'None'}</span>
-                    </div>
-                    <div className="grid grid-cols-[100px_1fr] items-center opacity-0">
-                       <span className="text-[10px] font-black">Spacer</span>
-                       <span className="text-sm font-bold border-b border-slate-400">#</span>
-                    </div>
-                 </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="flex-1 w-full px-4 mb-20 overflow-hidden">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 italic">Outward Documents Information</p>
-                <div className="border border-green-700 rounded-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-[#f0f9f1] border-b border-green-700">
-                           <tr className="[&>th]:p-3 [&>th]:text-[10px] [&>th]:font-black [&>th]:text-slate-500 [&>th]:uppercase [&>th]:tracking-tight [&>th]:border-r [&>th]:border-green-700 last:[&>th]:border-0">
-                              <th>Outward#/Transfer#</th>
-                              <th className="text-center">GP #</th>
-                              <th>Item Name</th>
-                              <th className="text-center">Yards</th>
-                              <th className="text-right">Quantity</th>
-                              <th className="text-right">Rate</th>
-                              <th className="text-right">Amount</th>
-                           </tr>
-                        </thead>
-                        <tbody className="[&>tr]:border-b last:[&>tr]:border-0 [&>tr]:border-slate-100">
-                           {selectedInvoice?.items?.map((item: any, i: number) => (
-                             <tr key={i} className="[&>td]:p-3 [&>td]:text-xs [&>td]:font-bold [&>td]:border-r [&>td]:border-slate-100 last:[&>td]:border-0">
-                                <td>{item.outward_no}</td>
-                                <td className="text-center">{item.gp_no}</td>
-                                <td>{item.item_name}</td>
-                                <td className="text-center underline underline-offset-4 decoration-slate-300">{item.measurement}</td>
-                                <td className="text-right">{Number(item.quantity).toFixed(2)}</td>
-                                <td className="text-right">{Number(item.measurement === 15 ? selectedInvoice?.rate_15 : selectedInvoice?.rate_22).toFixed(2)}</td>
-                                <td className="text-right font-black">{Number(item.quantity * (item.measurement === 15 ? selectedInvoice?.rate_15 : selectedInvoice?.rate_22)).toFixed(2)}</td>
-                             </tr>
-                           ))}
-                           {/* Empty rows filler */}
-                           {Array.from({length: Math.max(0, 8 - (selectedInvoice?.items?.length || 0))}).map((_, i) => (
-                              <tr key={`empty-${i}`} className="[&>td]:p-3 [&>td]:text-transparent h-10 select-none">
-                                 <td>.</td><td>.</td><td>.</td><td>.</td><td>.</td><td>.</td><td>.</td>
-                              </tr>
-                           ))}
-                        </tbody>
-                    </table>
+      <div id="invoice-print" className="hidden print:block bg-white text-black p-0">
+          {selectedInvoicesForPrint.map((invoice, idx) => (
+            <div key={invoice.id} className={cn(
+               "p-12 min-h-screen relative font-sans border-[3px] border-blue-600 rounded-lg m-4",
+               idx < selectedInvoicesForPrint.length - 1 && "page-break-after-always"
+            )}>
+                {/* Logo Area */}
+                <div className="absolute top-12 right-12 w-32 h-32 opacity-90 rotate-12">
+                   <img src="/logo.png" className="w-full" />
                 </div>
-              </div>
 
-              {/* Bottom Totals */}
-              <div className="w-[400px] ml-auto border-2 border-amber-400 rounded-lg overflow-hidden mb-24 shadow-sm bg-amber-50/10">
-                 <div className="p-3 border-b border-amber-200 flex justify-between items-center px-6">
-                    <span className="text-[10px] font-black text-slate-500 uppercase">Sub Total:</span>
-                    <span className="text-sm font-black text-blue-700">{Number(selectedInvoice?.sub_total).toFixed(2)}</span>
-                 </div>
-                 <div className="p-3 border-b-4 border-red-600 flex justify-between items-center px-6">
-                    <span className="text-[10px] font-black text-slate-500 uppercase">Discount:</span>
-                    <span className="text-sm font-black text-blue-700">{Number(selectedInvoice?.discount_amount).toFixed(2)}</span>
-                 </div>
-                 <div className="p-4 bg-white flex justify-between items-center px-6">
-                    <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total Amount:</span>
-                    <span className="text-xl font-black text-blue-700">{Number(selectedInvoice?.total_amount).toFixed(2)}</span>
-                 </div>
-              </div>
+                {/* Header */}
+                <div className="text-center space-y-4 mb-16 relative z-10">
+                   <h1 className="text-4xl font-black tracking-tighter text-blue-700 uppercase">MOMINA LACE DYEING</h1>
+                   <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Owner: GHULAM MUSTAFA</p>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">GM : Shahid, Naveed</p>
+                   </div>
+                   <h2 className="inline-block text-xl font-black border-b-2 border-red-600 text-red-600 px-6 py-1 mx-auto uppercase mt-4">INVOICE</h2>
+                </div>
 
-              {/* Footer */}
-              <div className="mt-auto pt-6 border-t border-slate-100 space-y-2">
-                  <p className="text-[9px] font-black text-blue-800 uppercase">SITE: <span className="text-slate-500 font-medium">Small Industrial State, Sargodha Road, Faisalabad</span></p>
-                  <p className="text-[9px] font-black text-blue-800 uppercase">CONTACTS: <span className="text-slate-500 font-medium">0321-7651815, 0300-8651815, 0304-6166663, 0300-8636129</span></p>
-              </div>
+                {/* Meta Grid */}
+                <div className="grid grid-cols-2 gap-x-20 mb-12 px-10">
+                   <div className="space-y-3">
+                      <div className="grid grid-cols-[100px_1fr] items-center">
+                         <span className="text-[10px] font-black text-blue-700 uppercase">Invoice #:</span>
+                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.invoice_no}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center">
+                         <span className="text-[10px] font-black text-blue-700 uppercase">MS Party:</span>
+                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.ms_party_name}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center">
+                         <span className="text-[10px] font-black text-blue-700 uppercase">Date:</span>
+                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">
+                           {invoice.date ? format(new Date(invoice.date), 'yyyy-MM-dd') : ''}
+                         </span>
+                      </div>
+                   </div>
+                   <div className="space-y-3">
+                      <div className="grid grid-cols-[100px_1fr] items-center">
+                         <span className="text-[10px] font-black text-blue-700 uppercase">Created By:</span>
+                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.created_by || 'momin'}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center">
+                         <span className="text-[10px] font-black text-blue-700 uppercase">Edited By:</span>
+                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.edited_by || 'None'}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center opacity-0">
+                         <span className="text-[10px] font-black">Spacer</span>
+                         <span className="text-sm font-bold border-b border-slate-400">#</span>
+                      </div>
+                   </div>
+                </div>
 
-          </div>
+                {/* Items Table */}
+                <div className="w-full px-4 mb-16">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 italic">Outward Documents Information</p>
+                  <div className="border border-green-700 rounded-sm overflow-hidden bg-white">
+                      <table className="w-full text-left border-collapse">
+                          <thead className="bg-[#f0f9f1] border-b border-green-700">
+                             <tr className="[&>th]:p-3 [&>th]:text-[10px] [&>th]:font-black [&>th]:text-slate-500 [&>th]:uppercase [&>th]:tracking-tight [&>th]:border-r [&>th]:border-green-700 last:[&>th]:border-0">
+                                <th>Outward#/Transfer#</th>
+                                <th className="text-center">GP #</th>
+                                <th>Item Name</th>
+                                <th className="text-center">Yards</th>
+                                <th className="text-right">Quantity</th>
+                                <th className="text-right">Rate</th>
+                                <th className="text-right">Amount</th>
+                             </tr>
+                          </thead>
+                          <tbody>
+                             {invoice.items?.map((item: any, i: number) => (
+                               <tr key={i} className="border-b border-slate-100 last:border-0 [&>td]:p-3 [&>td]:text-xs [&>td]:font-bold [&>td]:border-r [&>td]:border-slate-100 last:[&>td]:border-0">
+                                  <td>{item.outward_no}</td>
+                                  <td className="text-center">{item.gp_no}</td>
+                                  <td>{item.item_name}</td>
+                                  <td className="text-center underline underline-offset-4 decoration-slate-300">{item.measurement}</td>
+                                  <td className="text-right">{Number(item.quantity).toFixed(2)}</td>
+                                  <td className="text-right">{Number(item.measurement === 15 ? invoice.rate_15 : invoice.rate_22).toFixed(2)}</td>
+                                  <td className="text-right font-black">{Number(item.quantity * (item.measurement === 15 ? invoice.rate_15 : invoice.rate_22)).toFixed(2)}</td>
+                               </tr>
+                             ))}
+                          </tbody>
+                      </table>
+                  </div>
+                </div>
+
+                {/* Bottom Totals */}
+                <div className="w-[400px] ml-auto border-2 border-amber-400 rounded-lg overflow-hidden mb-16 shadow-sm bg-white">
+                   <div className="p-3 border-b border-amber-200 flex justify-between items-center px-6">
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Sub Total:</span>
+                      <span className="text-sm font-black text-blue-700">{Number(invoice.sub_total).toFixed(2)}</span>
+                   </div>
+                   <div className="p-3 border-b-4 border-red-600 flex justify-between items-center px-6">
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Discount:</span>
+                      <span className="text-sm font-black text-blue-700">{Number(invoice.discount_amount).toFixed(2)}</span>
+                   </div>
+                   <div className="p-4 bg-white flex justify-between items-center px-6">
+                      <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total Amount:</span>
+                      <span className="text-xl font-black text-blue-700">{Number(invoice.total_amount).toFixed(2)}</span>
+                   </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-20 pt-6 border-t border-slate-100 space-y-2">
+                    <p className="text-[9px] font-black text-blue-800 uppercase">SITE: <span className="text-slate-500 font-medium">Small Industrial State, Sargodha Road, Faisalabad</span></p>
+                    <p className="text-[9px] font-black text-blue-800 uppercase">CONTACTS: <span className="text-slate-500 font-medium">0321-7651815, 0300-8651815, 0304-6166663, 0300-8636129</span></p>
+                </div>
+            </div>
+          ))}
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body * { visibility: hidden; }
+          #invoice-print, #invoice-print * { visibility: visible; }
+          #invoice-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+          .page-break-after-always { page-break-after: always; }
+          @page { margin: 0; size: auto; }
+        }
+      `}} />
 
     </div>
   );
