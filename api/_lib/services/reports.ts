@@ -234,8 +234,17 @@ export const reportsService = {
         m.name as ms_party_name
       FROM ledger_entries l
       JOIN ms_parties m ON l.ms_party_id = m.id
+      JOIN ms_parties m_target ON l.ms_party_id = m_target.id
       WHERE 
-        (${ms_party_id || null}::integer IS NULL OR l.ms_party_id = ${ms_party_id || null}::integer)
+        (
+          (${ms_party_id || null}::integer IS NULL) 
+          OR 
+          (
+            EXISTS (SELECT 1 FROM ms_parties WHERE id = ${ms_party_id || null}::integer AND name = 'Dyeing')
+            -- If Dyeing is selected, we show EVERYTHING (it is the central pool)
+            OR l.ms_party_id = ${ms_party_id || null}::integer
+          )
+        )
         AND (${item_id || null}::integer IS NULL OR l.item_id = ${item_id || null}::integer)
         AND (${from_date || null}::date IS NULL OR l.date >= ${from_date || null}::date)
         AND (${to_date || null}::date IS NULL OR l.date <= ${to_date || null}::date)

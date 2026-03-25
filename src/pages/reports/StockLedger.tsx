@@ -11,7 +11,11 @@ import {
   Filter,
   Check,
   ChevronsUpDown,
-  Table as TableIcon
+  Table as TableIcon,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  BarChart3
 } from "lucide-react";
 import { 
   reportsApi, 
@@ -38,23 +42,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 
+type GroupedLedger = {
+  itemId: number;
+  itemName: string;
+  transactions: (StockLedgerRow & { balance: number })[];
+  totalDebit: number;
+  totalCredit: number;
+  finalBalance: number;
+};
+
 export default function StockLedger() {
   // Filter States
   const [msPartyId, setMsPartyId] = useState<string>("all");
   const [fromDate, setFromDate] = useState<string>(format(subDays(new Date(), 365), 'yyyy-MM-dd'));
   const [toDate, setToDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [transactionType, setTransactionType] = useState<string>("all");
-  const [particulars, setParticulars] = useState<string>("all");
-  const [itemId, setItemId] = useState<string>("all");
   const [measurement, setMeasurement] = useState<{ [key: string]: boolean }>({ "15": false, "22": false });
-  const [amountType, setAmountType] = useState<{ [key: string]: boolean }>({ "debit": false, "credit": false });
-
+  
   // UI States
   const [msPartyOpen, setMsPartyOpen] = useState(false);
-  const [itemOpen, setItemOpen] = useState(false);
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [partOpen, setPartOpen] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
   // Queries
   const { data: msParties = [] } = useQuery({
@@ -62,81 +69,33 @@ export default function StockLedger() {
     queryFn: () => msPartiesApi.list(),
   });
 
-  const { data: items = [] } = useQuery({
-    queryKey: ["items"],
-    queryFn: () => itemsApi.list(),
-  });
-
-  // Fetch full ledger data for the selected party to build dynamic filters
-  const { data: rawLedgerData = [] } = useQuery({
-    queryKey: ["raw_stock_ledger", msPartyId],
-    queryFn: () => msPartyId !== "all" 
-      ? reportsApi.getStockLedger({ ms_party_id: msPartyId }) 
-      : Promise.resolve([]),
-    enabled: msPartyId !== "all"
-  });
-
-  // The actual report query triggered by "Generate Report"
+  // The actual report query
   const { 
     data: ledger = [], 
     isLoading, 
     refetch, 
     isFetching 
   } = useQuery({
-    queryKey: ["stock_ledger_report"], // Query key doesn't depend on filters to avoid auto-trigger
+    queryKey: ["stock_ledger_report_internal"], 
     queryFn: () => {
       const activeMeasurement = Object.keys(measurement).find(k => measurement[k]);
-      const activeAmountType = Object.keys(amountType).find(k => amountType[k]) as 'debit'|'credit'|undefined;
-
       return reportsApi.getStockLedger({
         ms_party_id: msPartyId === "all" ? undefined : Number(msPartyId),
-        item_id: itemId === "all" ? undefined : Number(itemId),
         from_date: fromDate,
         to_date: toDate,
-        transaction_type: transactionType === "all" ? undefined : transactionType,
-        particulars: particulars === "all" ? undefined : particulars,
         measurement: activeMeasurement ? Number(activeMeasurement) : undefined,
-        amount_type: activeAmountType
       });
     },
-    enabled: false // Only manual refetch
+    enabled: false
   });
 
-  // Effect to set default party "Dyeing"
+  // Default Party "Dyeing"
   useEffect(() => {
     if (msParties.length > 0 && msPartyId === "all") {
-       const defaultParty = msParties.find(p => 
-          p.name.toLowerCase() === 'dyeing'
-       );
-       if (defaultParty) {
-          setMsPartyId(String(defaultParty.id));
-       }
+       const defaultParty = msParties.find(p => p.name.toLowerCase() === 'dyeing');
+       if (defaultParty) setMsPartyId(String(defaultParty.id));
     }
   }, [msParties]);
-
-  // Dynamic filter options based on raw selection data
-  const dynamicFilters = useMemo(() => {
-    const types = new Set<string>();
-    const details = new Set<string>();
-    const partyItems = new Set<string>();
-
-    rawLedgerData.forEach(row => {
-      if (row.type) types.add(row.type);
-      if (row.particulars) details.add(row.particulars);
-      if (row.item_name) partyItems.add(row.item_name);
-    });
-
-    return {
-      types: Array.from(types).sort(),
-      particulars: Array.from(details).sort(),
-      items: rawLedgerData.reduce((acc: {id: number, name: string}[], row) => {
-        if (!acc.find(a => a.id === row.item_id)) {
-           acc.push({ id: row.item_id, name: row.item_name });
-        }
-        return acc;
-      }, []).sort((a,b) => a.name.localeCompare(b.name))
-    };
-  }, [rawLedgerData]);
 
   const handleGenerate = () => {
     if (msPartyId === "all") {
@@ -148,60 +107,81 @@ export default function StockLedger() {
   };
 
   const handleClear = () => {
-    setTransactionType("all");
-    setParticulars("all");
-    setItemId("all");
     setMeasurement({ "15": false, "22": false });
-    setAmountType({ "debit": false, "credit": false });
     setIsGenerated(false);
+    setExpandedItems(new Set());
   };
 
-  const selectedMsPartyObj = msParties.find(p => String(p.id) === msPartyId);
-  const selectedItemObj = items.find(i => String(i.id) === itemId);
+  const toggleItem = (itemId: number) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemId)) newExpanded.delete(itemId);
+    else newExpanded.add(itemId);
+    setExpandedItems(newExpanded);
+  };
 
-  // Calculate Running Balance
-  const reportWithBalance = useMemo(() => {
-    let balance = 0;
-    return ledger.map(row => {
-      balance += (row.debit || 0) - (row.credit || 0);
-      return { ...row, balance };
+  // Grouping and Balance Calculation Logic
+  const groupedData = useMemo(() => {
+    const groups: Record<number, GroupedLedger> = {};
+
+    ledger.forEach(row => {
+      if (!groups[row.item_id]) {
+        groups[row.item_id] = {
+          itemId: row.item_id,
+          itemName: row.item_name,
+          transactions: [],
+          totalDebit: 0,
+          totalCredit: 0,
+          finalBalance: 0
+        };
+      }
+      
+      const group = groups[row.item_id];
+      const balance = group.finalBalance + (row.debit || 0) - (row.credit || 0);
+      
+      group.transactions.push({ ...row, balance });
+      group.totalDebit += (row.debit || 0);
+      group.totalCredit += (row.credit || 0);
+      group.finalBalance = balance;
     });
+
+    return Object.values(groups).sort((a,b) => a.itemName.localeCompare(b.itemName));
   }, [ledger]);
+
+  const selectedMsPartyObj = msParties.find(p => String(p.id) === msPartyId);
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       
-      {/* Top Header Card */}
+      {/* Header */}
       <div className="bg-slate-900 text-white rounded-2xl shadow-elevated border border-slate-800 p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-600/20 rounded-xl">
-              <FileText className="h-8 w-8 text-blue-400" />
+            <div className="p-3 bg-blue-600/20 rounded-xl shadow-glow-blue/10">
+              <Layers className="h-8 w-8 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Stock Ledgers</h1>
-              <p className="text-slate-400 text-sm mt-1">Detailed transaction history for individual parties.</p>
+              <h1 className="text-2xl font-bold tracking-tight">Stock Ledger (Item Wise)</h1>
+              <p className="text-slate-400 text-sm mt-1">Central inventory tracking & party movements.</p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-end">
             <div className="space-y-1.5 w-full sm:w-64">
               <Label className="text-slate-400 text-[10px] uppercase font-bold tracking-widest px-1 flex items-center gap-1.5">
-                <Search className="h-3 w-3" /> Search Ledger:
+                <Search className="h-3 w-3" /> Select Unit/Ledger:
               </Label>
               <Popover open={msPartyOpen} onOpenChange={setMsPartyOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    role="combobox"
-                    className="w-full justify-between bg-white text-slate-900 border-none h-11 shadow-inner"
+                    className="w-full justify-between bg-white text-slate-900 border-none h-11 shadow-inner ring-offset-slate-900 focus:ring-2 focus:ring-blue-500"
                   >
                     <span className="truncate">
                       {msPartyId === "all" ? "-- Select Ledger --" : 
-                        (selectedMsPartyObj?.name.toLowerCase().includes('dyeing') ? "\u2B50 " : "") + 
-                        selectedMsPartyObj?.name || "-- Select Ledger --"}
+                        (selectedMsPartyObj?.name.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
+                        selectedMsPartyObj?.name}
                     </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[300px] p-0" align="end">
@@ -220,7 +200,7 @@ export default function StockLedger() {
                             }}
                           >
                             <Check className={cn("mr-2 h-4 w-4", msPartyId === String(party.id) ? "opacity-100" : "opacity-0")} />
-                            <span>{party.name.toLowerCase().includes('dyeing') ? "\u2B50 " : ""}{party.name}</span>
+                            {party.name.toLowerCase() === 'dyeing' ? "\u2B50 " : ""}{party.name}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -233,273 +213,155 @@ export default function StockLedger() {
         </div>
       </div>
 
-      {/* Advanced Filters Box */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-slate-50/80 border-b px-6 py-3 flex items-center gap-2">
-          <Filter className="h-4 w-4 text-blue-600" />
-          <span className="font-bold text-slate-700 text-sm uppercase tracking-wide">Advanced Filters</span>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-            
-            {/* Date Range */}
-            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                   <Calendar className="h-3 w-3" /> Date Range: <span className="text-slate-900">From:</span>
-                 </Label>
-                 <Input 
-                   type="date" 
-                   value={fromDate} 
-                   onChange={(e) => setFromDate(e.target.value)}
-                   className="h-10 bg-slate-50"
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                   <ArrowRight className="h-3 w-3" /> To:
-                 </Label>
-                 <Input 
-                   type="date" 
-                   value={toDate} 
-                   onChange={(e) => setToDate(e.target.value)}
-                   className="h-10 bg-slate-50"
-                 />
-               </div>
+      {/* Grouped Filters */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+          <div className="md:col-span-5 grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 px-1">
+                <Calendar className="h-3 w-3" /> From:
+              </Label>
+              <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="bg-slate-50 h-10 border-slate-200" />
             </div>
-
-            {/* Trans Type */}
-            <div className="lg:col-span-3 space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase">Transaction Type:</Label>
-              <Popover open={typeOpen} onOpenChange={setTypeOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between h-10 font-normal bg-slate-50">
-                    {transactionType === "all" ? "All Types" : transactionType}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandList>
-                      <CommandGroup>
-                        <CommandItem onSelect={() => { setTransactionType("all"); setTypeOpen(false); }}>All Types</CommandItem>
-                        {dynamicFilters.types.map(t => (
-                          <CommandItem key={t} onSelect={() => { setTransactionType(t); setTypeOpen(false); }}>{t}</CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Particulars */}
-            <div className="lg:col-span-3 space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase">Particulars:</Label>
-              <Popover open={partOpen} onOpenChange={setPartOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between h-10 font-normal bg-slate-50">
-                    <span className="truncate">{particulars === "all" ? "All Particulars" : particulars}</span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search party..." />
-                    <CommandList>
-                      <CommandEmpty>No parties found.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem onSelect={() => { setParticulars("all"); setPartOpen(false); }}>All Particulars</CommandItem>
-                        {dynamicFilters.particulars.map(p => (
-                          <CommandItem key={p} value={p} onSelect={() => { setParticulars(p); setPartOpen(false); }}>{p}</CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-            {/* Item Select */}
-            <div className="lg:col-span-4 space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase">Item:</Label>
-              <Popover open={itemOpen} onOpenChange={setItemOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between h-10 font-normal bg-slate-50">
-                    <span className="truncate">{itemId === "all" ? "All Items" : dynamicFilters.items.find(i => String(i.id) === itemId)?.name || "All Items"}</span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandList>
-                      <CommandGroup>
-                        <CommandItem onSelect={() => { setItemId("all"); setItemOpen(false); }}>All Items</CommandItem>
-                        {dynamicFilters.items.map(i => (
-                          <CommandItem key={i.id} value={i.name} onSelect={() => { setItemId(String(i.id)); setItemOpen(false); }}>{i.name}</CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Yard Checkboxes */}
-            <div className="lg:col-span-3 space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase px-1">Yard:</Label>
-              <div className="flex gap-4 p-2 bg-slate-50 rounded-lg border h-10 items-center px-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="y15" 
-                    checked={measurement["15"]} 
-                    onCheckedChange={(val) => setMeasurement({ "15": !!val, "22": false })}
-                  />
-                  <label htmlFor="y15" className="text-xs font-medium leading-none cursor-pointer">15 Yards</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="y22" 
-                    checked={measurement["22"]} 
-                    onCheckedChange={(val) => setMeasurement({ "22": !!val, "15": false })}
-                  />
-                  <label htmlFor="y22" className="text-xs font-medium leading-none cursor-pointer">22 Yards</label>
-                </div>
-              </div>
-            </div>
-
-            {/* Amount Type */}
-            <div className="lg:col-span-3 space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase px-1">Amount Type:</Label>
-              <div className="flex gap-6 p-2 bg-slate-50 rounded-lg border h-10 items-center px-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="debit" 
-                    checked={amountType["debit"]} 
-                    onCheckedChange={(val) => setAmountType({ "debit": !!val, "credit": false })}
-                  />
-                  <label htmlFor="debit" className="text-xs font-medium text-blue-600 leading-none cursor-pointer">Debit</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="credit" 
-                    checked={amountType["credit"]} 
-                    onCheckedChange={(val) => setAmountType({ "credit": !!val, "debit": false })}
-                  />
-                  <label htmlFor="credit" className="text-xs font-medium text-orange-600 leading-none cursor-pointer">Credit</label>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-2 flex gap-2">
-               <Button variant="destructive" onClick={handleClear} className="w-full h-10 shadow-sm transition-all hover:brightness-110">
-                 <Eraser className="h-4 w-4 mr-2" /> Clear
-               </Button>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 px-1">
+                <ArrowRight className="h-3 w-3" /> To:
+              </Label>
+              <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="bg-slate-50 h-10 border-slate-200" />
             </div>
           </div>
 
-          {/* Action Footer */}
-          <div className="pt-4 flex justify-end">
-            <Button 
-               onClick={handleGenerate} 
-               disabled={isFetching}
-               className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg transition-all active:scale-95 text-base"
-            >
-              {isFetching ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <TableIcon className="mr-2 h-5 w-5" />}
-              Generate Report
+          <div className="md:col-span-3 space-y-2">
+            <Label className="text-xs font-bold text-slate-500 uppercase px-1">Filter Measurement:</Label>
+            <div className="flex gap-4 p-2 bg-slate-50 rounded-lg border border-slate-200 h-10 items-center px-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="y15" checked={measurement["15"]} onCheckedChange={(v) => setMeasurement({ "15": !!v, "22": false })} />
+                <label htmlFor="y15" className="text-xs font-medium cursor-pointer">15 Yards</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="y22" checked={measurement["22"]} onCheckedChange={(v) => setMeasurement({ "22": !!v, "15": false })} />
+                <label htmlFor="y22" className="text-xs font-medium cursor-pointer">22 Yards</label>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-4 flex gap-3">
+            <Button variant="outline" onClick={handleClear} className="flex-1 h-10 border-slate-200 hover:bg-slate-50">
+              <Eraser className="h-4 w-4 mr-2" /> Reset
+            </Button>
+            <Button onClick={handleGenerate} disabled={isFetching} className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 shadow-lg">
+              {isFetching ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <BarChart3 className="mr-2 h-4 w-4" />}
+              Generate
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Results Section */}
+      {/* Grouped Table View */}
       {isGenerated && (
-        <div className="bg-white rounded-2xl shadow-elevated border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-            <h2 className="font-bold tracking-tight flex items-center gap-2">
-              <TableIcon className="h-5 w-5 text-blue-400" />
-              Stock Transactions Ledger
-            </h2>
-            <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-2" /> Print
-            </Button>
+        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+          <div className="flex justify-between items-center px-2">
+             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+               <TableIcon className="h-5 w-5 text-blue-600" /> Items List Summary
+             </h2>
+             <Button variant="ghost" size="sm" onClick={() => window.print()} className="text-slate-500">
+               <Printer className="h-4 w-4 mr-2" /> Print Full Ledger
+             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="w-[100px] font-bold text-slate-700 uppercase tracking-tighter text-[10px]">Date</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px]">Trans Type</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px]">Particulars</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px]">Description</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px]">Item Name</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px] text-center">15 Yard Qty</TableHead>
-                  <TableHead className="font-bold text-slate-700 uppercase tracking-tighter text-[10px] text-center">22 Yard Qty</TableHead>
-                  <TableHead className="font-bold text-blue-600 uppercase tracking-tighter text-[10px] text-center bg-blue-50/50">Total Qty (Debit)</TableHead>
-                  <TableHead className="font-bold text-orange-600 uppercase tracking-tighter text-[10px] text-center bg-orange-50/50">Total Qty (Credit)</TableHead>
-                  <TableHead className="font-bold text-slate-900 uppercase tracking-tighter text-[10px] text-center bg-slate-100/80">Balance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-20 text-slate-400">Loading ledger entries...</TableCell>
-                  </TableRow>
-                ) : reportWithBalance.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-20 text-slate-400 font-medium">No transactions found for the selected filters.</TableCell>
-                  </TableRow>
-                ) : (
-                  reportWithBalance.map((row, idx) => (
-                    <TableRow key={idx} className="hover:bg-slate-50 transition-colors group">
-                      <TableCell className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
-                        {format(new Date(row.date), 'dd/MM/yyyy')}
-                      </TableCell>
-                      <TableCell className="text-[11px] font-bold text-slate-700">
-                        <span className={cn(
-                          "px-2 py-0.5 rounded text-[9px] uppercase tracking-wide",
-                          row.type?.includes('Inward') ? "bg-blue-100 text-blue-800" :
-                          row.type?.includes('Outward') ? "bg-orange-100 text-orange-800" :
-                          "bg-purple-100 text-purple-800"
-                        )}>
-                          {row.type}
-                        </span>
-                        <div className="text-[10px] font-normal text-slate-400 mt-0.5">{row.ref_no}</div>
-                      </TableCell>
-                      <TableCell className="text-[11px] font-medium text-slate-800">{row.particulars}</TableCell>
-                      <TableCell className="text-[10px] text-slate-500 max-w-[150px] truncate" title={row.description}>
-                        {row.description}
-                      </TableCell>
-                      <TableCell className="text-[11px] font-medium text-slate-900">{row.item_name}</TableCell>
-                      <TableCell className="text-center text-[11px] font-bold text-slate-600">
-                        {row.measurement === 15 ? (row.debit || row.credit) : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-[11px] font-bold text-slate-600">
-                        {row.measurement === 22 ? (row.debit || row.credit) : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-[12px] font-bold text-blue-600 bg-blue-50/20">
-                        {row.debit > 0 ? row.debit : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-[12px] font-bold text-orange-600 bg-orange-50/20">
-                        {row.credit > 0 ? row.credit : '-'}
-                      </TableCell>
-                      <TableCell className={cn(
-                        "text-center text-[12px] font-bold bg-slate-50/50",
-                        row.balance >= 0 ? "text-slate-900" : "text-red-600"
-                      )}>
-                        {row.balance.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))
+          {groupedData.length === 0 ? (
+            <div className="bg-white rounded-2xl border p-20 text-center text-slate-400 font-medium">
+              No stock data found for the selected ledger/filters.
+            </div>
+          ) : (
+            groupedData.map((group) => (
+              <div key={group.itemId} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Accordion Header */}
+                <button 
+                  onClick={() => toggleItem(group.itemId)}
+                  className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors border-b border-transparent data-[open=true]:border-slate-200"
+                  data-open={expandedItems.has(group.itemId)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                      {expandedItems.has(group.itemId) ? <ChevronDown className="h-5 w-5 text-slate-600" /> : <ChevronRight className="h-5 w-5 text-slate-600" />}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">{group.itemName}</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">{group.transactions.length} Transactions</p>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:flex items-center gap-8">
+                    <div className="text-right">
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Debit</p>
+                       <p className="text-sm font-bold text-blue-600">+{group.totalDebit.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Credit</p>
+                       <p className="text-sm font-bold text-orange-600">-{group.totalCredit.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100">
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Final Balance</p>
+                       <p className={cn("text-base font-black", group.finalBalance >= 0 ? "text-slate-900" : "text-red-600")}>
+                         {group.finalBalance.toLocaleString()}
+                       </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Details Table */}
+                {expandedItems.has(group.itemId) && (
+                  <div className="animate-in slide-in-from-top-2 duration-200">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow>
+                          <TableHead className="w-[120px] font-bold text-[10px] text-slate-500 uppercase tracking-widest pl-6">Date</TableHead>
+                          <TableHead className="font-bold text-[10px] text-slate-500 uppercase tracking-widest">Type / Ref No</TableHead>
+                          <TableHead className="font-bold text-[10px] text-slate-500 uppercase tracking-widest">Particulars</TableHead>
+                          <TableHead className="font-bold text-[10px] text-slate-500 uppercase tracking-widest text-center">MSR</TableHead>
+                          <TableHead className="font-bold text-[10px] text-slate-500 uppercase tracking-widest">Description</TableHead>
+                          <TableHead className="text-center font-bold text-[10px] text-blue-600 uppercase tracking-widest bg-blue-50/30">Debit (+)</TableHead>
+                          <TableHead className="text-center font-bold text-[10px] text-orange-600 uppercase tracking-widest bg-orange-50/30">Credit (-)</TableHead>
+                          <TableHead className="text-center font-bold text-[10px] text-slate-900 uppercase tracking-widest bg-slate-100 pr-6">Run Balance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.transactions.map((tx, idx) => (
+                          <TableRow key={idx} className="hover:bg-slate-50/80 transition-colors group/row text-[11px]">
+                            <TableCell className="font-medium text-slate-500 pl-6 whitespace-nowrap">
+                              {format(new Date(tx.date), 'dd MMM yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-bold text-slate-700">{tx.type}</div>
+                              <div className="text-[10px] text-slate-400">{tx.ref_no}</div>
+                            </TableCell>
+                            <TableCell className="font-bold text-slate-800">{tx.particulars}</TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-600">{tx.measurement}"</span>
+                            </TableCell>
+                            <TableCell className="text-slate-400 italic max-w-[120px] truncate" title={tx.description}>{tx.description}</TableCell>
+                            <TableCell className="text-center font-bold text-blue-600 bg-blue-50/10">
+                              {tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : "-"}
+                            </TableCell>
+                            <TableCell className="text-center font-bold text-orange-600 bg-orange-50/10">
+                              {tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : "-"}
+                            </TableCell>
+                            <TableCell className={cn(
+                              "text-center font-black bg-slate-50/50 pr-6 text-sm",
+                              tx.balance >= 0 ? "text-slate-900" : "text-red-600"
+                            )}>
+                              {tx.balance.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
