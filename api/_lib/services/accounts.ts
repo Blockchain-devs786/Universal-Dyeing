@@ -1,4 +1,4 @@
-import { getDb } from "../db";
+import { getDb } from "../db.js";
 
 export const accountsService = {
   async list(search?: string) {
