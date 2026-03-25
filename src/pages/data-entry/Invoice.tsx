@@ -536,28 +536,28 @@ export default function Invoice() {
       <div id="invoice-print" className="hidden print:block bg-white text-black p-0">
           {selectedInvoicesForPrint.map((invoice, idx) => (
             <div key={invoice.id} className={cn(
-               "w-[210mm] h-[297mm] p-[10mm] mx-auto box-border bg-white",
+               "w-[210mm] min-h-[297mm] p-[5mm] mx-auto box-border bg-white",
                idx < selectedInvoicesForPrint.length - 1 && "page-break-after-always"
             )}>
-              <div className="w-full h-full border-[4px] border-blue-600 rounded-xl p-10 relative font-sans box-border">
+              <div className="w-full min-h-[287mm] border-[4px] border-blue-600 rounded-xl p-8 relative font-sans box-border flex flex-col">
                 {/* Logo Area */}
                 <div className="absolute top-12 right-12 w-32 h-32 opacity-90 rotate-12">
                    <img src="/logo.png" className="w-full" />
                 </div>
 
                 {/* Header */}
-                <div className="text-center space-y-4 mb-16 relative z-10">
+                <div className="text-center space-y-4 mb-10 relative z-10">
                    <h1 className="text-4xl font-black tracking-tighter text-blue-700 uppercase">MOMINA LACE DYEING</h1>
                    <div className="space-y-0.5">
                       <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Owner: GHULAM MUSTAFA</p>
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">GM : Shahid, Naveed</p>
                    </div>
-                   <h2 className="inline-block text-xl font-black border-b-2 border-red-600 text-red-600 px-6 py-1 mx-auto uppercase mt-4">INVOICE</h2>
+                   <h2 className="inline-block text-xl font-black border-b-2 border-red-600 text-red-600 px-6 py-0.5 mx-auto uppercase mt-2">INVOICE</h2>
                 </div>
 
                 {/* Meta Grid */}
-                <div className="grid grid-cols-2 gap-x-20 mb-12 px-10">
-                   <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-x-20 mb-8 px-10">
+                   <div className="space-y-2">
                       <div className="grid grid-cols-[100px_1fr] items-center">
                          <span className="text-[10px] font-black text-blue-700 uppercase">Invoice #:</span>
                          <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.invoice_no}</span>
@@ -573,7 +573,7 @@ export default function Invoice() {
                          </span>
                       </div>
                    </div>
-                   <div className="space-y-3">
+                   <div className="space-y-2">
                       <div className="grid grid-cols-[100px_1fr] items-center">
                          <span className="text-[10px] font-black text-blue-700 uppercase">Created By:</span>
                          <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.created_by || 'momin'}</span>
@@ -581,10 +581,6 @@ export default function Invoice() {
                       <div className="grid grid-cols-[100px_1fr] items-center">
                          <span className="text-[10px] font-black text-blue-700 uppercase">Edited By:</span>
                          <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.edited_by || 'None'}</span>
-                      </div>
-                      <div className="grid grid-cols-[100px_1fr] items-center opacity-0">
-                         <span className="text-[10px] font-black">Spacer</span>
-                         <span className="text-sm font-bold border-b border-slate-400">#</span>
                       </div>
                    </div>
                 </div>
@@ -639,7 +635,7 @@ export default function Invoice() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-20 pt-6 border-t border-slate-100 space-y-2">
+                <div className="mt-auto pt-4 border-t border-slate-100 space-y-1 page-break-inside-avoid">
                     <p className="text-[9px] font-black text-blue-800 uppercase">SITE: <span className="text-slate-500 font-medium">Small Industrial State, Sargodha Road, Faisalabad</span></p>
                     <p className="text-[9px] font-black text-blue-800 uppercase">CONTACTS: <span className="text-slate-500 font-medium">0321-7651815, 0300-8651815, 0304-6166663, 0300-8636129</span></p>
                 </div>
@@ -654,6 +650,7 @@ export default function Invoice() {
           #invoice-print, #invoice-print * { visibility: visible; }
           #invoice-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
           .page-break-after-always { page-break-after: always; display: block; }
+          .page-break-inside-avoid { page-break-inside: avoid; }
           @page { margin: 0; size: A4; }
         }
       `}} />
