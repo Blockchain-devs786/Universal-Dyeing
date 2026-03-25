@@ -536,7 +536,7 @@ export default function Invoice() {
       <div id="invoice-print" className="hidden print:block bg-white text-black p-0">
           {selectedInvoicesForPrint.map((invoice, idx) => (
             <div key={invoice.id} className={cn(
-               "p-12 min-h-screen relative font-sans border-[3px] border-blue-600 rounded-lg m-4",
+               "p-10 h-[285mm] relative font-sans border-[4px] border-blue-600 rounded-xl mx-auto my-2",
                idx < selectedInvoicesForPrint.length - 1 && "page-break-after-always"
             )}>
                 {/* Logo Area */}
@@ -651,8 +651,8 @@ export default function Invoice() {
           body * { visibility: hidden; }
           #invoice-print, #invoice-print * { visibility: visible; }
           #invoice-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
-          .page-break-after-always { page-break-after: always; }
-          @page { margin: 0; size: auto; }
+          .page-break-after-always { page-break-after: always; display: block; }
+          @page { margin: 5mm; size: A4; }
         }
       `}} />
 
