@@ -11,7 +11,8 @@ import {
   ChevronsUpDown,
   FileSearch,
   Receipt,
-  Pencil
+  Pencil,
+  ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
