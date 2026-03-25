@@ -3,35 +3,20 @@ import { getDb } from "../db.js";
 export const vouchersService = {
   async list(filters: any = {}) {
     const db = getDb();
-    const type = filters.type || null;
-    const fromDate = filters.from_date || null;
-    const toDate = filters.to_date || null;
-    const search = filters.search ? `%${filters.search}%` : null;
-
+    
     return await db`
       SELECT v.*, 
-        (
-          SELECT json_agg(t) 
-          FROM (
-            SELECT ve.*, 
-              CASE 
-                WHEN ve.account_type = 'MS Party' THEN (SELECT name FROM ms_parties WHERE id = ve.account_id)
-                WHEN ve.account_type = 'Vendor' THEN (SELECT name FROM vendors WHERE id = ve.account_id)
-                WHEN ve.account_type = 'Expense' THEN (SELECT name FROM expenses WHERE id = ve.account_id)
-                WHEN ve.account_type = 'Account' THEN (SELECT name FROM accounts WHERE id = ve.account_id)
-                WHEN ve.account_type = 'Asset' THEN (SELECT name FROM assets WHERE id = ve.account_id)
-              END as account_name
-            FROM voucher_entries ve 
-            WHERE ve.voucher_id = v.id
-            ORDER BY ve.id ASC
-          ) t
-        ) as entries
+        (SELECT json_agg(ve.*) FROM voucher_entries ve WHERE ve.voucher_id = v.id) as entries
       FROM vouchers v
       WHERE 
-        (${type}::text IS NULL OR v.type = ${type}::text)
-        AND (${fromDate}::date IS NULL OR v.date >= ${fromDate}::date)
-        AND (${toDate}::date IS NULL OR v.date <= ${toDate}::date)
-        AND (${search}::text IS NULL OR (v.voucher_no ILIKE ${search} OR v.description ILIKE ${search}))
+        (${filters.type || null}::text IS NULL OR v.type = ${filters.type || null}::text)
+        AND (${filters.from_date || null}::date IS NULL OR v.date >= ${filters.from_date || null}::date)
+        AND (${filters.to_date || null}::date IS NULL OR v.date <= ${filters.to_date || null}::date)
+        AND (
+          ${filters.search || null}::text IS NULL 
+          OR v.voucher_no ILIKE ${'%' + filters.search + '%'} 
+          OR v.description ILIKE ${'%' + filters.search + '%'}
+        )
       ORDER BY v.date DESC, v.id DESC
     `;
   },
