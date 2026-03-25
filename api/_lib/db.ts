@@ -254,13 +254,10 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS transfer_by_names (
       id SERIAL PRIMARY KEY,
       tbn_no VARCHAR(50) UNIQUE,
-      gp_no VARCHAR(50) UNIQUE,
       sr_no VARCHAR(50),
       ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
       from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
       transfer_to_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
-      vehicle_no VARCHAR(100),
-      driver_name VARCHAR(100),
       date DATE NOT NULL,
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -320,22 +317,6 @@ export async function initializeDatabase() {
       invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE,
       outward_id INTEGER REFERENCES outwards(id) ON DELETE CASCADE,
       UNIQUE(outward_id)
-    )
-  `;
-
-  // Accounts table
-  await db`
-    CREATE TABLE IF NOT EXISTS accounts (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL UNIQUE,
-      type VARCHAR(50) NOT NULL CHECK (type IN ('Cash', 'Bank')),
-      account_no VARCHAR(100),
-      bank_name VARCHAR(100),
-      opening_balance DECIMAL(15,2) DEFAULT 0,
-      current_balance DECIMAL(15,2) DEFAULT 0,
-      status VARCHAR(20) DEFAULT 'active',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
 }
