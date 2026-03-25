@@ -335,6 +335,15 @@ export async function initializeDatabase() {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safety migrations for accounts
+  try {
+    await db`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS account_number VARCHAR(100)`;
+    await db`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255)`;
+    await db`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS current_balance DECIMAL(15,2) DEFAULT 0`;
+  } catch (err) {
+    console.error("Migration error for accounts:", err);
+  }
 }
 
 /**
