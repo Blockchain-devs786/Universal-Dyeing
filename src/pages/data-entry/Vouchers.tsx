@@ -89,7 +89,7 @@ export default function Vouchers() {
   const { data: vouchers = [], isLoading } = useQuery({
     queryKey: ["vouchers", search, typeFilter],
     queryFn: () => vouchersApi.list({ 
-      search, 
+      search: search || undefined, 
       type: typeFilter !== "all" ? typeFilter : undefined 
     }),
   });
@@ -527,93 +527,78 @@ export default function Vouchers() {
           </TableBody>
         </Table>
       </div>
-      {/* Hidden Print Template */}
-      <div id="voucher-print-area" className="hidden print:block p-8 bg-white font-serif text-[12pt] leading-relaxed">
+      {/* Hidden Print Template - Half Page Compact */}
+      <div id="voucher-print-area" className="hidden print:block p-0 bg-white leading-relaxed">
         {vouchers.filter((v: any) => selectedPrintId === null || v.id === selectedPrintId).map((v: any) => (
-          <div key={v.id} id={`print-voucher-${v.id}`} className="space-y-8 page-break-after border p-10 rounded-lg relative overflow-hidden">
-            {/* Watermark/Logo styling */}
-            <div className="absolute top-0 right-0 opacity-[0.03] -translate-y-10 translate-x-10">
-                <Receipt size={400} />
+          <div key={v.id} id={`print-voucher-${v.id}`} className="p-8 border-b-2 border-double border-slate-300 h-[50vh] flex flex-col justify-between">
+            <div className="space-y-6">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Universal Dyeing</h1>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">Industrial Textile Solutions</p>
+                    </div>
+                    <div className="text-right">
+                        <Badge variant="outline" className="text-lg font-black border-2 border-slate-900 px-4 py-1 text-slate-900 uppercase italic">
+                            {v.type} Voucher
+                        </Badge>
+                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase">Voucher ID: <span className="text-slate-900 font-extrabold">{v.voucher_no}</span></p>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-end border-y py-3 border-slate-100">
+                    <div className="flex gap-8">
+                        <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</p>
+                            <p className="text-sm font-black text-slate-800">{format(new Date(v.date), 'dd MMM yyyy')}</p>
+                        </div>
+                        {v.ref_no && (
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ref #</p>
+                                <p className="text-sm font-black text-slate-800">{v.ref_no}</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="max-w-[300px] text-right">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Narration</p>
+                        <p className="text-xs italic font-medium text-slate-700 leading-tight">{v.description || "No specific details."}</p>
+                    </div>
+                </div>
+
+                <div className="border rounded-md overflow-hidden bg-white mt-4 shadow-sm">
+                    <Table className="w-full border-collapse">
+                        <TableHeader>
+                            <TableRow className="h-10 bg-slate-900 hover:bg-slate-900">
+                                <TableHead className="text-white font-black uppercase text-[10px] pl-6 tracking-wider">Account / Party Name</TableHead>
+                                <TableHead className="text-white font-black uppercase text-[10px] tracking-wider">Type</TableHead>
+                                <TableHead className="text-white font-black uppercase text-[10px] text-right tracking-wider">Debit (Rs)</TableHead>
+                                <TableHead className="text-white font-black uppercase text-[10px] text-right pr-6 tracking-wider">Credit (Rs)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {v.entries?.map((entry: any, eIdx: number) => (
+                                <TableRow key={eIdx} className="h-9 border-b border-slate-100">
+                                    <TableCell className="pl-6 text-sm font-bold text-slate-800">{entry.account_name}</TableCell>
+                                    <TableCell className="text-[9px] font-black text-slate-400 uppercase">{entry.account_type}</TableCell>
+                                    <TableCell className="text-right font-black text-sm text-slate-900 px-4">{entry.debit > 0 ? Number(entry.debit).toLocaleString() : '-'}</TableCell>
+                                    <TableCell className="text-right font-black text-sm text-slate-900 px-4 pr-6">{entry.credit > 0 ? Number(entry.credit).toLocaleString() : '-'}</TableCell>
+                                </TableRow>
+                            ))}
+                            <TableRow className="h-12 bg-slate-50 border-t-2 border-slate-200">
+                                <TableCell colSpan={2} className="pl-6 font-black uppercase text-xs tracking-widest text-slate-600">Transactional Totals</TableCell>
+                                <TableCell className="text-right font-black text-lg text-slate-900 bg-blue-50/20">Rs {Number(v.total_amount).toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-black text-lg text-slate-900 bg-red-50/20 pr-6">Rs {Number(v.total_amount).toLocaleString()}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
 
-            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 relative z-10">
-              <div>
-                <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">Universal Dyeing</h1>
-                <p className="text-sm font-bold text-slate-600 uppercase tracking-widest mt-1">Industrial Textile Solutions</p>
-                <div className="mt-4 text-xs font-medium text-slate-500">
-                    <p>Faisalabad, Pakistan</p>
-                    <p>Tel: +92 3XX XXXXXXX</p>
+            <div className="grid grid-cols-2 gap-20 mt-10 pt-6">
+                <div className="border-t border-slate-300 pt-2 flex flex-col items-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Accountant / Prepared By</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="inline-block px-6 py-2 bg-slate-900 text-white rounded-md font-black text-xl uppercase tracking-tighter">
-                  {v.type === 'CRV' ? 'Cash Receipt' : v.type === 'CPV' ? 'Cash Payment' : 'Journal Voucher'}
-                </div>
-                <div className="mt-4 space-y-1">
-                    <p className="text-sm font-black text-slate-900">Voucher #: <span className="font-serif italic ml-1">{v.voucher_no}</span></p>
-                    <p className="text-sm font-black text-slate-900">Date: <span className="font-serif italic ml-1">{format(new Date(v.date), 'dd MMM yyyy')}</span></p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-10 py-4 relative z-10">
-                <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
-                    <p className="text-[10pt] font-black uppercase text-slate-400 tracking-widest mb-2">Narration / Description</p>
-                    <p className="italic text-slate-800">{v.description || "No specific narration provided."}</p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
-                    <p className="text-[10pt] font-black uppercase text-slate-400 tracking-widest mb-2">Reference Info</p>
-                    <p className="font-bold text-slate-900">{v.ref_no || "N/A"}</p>
-                    <p className="text-[10pt] font-black uppercase text-slate-400 tracking-widest mb-1 mt-3">Total Amount</p>
-                    <p className="text-2xl font-black text-slate-900">Rs {Number(v.total_amount).toLocaleString()}</p>
-                </div>
-            </div>
-
-            <div className="mt-8 border rounded-lg overflow-hidden relative z-10">
-              <Table className="w-full border-collapse">
-                <TableHeader className="bg-slate-900 text-white">
-                  <TableRow className="h-12">
-                    <TableHead className="text-white font-black uppercase text-xs pl-6">Account Details</TableHead>
-                    <TableHead className="text-white font-black uppercase text-xs">Entity Type</TableHead>
-                    <TableHead className="text-white font-black uppercase text-xs text-right">Debit (PKR)</TableHead>
-                    <TableHead className="text-white font-black uppercase text-xs text-right pr-6">Credit (PKR)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {v.entries?.map((entry: any, eIdx: number) => (
-                    <TableRow key={eIdx} className="h-10 border-b border-slate-100 italic">
-                      <TableCell className="pl-6 font-bold text-slate-800">
-                        {
-                            entry.account_type === 'MS Party' ? msParties.find(p => p.id === entry.account_id)?.name :
-                            entry.account_type === 'Vendor' ? vendors.find(p => p.id === entry.account_id)?.name :
-                            entry.account_type === 'Expense' ? expenses.find(p => p.id === entry.account_id)?.name :
-                            entry.account_type === 'Account' ? bankAccounts.find(p => p.id === entry.account_id)?.name :
-                            assets.find(p => p.id === entry.account_id)?.name
-                        }
-                      </TableCell>
-                      <TableCell className="text-sm font-bold text-slate-400 uppercase tracking-tighter">{entry.account_type}</TableCell>
-                      <TableCell className="text-right font-black text-slate-900">{entry.debit > 0 ? Number(entry.debit).toLocaleString() : '-'}</TableCell>
-                      <TableCell className="text-right font-black text-slate-900 pr-6">{entry.credit > 0 ? Number(entry.credit).toLocaleString() : '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="h-14 bg-slate-50">
-                    <TableCell colSpan={2} className="pl-6 font-black uppercase text-sm tracking-widest text-slate-900">Voucher Totals</TableCell>
-                    <TableCell className="text-right font-black text-xl text-slate-900 border-l">Rs {Number(v.total_amount).toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-black text-xl text-slate-900 pr-6 border-l">Rs {Number(v.total_amount).toLocaleString()}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="grid grid-cols-3 gap-10 mt-24 relative z-10 pt-10">
-                <div className="border-t border-slate-400 pt-3 text-center">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Prepared By</p>
-                </div>
-                <div className="border-t border-slate-400 pt-3 text-center">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Authorized Signature</p>
-                </div>
-                <div className="border-t border-slate-400 pt-3 text-center">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Received By</p>
+                <div className="border-t border-slate-300 pt-2 flex flex-col items-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Authorized Signature</p>
                 </div>
             </div>
           </div>
