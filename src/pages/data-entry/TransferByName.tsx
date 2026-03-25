@@ -244,6 +244,7 @@ export default function TransferByNamePage() {
     if (!formData.ms_party_id) return toast.error("MS Party is required");
     if (!formData.from_party_id) return toast.error("From Party is required");
     if (!formData.transfer_to_party_id) return toast.error("Transfer BN Ms Party Party is required");
+    if (formData.ms_party_id === formData.transfer_to_party_id) return toast.error("Cannot transfer to the same MS Party");
     if (!formData.date) return toast.error("Date is required");
     if (formData.items.length === 0) return toast.error("At least one item is required");
 
@@ -611,7 +612,9 @@ export default function TransferByNamePage() {
                         <CommandList>
                           <CommandEmpty>No records found.</CommandEmpty>
                           <CommandGroup>
-                            {msParties.map((party) => (
+                            {msParties
+                              .filter((party) => String(party.id) !== formData.ms_party_id)
+                              .map((party) => (
                               <CommandItem
                                 key={party.id}
                                 value={party.name}

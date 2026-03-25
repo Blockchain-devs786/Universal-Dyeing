@@ -79,6 +79,10 @@ export const transferByNamesService = {
   async create(data: TransferByName) {
     const sql = getDb();
     
+    if (String(data.ms_party_id) === String(data.transfer_to_party_id)) {
+      throw new Error("Cannot transfer to the same MS Party");
+    }
+
     // Insert tbn record
     const tbnRows = await sql`
       INSERT INTO transfer_by_names (ms_party_id, from_party_id, transfer_to_party_id, vehicle_no, driver_name, date)
@@ -132,6 +136,10 @@ export const transferByNamesService = {
            `;
            newSrNo = String(maxSrRow[0].next_sr_no);
        }
+    }
+
+    if (String(data.ms_party_id) === String(data.transfer_to_party_id)) {
+      throw new Error("Cannot transfer to the same MS Party");
     }
 
     if (data.ms_party_id || data.from_party_id || data.transfer_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
