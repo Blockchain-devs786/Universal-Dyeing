@@ -200,6 +200,22 @@ export interface StockReportRow {
   remaining: number;
 }
 
+export interface StockLedgerRow {
+  id: number;
+  date: string;
+  type: string;
+  ref_no: string;
+  ms_party_id: number;
+  ms_party_name: string;
+  particulars: string;
+  item_id: number;
+  item_name: string;
+  measurement: number;
+  debit: number;
+  credit: number;
+  description: string;
+}
+
 export interface AssetCategory {
   id: number;
   name: string;
@@ -363,6 +379,28 @@ export const reportsApi = {
     if (ms_party_id && ms_party_id !== "all") params.ms_party_id = String(ms_party_id);
     if (item_id && item_id !== "all") params.item_id = String(item_id);
     return coreRequest<StockReportRow[]>('reports.stock', {}, params);
+  },
+  getStockLedger: (filters: {
+    ms_party_id?: string | number;
+    item_id?: string | number;
+    from_date?: string;
+    to_date?: string;
+    transaction_type?: string;
+    particulars?: string;
+    measurement?: number;
+    amount_type?: 'debit' | 'credit';
+  }) => {
+    const params: Record<string, string> = {};
+    if (filters.ms_party_id && filters.ms_party_id !== "all") params.ms_party_id = String(filters.ms_party_id);
+    if (filters.item_id && filters.item_id !== "all") params.item_id = String(filters.item_id);
+    if (filters.from_date) params.from_date = filters.from_date;
+    if (filters.to_date) params.to_date = filters.to_date;
+    if (filters.transaction_type) params.transaction_type = filters.transaction_type;
+    if (filters.particulars) params.particulars = filters.particulars;
+    if (filters.measurement) params.measurement = String(filters.measurement);
+    if (filters.amount_type) params.amount_type = filters.amount_type;
+    
+    return coreRequest<StockLedgerRow[]>('reports.stock_ledger', {}, params);
   }
 };
 

@@ -333,6 +333,17 @@ async function routeAction(
             query.ms_party_id ? Number(query.ms_party_id) : undefined,
             query.item_id ? Number(query.item_id) : undefined
           );
+        case 'stock_ledger':
+          return reportsService.getStockLedger({
+            ms_party_id: query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id,
+            item_id: query.item_id ? Number(query.item_id) : data.item_id,
+            from_date: (query.from_date as string) || data.from_date,
+            to_date: (query.to_date as string) || data.to_date,
+            transaction_type: (query.transaction_type as string) || data.transaction_type,
+            particulars: (query.particulars as string) || data.particulars,
+            measurement: query.measurement ? Number(query.measurement) : data.measurement,
+            amount_type: (query.amount_type as 'debit' | 'credit') || data.amount_type
+          });
         default:
           throw new Error(`Unknown operation: ${operation} for reports`);
       }
