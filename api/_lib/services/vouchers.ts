@@ -3,19 +3,21 @@ import { getDb } from "../db.js";
 export const vouchersService = {
   async list(filters: any = {}) {
     const db = getDb();
-    
+    const type = filters.type || null;
+    const search = filters.search && filters.search.trim() !== "" ? `%${filters.search}%` : null;
+
     return await db`
       SELECT v.*, 
         (SELECT json_agg(ve.*) FROM voucher_entries ve WHERE ve.voucher_id = v.id) as entries
       FROM vouchers v
       WHERE 
-        (${filters.type || null}::text IS NULL OR v.type = ${filters.type || null}::text)
+        (${type}::text IS NULL OR v.type = ${type})
         AND (${filters.from_date || null}::date IS NULL OR v.date >= ${filters.from_date || null}::date)
         AND (${filters.to_date || null}::date IS NULL OR v.date <= ${filters.to_date || null}::date)
         AND (
-          ${filters.search || null}::text IS NULL 
-          OR v.voucher_no ILIKE ${'%' + filters.search + '%'} 
-          OR v.description ILIKE ${'%' + filters.search + '%'}
+          ${search}::text IS NULL 
+          OR v.voucher_no ILIKE ${search} 
+          OR v.description ILIKE ${search}
         )
       ORDER BY v.date DESC, v.id DESC
     `;
