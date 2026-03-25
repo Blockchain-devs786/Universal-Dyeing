@@ -101,22 +101,26 @@ export const vouchersService = {
           WHERE id = ${entry.account_id}
         `;
         break;
-      case 'Account':
+      case 'Account': {
+        const diff = debit - credit;
         await db`
           UPDATE accounts SET 
-            current_balance = current_balance + (${debit} - ${credit}),
+            current_balance = current_balance + ${diff},
             updated_at = NOW()
           WHERE id = ${entry.account_id}
         `;
         break;
-      case 'Asset':
+      }
+      case 'Asset': {
+        const diff = debit - credit;
         await db`
           UPDATE assets SET 
-            value = value + (${debit} - ${credit}),
+            value = value + ${diff},
             updated_at = NOW()
           WHERE id = ${entry.account_id}
         `;
         break;
+      }
       // Expenses usually don't track a running balance in this simple schema, 
       // but we record them in voucher_entries for reports.
     }
