@@ -288,6 +288,37 @@ export async function initializeDatabase() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Invoices table
+  await db`
+    CREATE TABLE IF NOT EXISTS invoices (
+      id SERIAL PRIMARY KEY,
+      invoice_no VARCHAR(50) UNIQUE,
+      ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      date DATE NOT NULL,
+      sub_total DECIMAL(15,2) DEFAULT 0,
+      discount_percent DECIMAL(5,2) DEFAULT 0,
+      discount_amount DECIMAL(15,2) DEFAULT 0,
+      total_amount DECIMAL(15,2) DEFAULT 0,
+      rate_15 DECIMAL(10,2) DEFAULT 0,
+      rate_22 DECIMAL(10,2) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'active',
+      created_by VARCHAR(100),
+      edited_by VARCHAR(100),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Invoice Items table (linking to outwards)
+  await db`
+    CREATE TABLE IF NOT EXISTS invoice_items (
+      id SERIAL PRIMARY KEY,
+      invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE,
+      outward_id INTEGER REFERENCES outwards(id) ON DELETE CASCADE,
+      UNIQUE(outward_id)
+    )
+  `;
 }
 
 /**

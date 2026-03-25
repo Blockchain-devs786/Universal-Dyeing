@@ -11,6 +11,7 @@ import { outwardsService, type Outward } from './_lib/services/outwards.js';
 import { transfersService, type Transfer } from './_lib/services/transfers.js';
 import { transferByNamesService, type TransferByName } from './_lib/services/transfer_by_names.js';
 import { reportsService } from './_lib/services/reports.js';
+import { invoicesService, type Invoice } from './_lib/services/invoices.js';
 
 let dbInitialized = false;
 
@@ -348,7 +349,26 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for reports`);
       }
 
+    // ─── Invoices ──────────────────────────────────────────────
+    case 'invoices':
+      switch (operation) {
+        case 'list':
+          return invoicesService.list((query.search as string) || data.search);
+        case 'get':
+          return invoicesService.getById(Number(query.id || data.id));
+        case 'available_outwards':
+          return invoicesService.getAvailableOutwards(Number(query.ms_party_id || data.ms_party_id));
+        case 'create':
+          return invoicesService.create(data as Invoice);
+        case 'update':
+          return invoicesService.update(Number(data.id), data);
+        case 'delete':
+          return invoicesService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for invoices`);
+      }
+
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices`);
   }
 }

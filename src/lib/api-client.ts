@@ -259,6 +259,38 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface InvoiceItem {
+  outward_id: number;
+  outward_no: string;
+  gp_no: string;
+  sr_no: string;
+  item_name: string;
+  measurement: number;
+  quantity: number;
+}
+
+export interface Invoice {
+  id: number;
+  invoice_no: string;
+  ms_party_id: number;
+  ms_party_name?: string;
+  date: string;
+  sub_total: number;
+  discount_percent: number;
+  discount_amount: number;
+  total_amount: number;
+  rate_15: number;
+  rate_22: number;
+  status: string;
+  created_by?: string;
+  edited_by?: string;
+  created_at: string;
+  updated_at: string;
+  outward_ids?: number[];
+  items?: InvoiceItem[];
+  item_count?: number;
+}
+
 // ─── Core Request Function ───────────────────────────────────────
 
 async function coreRequest<T>(action: string, data?: Record<string, any>, queryParams?: Record<string, string>): Promise<T> {
@@ -596,6 +628,31 @@ export const expensesApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('expenses.delete', { id }),
+};
+
+// ─── Invoices API ────────────────────────────────────────────────
+
+export const invoicesApi = {
+  list: (search?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    return coreRequest<Invoice[]>('invoices.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<Invoice>('invoices.get', { id }),
+  
+  getAvailableOutwards: (msPartyId: number) =>
+    coreRequest<any[]>('invoices.available_outwards', { ms_party_id: msPartyId }),
+  
+  create: (data: any) => 
+    coreRequest<Invoice>('invoices.create', data),
+  
+  update: (id: number, data: Partial<Invoice>) => 
+    coreRequest<Invoice>('invoices.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('invoices.delete', { id }),
 };
 
 // ─── Health Check ────────────────────────────────────────────────
