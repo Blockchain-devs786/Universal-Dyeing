@@ -50,28 +50,27 @@ export const generateAndPrintHTML = (
     body { font-family: Arial, sans-serif; font-size: 12px; background: white; padding: 10mm; color: #1a1a1a; }
     .page { width: 190mm; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
-    .form { width: 100%; border: 1px solid #000; padding: 5mm; margin-bottom: 2mm; page-break-inside: avoid; overflow: hidden; min-height: 138mm; display: flex; flex-direction: column; }
+    .form { width: 100%; border: 1px solid #000; padding: 10mm; margin-bottom: 5mm; min-height: 138mm; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
     .form:last-child { margin-bottom: 0; }
-    .cut-line { border-top: 1px dashed #666; margin: 2mm 0; width: 100%; page-break-inside: avoid; }
-    .header { text-align: center; margin-bottom: 2mm; position: relative; min-height: 35mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .logo { position: absolute; right: 0; top: 0; width: 140px; height: 140px; }
+    .cut-line { border-top: 1px dashed #666; margin: 3mm 0; width: 100%; page-break-inside: avoid; }
+    .header { text-align: center; margin-bottom: 4mm; position: relative; min-height: 45mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .logo { position: absolute; right: 0; top: 0; width: 170px; height: 170px; }
     .logo img { width: 100%; height: 100%; object-fit: contain; }
-    .company-name { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 1mm; color: #0066cc; }
-    .owner-info { text-align: center; font-size: 10px; margin-bottom: 1mm; color: #333333; }
-    .subtitle { text-align: center; font-size: 14px; font-weight: bold; margin: 2mm 0; text-decoration: underline; color: #cc0000; }
-    .meta-info { margin-bottom: 3mm; }
+    .company-name { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 4mm; color: #0066cc; }
+    .owner-info { text-align: center; font-size: 13px; margin-bottom: 2mm; color: #333333; }
+    .subtitle { text-align: center; font-size: 20px; font-weight: bold; margin: 6mm 0; text-decoration: underline; color: #cc0000; }
+    .meta-info { margin-bottom: 6mm; }
     .meta-row { display: flex; justify-content: space-between; margin-bottom: 2mm; font-size: 11px; }
     .meta-item { flex: 1; margin-right: 5mm; }
     .meta-item:last-child { margin-right: 0; }
     .meta-label { font-weight: bold; display: inline-block; min-width: 80px; color: #0066cc; }
     .meta-value { border-bottom: 1px solid #333; display: inline-block; min-width: 100px; padding: 0 2mm; color: #cc0000; font-weight: 500; }
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; flex-grow: 1; }
-    .items-table tbody tr { height: 8mm; }
-    .items-table th, .items-table td { border: 1px solid #333; padding: 1.5mm; text-align: center; font-size: 11px; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; }
+    .items-table th, .items-table td { border: 1px solid #333; padding: 2.5mm; text-align: center; font-size: 12px; }
     .items-table th { background-color: #e6f2ff; font-weight: bold; color: #0066cc; }
     .items-table td { color: #1a1a1a; }
     .items-table tbody tr:nth-child(even) td { background-color: #f9f9f9; }
-    .footer { margin-top: auto; font-size: 9px; line-height: 1.2; padding-top: 2mm; }
+    .footer { margin-top: auto; padding-top: 5mm; font-size: 11px; line-height: 1.4; }
     .site-info { text-align: center; margin-top: 3mm; font-size: 10px; color: #006600; font-weight: 500; }
     .contacts { text-align: center; margin-top: 1mm; font-size: 10px; color: #cc6600; font-weight: 500; }
     @media print {
