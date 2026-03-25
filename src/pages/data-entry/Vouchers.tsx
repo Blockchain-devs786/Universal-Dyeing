@@ -222,7 +222,7 @@ export default function Vouchers() {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6">
+              <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 custom-scrollbar" style={{ maxHeight: 'calc(90vh - 180px)' }}>
                 {/* Header Info */}
                 <div className="grid grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                     <div className="space-y-1.5">
