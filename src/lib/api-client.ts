@@ -304,6 +304,31 @@ export interface Invoice {
   item_count?: number;
 }
 
+export interface VoucherEntry {
+  id?: number;
+  voucher_id?: number;
+  account_type: 'MS Party' | 'Vendor' | 'Expense' | 'Account' | 'Asset';
+  account_id: number;
+  debit: number;
+  credit: number;
+  description?: string;
+}
+
+export interface Voucher {
+  id: number;
+  voucher_no: string;
+  type: 'CRV' | 'CPV' | 'JV';
+  date: string;
+  ref_no?: string;
+  description?: string;
+  total_amount: number;
+  status: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  entries?: VoucherEntry[];
+}
+
 // ─── Core Request Function ───────────────────────────────────────
 
 async function coreRequest<T>(action: string, data?: Record<string, any>, queryParams?: Record<string, string>): Promise<T> {
@@ -688,6 +713,19 @@ export const accountsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('accounts.delete', { id }),
+};
+
+// ─── Vouchers API ────────────────────────────────────────────────
+
+export const vouchersApi = {
+  list: (filters: { type?: string, from_date?: string, to_date?: string, search?: string } = {}) => 
+    coreRequest<Voucher[]>('vouchers.list', {}, filters as any),
+  
+  create: (data: Omit<Voucher, 'id' | 'voucher_no' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Voucher>('vouchers.create', data),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('vouchers.delete', { id }),
 };
 
 

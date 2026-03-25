@@ -21,7 +21,7 @@ import Invoice from "@/pages/data-entry/Invoice";
 import Stocks from "@/pages/reports/Stocks";
 import StockLedger from "@/pages/reports/StockLedger";
 import CashLedger from "@/pages/reports/CashLedger";
-import Vouchers from "@/pages/reports/Vouchers";
+import Vouchers from "@/pages/data-entry/Vouchers";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,10 +51,10 @@ const App = () => (
           <Route path="/data-entry/transfer" element={<LayoutWrapper><Transfer /></LayoutWrapper>} />
           <Route path="/data-entry/transfer-by-name" element={<LayoutWrapper><TransferByName /></LayoutWrapper>} />
           <Route path="/data-entry/invoice" element={<LayoutWrapper><Invoice /></LayoutWrapper>} />
+          <Route path="/data-entry/vouchers" element={<LayoutWrapper><Vouchers /></LayoutWrapper>} />
           <Route path="/reports/stocks" element={<LayoutWrapper><Stocks /></LayoutWrapper>} />
           <Route path="/reports/stock-ledger" element={<LayoutWrapper><StockLedger /></LayoutWrapper>} />
           <Route path="/reports/cash-ledger" element={<LayoutWrapper><CashLedger /></LayoutWrapper>} />
-          <Route path="/reports/vouchers" element={<LayoutWrapper><Vouchers /></LayoutWrapper>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

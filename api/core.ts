@@ -13,6 +13,7 @@ import { transferByNamesService, type TransferByName } from './_lib/services/tra
 import { reportsService } from './_lib/services/reports.js';
 import { invoicesService, type Invoice } from './_lib/services/invoices.js';
 import { accountsService } from './_lib/services/accounts.js';
+import { vouchersService } from './_lib/services/vouchers.js';
 
 let dbInitialized = false;
 
@@ -386,7 +387,25 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for accounts`);
       }
 
+    // ─── Vouchers ──────────────────────────────────────────────
+    case 'vouchers':
+      switch (operation) {
+        case 'list':
+          return vouchersService.list({
+            type: query.type || data.type,
+            from_date: query.from_date || data.from_date,
+            to_date: query.to_date || data.to_date,
+            search: query.search || data.search
+          });
+        case 'create':
+          return vouchersService.create(data);
+        case 'delete':
+          return vouchersService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for vouchers`);
+      }
+
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices, accounts`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices, accounts, vouchers`);
   }
 }

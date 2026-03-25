@@ -344,6 +344,37 @@ export async function initializeDatabase() {
   } catch (err) {
     console.error("Migration error for accounts:", err);
   }
+
+  // Vouchers table
+  await db`
+    CREATE TABLE IF NOT EXISTS vouchers (
+      id SERIAL PRIMARY KEY,
+      voucher_no VARCHAR(50) UNIQUE,
+      type VARCHAR(10) NOT NULL CHECK (type IN ('CRV', 'CPV', 'JV')),
+      date DATE NOT NULL,
+      ref_no VARCHAR(100),
+      description TEXT,
+      total_amount DECIMAL(15,2) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'posted',
+      created_by VARCHAR(100),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Voucher entries table (Double Entry)
+  await db`
+    CREATE TABLE IF NOT EXISTS voucher_entries (
+      id SERIAL PRIMARY KEY,
+      voucher_id INTEGER REFERENCES vouchers(id) ON DELETE CASCADE,
+      account_type VARCHAR(50) NOT NULL CHECK (account_type IN ('MS Party', 'Vendor', 'Expense', 'Account', 'Asset')),
+      account_id INTEGER NOT NULL,
+      debit DECIMAL(15,2) DEFAULT 0,
+      credit DECIMAL(15,2) DEFAULT 0,
+      description TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
 }
 
 /**

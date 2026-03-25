@@ -58,13 +58,13 @@ const dataEntryItems = [
   { title: "Transfer", url: "/data-entry/transfer", icon: ArrowLeftRight },
   { title: "Transfer By Name", url: "/data-entry/transfer-by-name", icon: UserCheck },
   { title: "Invoice", url: "/data-entry/invoice", icon: FileText },
+  { title: "Vouchers", url: "/data-entry/vouchers", icon: Receipt },
 ];
 
 const reportItems = [
   { title: "Stocks", url: "/reports/stocks", icon: Package },
   { title: "Stock Ledger", url: "/reports/stock-ledger", icon: BookOpen },
   { title: "Cash Ledger", url: "/reports/cash-ledger", icon: Banknote },
-  { title: "Vouchers", url: "/reports/vouchers", icon: Receipt },
 ];
 
 interface NavGroupProps {
