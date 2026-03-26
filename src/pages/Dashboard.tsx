@@ -37,15 +37,23 @@ const stats = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const displayName = user?.username || "User";
 
   return (
     <div className="space-y-8 max-w-6xl">
       {/* Welcome */}
-      <div className="page-header-gradient rounded-2xl p-8 text-primary-foreground">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, Admin</h1>
-        <p className="text-primary-foreground/70 text-lg">
-          Your management dashboard is ready. Modules are being built for Phase 2.
-        </p>
+      <div className="page-header-gradient rounded-2xl p-8 text-primary-foreground shadow-premium border-none relative overflow-hidden">
+        <div className="relative z-10">
+            <h1 className="text-3xl font-black mb-2 uppercase tracking-tight">Welcome back, {displayName}</h1>
+            <p className="text-primary-foreground/80 text-lg font-medium opacity-90">
+            Your management dashboard is ready. All modules are correctly initialized.
+            </p>
+        </div>
+        <div className="absolute top-0 right-0 p-8 h-full flex items-center opacity-10">
+            <LayoutDashboard size={120} />
+        </div>
       </div>
 
       {/* Stats */}
