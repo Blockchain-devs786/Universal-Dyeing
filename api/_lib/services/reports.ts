@@ -285,7 +285,10 @@ export const reportsService = {
         -- 1. Invoices
         SELECT 
           i.date,
-          m.name as particulars,
+          CASE 
+            WHEN ${isDyeing} THEN 'MS: ' || m.name 
+            ELSE 'MS: Dyeing' 
+          END as particulars,
           i.invoice_no as ref_no,
           'Service Income' as description,
           CASE WHEN ${isDyeing} THEN 0 ELSE i.total_amount END as debit,
@@ -300,10 +303,28 @@ export const reportsService = {
 
         UNION ALL
 
-        -- 2. Voucher Entries for MS Party
+        -- 2. Voucher Entries for MS Party (Counterpart Logic)
         SELECT 
           v.date,
-          CASE WHEN ve.debit > 0 THEN 'To Account' ELSE 'By Account' END as particulars,
+          (
+            SELECT 
+              CASE 
+                WHEN ve2.account_type = 'MS Party' THEN 'MS: ' || mp.name
+                WHEN ve2.account_type = 'Account' THEN 'Acc: ' || acc.name
+                WHEN ve2.account_type = 'Vendor' THEN 'Ven: ' || ven.name
+                WHEN ve2.account_type = 'Expense' THEN 'Exp: ' || exp.name
+                WHEN ve2.account_type = 'Asset' THEN 'Ast: ' || ast.name
+                ELSE ve2.account_type || ': ' || ve2.account_id
+              END
+            FROM voucher_entries ve2
+            LEFT JOIN ms_parties mp ON ve2.account_id = mp.id AND ve2.account_type = 'MS Party'
+            LEFT JOIN accounts acc ON ve2.account_id = acc.id AND ve2.account_type = 'Account'
+            LEFT JOIN vendors ven ON ve2.account_id = ven.id AND ve2.account_type = 'Vendor'
+            LEFT JOIN expenses exp ON ve2.account_id = exp.id AND ve2.account_type = 'Expense'
+            LEFT JOIN assets ast ON ve2.account_id = ast.id AND ve2.account_type = 'Asset'
+            WHERE ve2.voucher_id = v.id AND ve2.id != ve.id
+            LIMIT 1
+          ) as particulars,
           v.voucher_no as ref_no,
           ve.description,
           ve.debit,
