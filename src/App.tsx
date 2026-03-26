@@ -53,8 +53,8 @@ const App = () => (
           {/* Protected Management Routes */}
           <Route path="/" element={<AuthGuard><LayoutWrapper><Dashboard /></LayoutWrapper></AuthGuard>} />
           
-          {/* Open User Management (for initial setup) */}
-          <Route path="/user-management" element={<LayoutWrapper><UserManagement /></LayoutWrapper>} />
+          {/* User Management (Protected) */}
+          <Route path="/user-management" element={<AuthGuard><LayoutWrapper><UserManagement /></LayoutWrapper></AuthGuard>} />
           
           <Route path="/define/ms-parties" element={<AuthGuard><LayoutWrapper><MsParties /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} />

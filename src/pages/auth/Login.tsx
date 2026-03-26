@@ -48,6 +48,11 @@ export default function Login() {
       toast.success("Login successful!");
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // Store expiry (7 days from now)
+      const expiry = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("auth_expiry", expiry.toString());
+
       navigate("/");
       window.location.reload(); // Quick refresh for context
     },

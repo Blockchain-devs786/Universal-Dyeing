@@ -2,13 +2,20 @@ import { Navigate, useLocation } from "react-router-dom";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("auth_token");
+  const expiry = localStorage.getItem("auth_expiry");
   const location = useLocation();
 
-  if (!token) {
-    // Redirect them to the /login page, but save the current location they were
-    // trying to go to when they were redirected. This allows us to send them
-    // along to that page after they login, which is a nicer user experience
-    // than dropping them off on the home page.
+  const isExpired = expiry && new Date().getTime() > parseInt(expiry);
+
+  if (!token || isExpired) {
+    // If expired, clear the stale data
+    if (isExpired) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_expiry");
+        localStorage.removeItem("user");
+    }
+
+    // Redirect them to the /login page
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
