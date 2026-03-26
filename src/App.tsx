@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,8 +23,18 @@ import StockLedger from "@/pages/reports/StockLedger";
 import CashLedger from "@/pages/reports/CashLedger";
 import Vouchers from "@/pages/data-entry/Vouchers";
 import NotFound from "@/pages/NotFound";
+import Login from "@/pages/auth/Login";
+import VerifyEmail from "@/pages/auth/VerifyEmail";
+import AuthGuard from "@/components/AuthGuard";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -34,30 +44,38 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LayoutWrapper><Dashboard /></LayoutWrapper>} />
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          
+          {/* Protected Management Routes */}
+          <Route path="/" element={<AuthGuard><LayoutWrapper><Dashboard /></LayoutWrapper></AuthGuard>} />
+          
+          {/* Open User Management (for initial setup) */}
           <Route path="/user-management" element={<LayoutWrapper><UserManagement /></LayoutWrapper>} />
-          <Route path="/define/ms-parties" element={<LayoutWrapper><MsParties /></LayoutWrapper>} />
-          <Route path="/define/from-parties" element={<LayoutWrapper><FromParties /></LayoutWrapper>} />
-          <Route path="/define/vendors" element={<LayoutWrapper><Vendors /></LayoutWrapper>} />
-          <Route path="/define/items" element={<LayoutWrapper><Items /></LayoutWrapper>} />
-          <Route path="/define/assets" element={<LayoutWrapper><Assets /></LayoutWrapper>} />
-          <Route path="/define/expenses" element={<LayoutWrapper><Expenses /></LayoutWrapper>} />
-          <Route path="/define/accounts" element={<LayoutWrapper><Accounts /></LayoutWrapper>} />
-          <Route path="/data-entry/inward" element={<LayoutWrapper><Inward /></LayoutWrapper>} />
-          <Route path="/data-entry/outward" element={<LayoutWrapper><Outward /></LayoutWrapper>} />
-          <Route path="/data-entry/transfer" element={<LayoutWrapper><Transfer /></LayoutWrapper>} />
-          <Route path="/data-entry/transfer-by-name" element={<LayoutWrapper><TransferByName /></LayoutWrapper>} />
-          <Route path="/data-entry/invoice" element={<LayoutWrapper><Invoice /></LayoutWrapper>} />
-          <Route path="/data-entry/vouchers" element={<LayoutWrapper><Vouchers /></LayoutWrapper>} />
-          <Route path="/reports/stocks" element={<LayoutWrapper><Stocks /></LayoutWrapper>} />
-          <Route path="/reports/stock-ledger" element={<LayoutWrapper><StockLedger /></LayoutWrapper>} />
-          <Route path="/reports/cash-ledger" element={<LayoutWrapper><CashLedger /></LayoutWrapper>} />
+          
+          <Route path="/define/ms-parties" element={<AuthGuard><LayoutWrapper><MsParties /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/vendors" element={<AuthGuard><LayoutWrapper><Vendors /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/items" element={<AuthGuard><LayoutWrapper><Items /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/assets" element={<AuthGuard><LayoutWrapper><Assets /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/expenses" element={<AuthGuard><LayoutWrapper><Expenses /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/accounts" element={<AuthGuard><LayoutWrapper><Accounts /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/inward" element={<AuthGuard><LayoutWrapper><Inward /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/outward" element={<AuthGuard><LayoutWrapper><Outward /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/transfer" element={<AuthGuard><LayoutWrapper><Transfer /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/transfer-by-name" element={<AuthGuard><LayoutWrapper><TransferByName /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/invoice" element={<AuthGuard><LayoutWrapper><Invoice /></LayoutWrapper></AuthGuard>} />
+          <Route path="/data-entry/vouchers" element={<AuthGuard><LayoutWrapper><Vouchers /></LayoutWrapper></AuthGuard>} />
+          <Route path="/reports/stocks" element={<AuthGuard><LayoutWrapper><Stocks /></LayoutWrapper></AuthGuard>} />
+          <Route path="/reports/stock-ledger" element={<AuthGuard><LayoutWrapper><StockLedger /></LayoutWrapper></AuthGuard>} />
+          <Route path="/reports/cash-ledger" element={<AuthGuard><LayoutWrapper><CashLedger /></LayoutWrapper></AuthGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <Sonner position="top-center" richColors />
     </TooltipProvider>
   </QueryClientProvider>
 );

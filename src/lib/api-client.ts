@@ -747,3 +747,25 @@ export const healthApi = {
     return response.json();
   },
 };
+
+// ─── Auth API ────────────────────────────────────────────────────
+
+async function authRequest<T>(action: string, data?: Record<string, any>): Promise<T> {
+  const response = await fetch(`${API_BASE}/auth?action=${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data: data || {} }),
+  });
+
+  const result: ApiResponse<T> = await response.json();
+  if (!result.success) throw new Error(result.error || 'Auth request failed');
+  return result.data as T;
+}
+
+export const authApi = {
+  createUser: (data: any) => authRequest<any>('users.create', data),
+  checkEmail: (email: string) => authRequest<{ verified: boolean, message?: string }>('auth.check_email', { email }),
+  verifyEmail: (token: string) => authRequest<{ success: boolean }>('auth.verify_email', { token }),
+  login: (data: any) => authRequest<{ token: string, user: any }>('auth.login', data),
+  resendVerification: (email: string) => authRequest<any>('auth.resend_verification', { email }),
+};
