@@ -388,10 +388,18 @@ export async function initializeDatabase() {
       verification_token VARCHAR(255),
       token_expiry TIMESTAMP WITH TIME ZONE,
       role VARCHAR(50) DEFAULT 'user',
+      module_access TEXT DEFAULT 'all',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Migration for existing users
+  try {
+      await db`ALTER TABLE neon_auth.users ADD COLUMN IF NOT EXISTS module_access TEXT DEFAULT 'all'`;
+  } catch (err) {
+      console.error("Migration error for users table:", err);
+  }
 }
 
 /**

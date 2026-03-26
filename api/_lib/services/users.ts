@@ -31,17 +31,55 @@ export const usersService = {
     return rows[0] || null;
   },
 
-  async create(data: User) {
+  async list() {
+    const sql = getDb();
+    return await sql`SELECT id, email, username, role, is_verified, module_access, created_at FROM neon_auth.users ORDER BY created_at DESC`;
+  },
+
+  async create(data: User & { module_access?: string }) {
     const sql = getDb();
     const hashedPassword = await bcrypt.hash(data.password!, 10);
     const [user] = await sql`
       INSERT INTO neon_auth.users (
-        email, username, password, role
+        email, username, password, role, module_access
       ) VALUES (
-        ${data.email}, ${data.username}, ${hashedPassword}, ${data.role || 'user'}
-      ) RETURNING id, email, username, role, is_verified
+        ${data.email || ''}, 
+        ${data.username || ''}, 
+        ${hashedPassword}, 
+        ${data.role || 'user'}, 
+        ${data.module_access || 'all'}
+      ) RETURNING id, email, username, role, is_verified, module_access
     `;
     return user;
+  },
+
+  async update(id: number, data: Partial<User> & { module_access?: string }) {
+    const sql = getDb();
+    
+    // Hash password if updating
+    let hashedPassword = data.password;
+    if (hashedPassword) {
+      hashedPassword = await bcrypt.hash(hashedPassword, 10);
+    }
+
+    const [user] = await sql`
+      UPDATE neon_auth.users SET
+        email = COALESCE(${data.email || null}, email),
+        username = COALESCE(${data.username || null}, username),
+        password = COALESCE(${hashedPassword || null}, password),
+        role = COALESCE(${data.role || null}, role),
+        module_access = COALESCE(${data.module_access || null}, module_access),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id, email, username, role, is_verified, module_access
+    `;
+    return user;
+  },
+
+  async delete(id: number) {
+    const sql = getDb();
+    await sql`DELETE FROM neon_auth.users WHERE id = ${id}`;
+    return { success: true };
   },
 
   async generateVerificationToken(email: string) {

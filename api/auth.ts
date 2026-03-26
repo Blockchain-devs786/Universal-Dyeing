@@ -48,6 +48,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'users.create':
         return res.status(200).json({ success: true, data: await usersService.create(data) });
 
+      case 'users.list':
+        return res.status(200).json({ success: true, data: await usersService.list() });
+
+      case 'users.update':
+        return res.status(200).json({ success: true, data: await usersService.update(parseInt(data.id), data) });
+
+      case 'users.delete':
+        return res.status(200).json({ success: true, data: await usersService.delete(parseInt(data.id)) });
+
       // 2. First-time login / Check email flow
       case 'auth.check_email': {
         const user = await usersService.findByEmail(data.email);

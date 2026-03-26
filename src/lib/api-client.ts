@@ -764,6 +764,9 @@ async function authRequest<T>(action: string, data?: Record<string, any>): Promi
 
 export const authApi = {
   createUser: (data: any) => authRequest<any>('users.create', data),
+  listUsers: () => authRequest<any[]>('users.list'),
+  updateUser: (data: any) => authRequest<any>('users.update', data),
+  deleteUser: (id: number) => authRequest<any>('users.delete', { id }),
   checkEmail: (email: string) => authRequest<{ verified: boolean, message?: string }>('auth.check_email', { email }),
   verifyEmail: (token: string) => authRequest<{ success: boolean }>('auth.verify_email', { token }),
   login: (data: any) => authRequest<{ token: string, user: any }>('auth.login', data),

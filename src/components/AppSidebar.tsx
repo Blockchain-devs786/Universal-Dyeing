@@ -121,6 +121,41 @@ function NavGroup({ label, icon: GroupIcon, items, collapsed }: NavGroupProps) {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const location = useLocation();
+
+  // Get user from localStorage
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const access = user?.module_access || "";
+  const isAdmin = user?.role === "admin" || access === "all";
+
+  const hasAccess = (moduleId: string) => {
+    if (isAdmin) return true;
+    return access.split(",").includes(moduleId);
+  };
+
+  // Filter items
+  const filteredDefine = defineItems.filter(() => hasAccess("define"));
+  const filteredDataEntry = dataEntryItems.filter((item) => {
+    const map: Record<string, string> = {
+      "/data-entry/inward": "inward",
+      "/data-entry/outward": "outward",
+      "/data-entry/transfer": "transfer",
+      "/data-entry/transfer-by-name": "transfer_by_name",
+      "/data-entry/invoice": "invoice",
+      "/data-entry/vouchers": "vouchers",
+    };
+    return hasAccess(map[item.url]);
+  });
+  const filteredReports = reportItems.filter((item) => {
+    if (item.url === "/reports/stocks") return hasAccess("reports_stocks");
+    return hasAccess("reports_ledger"); // Both ledgers under reports_ledger
+  });
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -132,10 +167,10 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-base font-bold text-sidebar-accent-foreground tracking-tight">
-                AdminPro
+                Universal Dyeing
               </h1>
               <p className="text-[11px] text-sidebar-foreground/50 font-medium">
-                Management Suite
+                Dyeing Management Suite
               </p>
             </div>
           )}
@@ -146,32 +181,37 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/"
-                    end
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                  >
-                    <LayoutDashboard className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="text-sm">Dashboard</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/user-management"
-                    end
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                  >
-                    <Users className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="text-sm">User Management</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {hasAccess("dashboard") && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/"
+                      end
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <LayoutDashboard className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="text-sm">Dashboard</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/user-management"
+                      end
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <Users className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="text-sm">User Management</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -180,21 +220,32 @@ export function AppSidebar() {
           <div className="h-px bg-sidebar-border" />
         </div>
 
-        <NavGroup label="Define" icon={Settings} items={defineItems} collapsed={collapsed} />
-        <NavGroup label="Data Entry" icon={PenLine} items={dataEntryItems} collapsed={collapsed} />
-        <NavGroup label="Reports" icon={BarChart3} items={reportItems} collapsed={collapsed} />
+        {filteredDefine.length > 0 && <NavGroup label="Define" icon={Settings} items={filteredDefine} collapsed={collapsed} />}
+        {filteredDataEntry.length > 0 && <NavGroup label="Data Entry" icon={PenLine} items={filteredDataEntry} collapsed={collapsed} />}
+        {filteredReports.length > 0 && <NavGroup label="Reports" icon={BarChart3} items={filteredReports} collapsed={collapsed} />}
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-3 border-t border-sidebar-border">
         {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <span className="text-xs font-semibold text-sidebar-primary">A</span>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center border border-sidebar-border">
+                <span className="text-xs font-semibold text-sidebar-primary uppercase">
+                  {user?.username?.[0] || 'U'}
+                </span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-sidebar-accent-foreground truncate uppercase">{user?.username || 'User'}</p>
+                <p className="text-[10px] text-sidebar-foreground/50 truncate font-medium uppercase">{user?.role || 'Guest'}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-sidebar-accent-foreground truncate">Admin</p>
-              <p className="text-[11px] text-sidebar-foreground/50 truncate">admin@company.com</p>
-            </div>
+            <button 
+              onClick={handleLogout}
+              className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-sidebar-foreground/40"
+              title="Logout"
+            >
+              <ArrowUpFromLine className="h-4 w-4 rotate-90" />
+            </button>
           </div>
         )}
       </SidebarFooter>
