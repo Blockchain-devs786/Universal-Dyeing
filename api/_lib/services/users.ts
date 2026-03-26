@@ -142,9 +142,10 @@ export const usersService = {
 
     const token = await this.generateVerificationToken(email);
     const verificationLink = `${baseUrl}/verify-email?token=${token}`;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Universal Dyeing <onboarding@resend.dev>';
 
     const { data, error } = await resend.emails.send({
-      from: 'Universal Dyeing <onboarding@resend.dev>', // Change to verified domain in prod
+      from: fromEmail,
       to: email,
       subject: 'Verify your Universal Dyeing account',
       html: `
