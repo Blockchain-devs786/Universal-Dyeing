@@ -428,77 +428,79 @@ export default function UserManagement() {
             <DialogTitle>Edit User Profile</DialogTitle>
             <DialogDescription className="text-slate-400">Modify credentials or module access permissions.</DialogDescription>
           </DialogHeader>
-          {editingUser && (
-            <div className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Username</Label>
-                    <Input 
-                        value={editingUser.username} 
-                        onChange={e => setEditingUser({...editingUser, username: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Email</Label>
-                    <Input 
-                        value={editingUser.email} 
-                        onChange={e => setEditingUser({...editingUser, email: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+          <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+            {editingUser && (
+                <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Change Password (Optional)</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Username</Label>
                         <Input 
-                            type="password" 
-                            placeholder="Type to change..." 
-                            value={editingUser.password}
-                            onChange={e => setEditingUser({...editingUser, password: e.target.value})}
+                            value={editingUser.username} 
+                            onChange={e => setEditingUser({...editingUser, username: e.target.value})}
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Role</Label>
-                        <Select value={editingUser.role} onValueChange={r => setEditingUser({...editingUser, role: r})}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Email</Label>
+                        <Input 
+                            value={editingUser.email} 
+                            onChange={e => setEditingUser({...editingUser, email: e.target.value})}
+                        />
                     </div>
-                </div>
+                    </div>
 
-                {editingUser.role !== "admin" && (
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Update Module Access</Label>
-                    <div className="max-h-[280px] overflow-y-auto pr-2">
-                        <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        {AVAILABLE_MODULES.map(module => (
-                            <div key={module.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                                id={`edit-${module.id}`} 
-                                checked={editingUser.module_access_list.includes(module.id)}
-                                onCheckedChange={() => {
-                                    const list = editingUser.module_access_list;
-                                    const newList = list.includes(module.id) 
-                                        ? list.filter((m: string) => m !== module.id) 
-                                        : [...list, module.id];
-                                    setEditingUser({...editingUser, module_access_list: newList});
-                                }}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-500">Change Password (Optional)</Label>
+                            <Input 
+                                type="password" 
+                                placeholder="Type to change..." 
+                                value={editingUser.password}
+                                onChange={e => setEditingUser({...editingUser, password: e.target.value})}
                             />
-                            <label htmlFor={`edit-${module.id}`} className="text-xs font-semibold text-slate-600">{module.label}</label>
-                            </div>
-                        ))}
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-500">Role</Label>
+                            <Select value={editingUser.role} onValueChange={r => setEditingUser({...editingUser, role: r})}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="manager">Manager</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
-                  </div>
-                )}
-            </div>
-          )}
+
+                    {editingUser.role !== "admin" && (
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Update Module Access</Label>
+                        <div className="max-h-52 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            {AVAILABLE_MODULES.map(module => (
+                                <div key={module.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id={`edit-${module.id}`} 
+                                    checked={editingUser.module_access_list.includes(module.id)}
+                                    onCheckedChange={() => {
+                                        const list = editingUser.module_access_list;
+                                        const newList = list.includes(module.id) 
+                                            ? list.filter((m: string) => m !== module.id) 
+                                            : [...list, module.id];
+                                        setEditingUser({...editingUser, module_access_list: newList});
+                                    }}
+                                />
+                                <label htmlFor={`edit-${module.id}`} className="text-xs font-semibold text-slate-600">{module.label}</label>
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                    </div>
+                    )}
+                </div>
+            )}
+          </div>
           <DialogFooter className="bg-slate-100 border-t p-4 px-6 flex justify-between gap-4">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-slate-300">Cancel</Button>
             <Button onClick={handleUpdate} className="bg-blue-600 hover:bg-blue-700 text-white font-bold" disabled={updateMutation.isPending}>
