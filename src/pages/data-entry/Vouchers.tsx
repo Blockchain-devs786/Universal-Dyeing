@@ -174,12 +174,12 @@ export default function Vouchers() {
     if (type === 'CRV') {
         setEntries([
             { account_type: 'Account', account_id: 0, debit: 0, credit: 0, description: "Cash Received" },
-            { account_type: 'MS Party', account_id: 0, debit: 0, credit: 0, description: "Party Payment" },
+            { account_type: 'MS Party', account_id: 0, debit: 0, credit: 0, description: "From Party/Others" },
         ]);
     } else if (type === 'CPV') {
         setEntries([
-            { account_type: 'Expense', account_id: 0, debit: 0, credit: 0, description: "Expense Payment" },
-            { account_type: 'Account', account_id: 0, debit: 0, credit: 0, description: "Cash Paid" },
+            { account_type: 'MS Party', account_id: 0, debit: 0, credit: 0, description: "To Party/Others" },
+            { account_type: 'Account', account_id: 0, debit: 0, credit: 0, description: "Cash / Bank Paid" },
         ]);
     }
   };
@@ -288,15 +288,19 @@ export default function Vouchers() {
                                   {entries.map((entry, idx) => (
                                       <TableRow key={idx} className="hover:bg-transparent h-14">
                                           <TableCell className="py-2">
-                                              <Select value={entry.account_type} onValueChange={(v: AccountType) => updateEntry(idx, 'account_type', v)}>
-                                                  <SelectTrigger className="h-9 text-xs">
+                                              <Select 
+                                                value={entry.account_type} 
+                                                onValueChange={(v: AccountType) => updateEntry(idx, 'account_type', v)}
+                                                disabled={(voucherType === 'CRV' && idx === 0) || (voucherType === 'CPV' && idx === 1)}
+                                              >
+                                                  <SelectTrigger className="h-9 text-xs disabled:opacity-80 disabled:bg-slate-50 font-bold">
                                                       <SelectValue />
                                                   </SelectTrigger>
                                                   <SelectContent>
+                                                      <SelectItem value="Account">Bank/Cash</SelectItem>
                                                       <SelectItem value="MS Party">MS Party</SelectItem>
                                                       <SelectItem value="Vendor">Vendor</SelectItem>
                                                       <SelectItem value="Expense">Expense</SelectItem>
-                                                      <SelectItem value="Account">Bank/Cash</SelectItem>
                                                       <SelectItem value="Asset">Asset</SelectItem>
                                                   </SelectContent>
                                               </Select>

@@ -3,7 +3,7 @@ import { getDb } from "../db.js";
 export const vouchersService = {
   async list(filters: any = {}) {
     const db = getDb();
-    
+
     // Normalize filters to null if they are missing or empty
     const type = filters.type || null;
     const fromDate = filters.from_date || null;
@@ -16,13 +16,13 @@ export const vouchersService = {
         (SELECT json_agg(ve.*) FROM voucher_entries ve WHERE ve.voucher_id = v.id) as entries
       FROM vouchers v
       WHERE 
-        (${type}::text IS NULL OR v.type = ${type}::text)
-        AND (${fromDate}::date IS NULL OR v.date >= ${fromDate}::date)
-        AND (${toDate}::date IS NULL OR v.date <= ${toDate}::date)
+        (${type}::text IS NULL OR v.type = ${type})
+        AND (${fromDate}::date IS NULL OR v.date >= ${fromDate})
+        AND (${toDate}::date IS NULL OR v.date <= ${toDate})
         AND (
           ${search}::text IS NULL 
-          OR v.voucher_no ILIKE ${searchPattern}::text 
-          OR v.description ILIKE ${searchPattern}::text
+          OR v.voucher_no ILIKE ${searchPattern} 
+          OR v.description ILIKE ${searchPattern}
         )
       ORDER BY v.date DESC, v.id DESC
     `;
@@ -30,7 +30,7 @@ export const vouchersService = {
 
   async create(data: any) {
     const db = getDb();
-    
+
     // Generate Voucher No
     const prefix = data.type; // CRV, CPV, JV
     const [lastVoucher] = await db`
@@ -38,11 +38,11 @@ export const vouchersService = {
       WHERE type = ${data.type} 
       ORDER BY id DESC LIMIT 1
     `;
-    
+
     let nextNum = 1;
     if (lastVoucher && lastVoucher.voucher_no) {
-       const parts = lastVoucher.voucher_no.split('-');
-       nextNum = parseInt(parts[1]) + 1;
+      const parts = lastVoucher.voucher_no.split('-');
+      nextNum = parseInt(parts[1]) + 1;
     }
     const voucherNo = `${prefix}-${String(nextNum).padStart(4, '0')}`;
 
@@ -131,7 +131,7 @@ export const vouchersService = {
   async delete(id: number) {
     const db = getDb();
     const entries = await db`SELECT * FROM voucher_entries WHERE voucher_id = ${id}`;
-    
+
     // Reverse balances
     for (const entry of entries) {
       await this.updateAccountBalance(entry, true);
