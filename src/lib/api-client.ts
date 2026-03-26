@@ -767,6 +767,7 @@ export const authApi = {
   listUsers: () => authRequest<any[]>('users.list'),
   updateUser: (data: any) => authRequest<any>('users.update', data),
   deleteUser: (id: number) => authRequest<any>('users.delete', { id }),
+  verifyManually: (id: number) => authRequest<any>('users.verify_manually', { id }),
   checkEmail: (email: string) => authRequest<{ verified: boolean, message?: string }>('auth.check_email', { email }),
   verifyEmail: (token: string) => authRequest<{ success: boolean }>('auth.verify_email', { token }),
   login: (data: any) => authRequest<{ token: string, user: any }>('auth.login', data),

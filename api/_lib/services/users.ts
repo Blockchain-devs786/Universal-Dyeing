@@ -123,6 +123,19 @@ export const usersService = {
     return { success: true, user_id: user.id };
   },
 
+  async verifyManually(id: number) {
+    const sql = getDb();
+    await sql`
+      UPDATE neon_auth.users SET
+        is_verified = true,
+        verification_token = NULL,
+        token_expiry = NULL,
+        updated_at = NOW()
+      WHERE id = ${id}
+    `;
+    return { success: true };
+  },
+
   async sendVerificationEmail(email: string, baseUrl: string) {
     const user = await this.findByEmail(email);
     if (!user) throw new Error('User not found');

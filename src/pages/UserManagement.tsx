@@ -109,6 +109,17 @@ export default function UserManagement() {
     }
   });
 
+  const verifyManuallyMutation = useMutation({
+    mutationFn: (id: number) => authApi.verifyManually(id),
+    onSuccess: () => {
+      toast.success("Account verified manually!");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Manual verification failed.");
+    }
+  });
+
   const resetForm = () => {
     setEmail("");
     setUsername("");
@@ -357,6 +368,21 @@ export default function UserManagement() {
                             </div>
                         </TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
+                          {!user.is_verified && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              onClick={() => {
+                                  if(confirm(`Do you want to manually verify ${user.username}'s account? This bypasses the email check.`)) {
+                                      verifyManuallyMutation.mutate(user.id);
+                                  }
+                              }}
+                              title="Verify Manually"
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
