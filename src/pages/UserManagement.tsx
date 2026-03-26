@@ -257,18 +257,20 @@ export default function UserManagement() {
                 {role !== "admin" && (
                   <div className="space-y-3 pt-4 border-t border-slate-100">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Module Access Control</Label>
-                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                      {AVAILABLE_MODULES.map(module => (
-                        <div key={module.id} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={module.id} 
-                            checked={selectedModules.includes(module.id)}
-                            onCheckedChange={() => toggleModule(module.id)}
-                            className="data-[state=checked]:bg-blue-600 border-slate-300"
-                          />
-                          <label htmlFor={module.id} className="text-xs font-semibold text-slate-600 cursor-pointer">{module.label}</label>
+                    <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                        {AVAILABLE_MODULES.map(module => (
+                            <div key={module.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={module.id} 
+                                checked={selectedModules.includes(module.id)}
+                                onCheckedChange={() => toggleModule(module.id)}
+                                className="data-[state=checked]:bg-blue-600 border-slate-300"
+                            />
+                            <label htmlFor={module.id} className="text-xs font-semibold text-slate-600 cursor-pointer">{module.label}</label>
+                            </div>
+                        ))}
                         </div>
-                      ))}
                     </div>
                   </div>
                 )}
@@ -473,23 +475,25 @@ export default function UserManagement() {
                 {editingUser.role !== "admin" && (
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Update Module Access</Label>
-                    <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                      {AVAILABLE_MODULES.map(module => (
-                        <div key={module.id} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`edit-${module.id}`} 
-                            checked={editingUser.module_access_list.includes(module.id)}
-                            onCheckedChange={() => {
-                                const list = editingUser.module_access_list;
-                                const newList = list.includes(module.id) 
-                                    ? list.filter((m: string) => m !== module.id) 
-                                    : [...list, module.id];
-                                setEditingUser({...editingUser, module_access_list: newList});
-                            }}
-                          />
-                          <label htmlFor={`edit-${module.id}`} className="text-xs font-semibold text-slate-600">{module.label}</label>
+                    <div className="max-h-[280px] overflow-y-auto pr-2">
+                        <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        {AVAILABLE_MODULES.map(module => (
+                            <div key={module.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={`edit-${module.id}`} 
+                                checked={editingUser.module_access_list.includes(module.id)}
+                                onCheckedChange={() => {
+                                    const list = editingUser.module_access_list;
+                                    const newList = list.includes(module.id) 
+                                        ? list.filter((m: string) => m !== module.id) 
+                                        : [...list, module.id];
+                                    setEditingUser({...editingUser, module_access_list: newList});
+                                }}
+                            />
+                            <label htmlFor={`edit-${module.id}`} className="text-xs font-semibold text-slate-600">{module.label}</label>
+                            </div>
+                        ))}
                         </div>
-                      ))}
                     </div>
                   </div>
                 )}
