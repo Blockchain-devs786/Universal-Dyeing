@@ -375,6 +375,23 @@ export async function initializeDatabase() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // --- NEW AUTH SCHEMA & USERS TABLE ---
+  await db`CREATE SCHEMA IF NOT EXISTS neon_auth`;
+  await db`
+    CREATE TABLE IF NOT EXISTS neon_auth.users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      username VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      is_verified BOOLEAN DEFAULT false,
+      verification_token VARCHAR(255),
+      token_expiry TIMESTAMP WITH TIME ZONE,
+      role VARCHAR(50) DEFAULT 'user',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
 }
 
 /**
