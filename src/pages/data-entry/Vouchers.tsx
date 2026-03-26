@@ -279,8 +279,14 @@ export default function Vouchers() {
                                   <TableRow className="hover:bg-transparent h-10">
                                       <TableHead className="w-[180px] text-[10px] font-black uppercase">Account Type</TableHead>
                                       <TableHead className="text-[10px] font-black uppercase">Account / Party</TableHead>
-                                      <TableHead className="w-[120px] text-right text-[10px] font-black uppercase">Debit (Rs)</TableHead>
-                                      <TableHead className="w-[120px] text-right text-[10px] font-black uppercase">Credit (Rs)</TableHead>
+                                      {voucherType === 'JV' ? (
+                                          <>
+                                              <TableHead className="w-[120px] text-right text-[10px] font-black uppercase">Debit (Rs)</TableHead>
+                                              <TableHead className="w-[120px] text-right text-[10px] font-black uppercase">Credit (Rs)</TableHead>
+                                          </>
+                                      ) : (
+                                          <TableHead className="w-[150px] text-right text-[10px] font-black uppercase">Amount (Rs)</TableHead>
+                                      )}
                                       <TableHead className="w-[40px]"></TableHead>
                                   </TableRow>
                               </TableHeader>
@@ -317,24 +323,58 @@ export default function Vouchers() {
                                                   </SelectContent>
                                               </Select>
                                           </TableCell>
-                                          <TableCell className="py-2">
-                                              <Input 
-                                                  type="number" 
-                                                  value={entry.debit || ""} 
-                                                  onChange={e => updateEntry(idx, 'debit', parseFloat(e.target.value) || 0)} 
-                                                  className="h-9 text-right font-bold text-blue-700 bg-blue-50/30 border-blue-100" 
-                                                  placeholder="0.00"
-                                              />
-                                          </TableCell>
-                                          <TableCell className="py-2">
-                                              <Input 
-                                                  type="number" 
-                                                  value={entry.credit || ""} 
-                                                  onChange={e => updateEntry(idx, 'credit', parseFloat(e.target.value) || 0)} 
-                                                  className="h-9 text-right font-bold text-red-700 bg-red-50/30 border-red-100" 
-                                                  placeholder="0.00"
-                                              />
-                                          </TableCell>
+                                          {voucherType === 'JV' ? (
+                                              <>
+                                                  <TableCell className="py-2">
+                                                      <Input 
+                                                          type="number" 
+                                                          value={entry.debit || ""} 
+                                                          onChange={e => updateEntry(idx, 'debit', parseFloat(e.target.value) || 0)} 
+                                                          className="h-9 text-right font-bold text-blue-700 bg-blue-50/30 border-blue-100" 
+                                                          placeholder="0.00"
+                                                      />
+                                                  </TableCell>
+                                                  <TableCell className="py-2">
+                                                      <Input 
+                                                          type="number" 
+                                                          value={entry.credit || ""} 
+                                                          onChange={e => updateEntry(idx, 'credit', parseFloat(e.target.value) || 0)} 
+                                                          className="h-9 text-right font-bold text-red-700 bg-red-50/30 border-red-100" 
+                                                          placeholder="0.00"
+                                                      />
+                                                  </TableCell>
+                                              </>
+                                          ) : (
+                                              <TableCell className="py-2">
+                                                  {idx === 0 ? (
+                                                      <Input 
+                                                          type="number" 
+                                                          value={totalDebit || ""} 
+                                                          onChange={e => {
+                                                              const val = parseFloat(e.target.value) || 0;
+                                                              // CRV: Line 0 is Debit, Line 1 is Credit
+                                                              // CPV: Line 0 is Debit, Line 1 is Credit
+                                                              // Wait, for 2 lines, we update both to maintain balance.
+                                                              const newEntries = [...entries];
+                                                              if (voucherType === 'CRV') {
+                                                                  newEntries[0].debit = val;
+                                                                  newEntries[1].credit = val;
+                                                              } else {
+                                                                  newEntries[0].debit = val;
+                                                                  newEntries[1].credit = val;
+                                                              }
+                                                              setEntries(newEntries);
+                                                          }} 
+                                                          className="h-9 text-right font-black text-slate-900 border-primary/20 bg-primary/5 focus:bg-white" 
+                                                          placeholder="Enrer Amount"
+                                                      />
+                                                  ) : (
+                                                      <div className="text-right font-bold text-slate-400 opacity-50 px-3">
+                                                          {totalDebit.toLocaleString()}
+                                                      </div>
+                                                  )}
+                                              </TableCell>
+                                          )}
                                           <TableCell className="py-2 text-center">
                                               {voucherType === 'JV' && (
                                                   <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600" onClick={() => removeEntry(idx)}>
