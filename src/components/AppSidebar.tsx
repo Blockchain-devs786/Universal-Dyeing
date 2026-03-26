@@ -131,11 +131,24 @@ export function AppSidebar() {
 
   const hasAccess = (moduleId: string) => {
     if (isAdmin) return true;
+    if (moduleId === "dashboard") return true; // Dashboard always visible
     return access.split(",").includes(moduleId);
   };
 
   // Filter items
-  const filteredDefine = defineItems.filter(() => hasAccess("define"));
+  const filteredDefine = defineItems.filter((item) => {
+      const map: Record<string, string> = {
+          "/define/ms-parties": "define_ms_parties",
+          "/define/from-parties": "define_from_parties",
+          "/define/vendors": "define_vendors",
+          "/define/items": "define_items",
+          "/define/assets": "define_assets",
+          "/define/expenses": "define_expenses",
+          "/define/accounts": "define_accounts",
+      };
+      return hasAccess(map[item.url]);
+  });
+  
   const filteredDataEntry = dataEntryItems.filter((item) => {
     const map: Record<string, string> = {
       "/data-entry/inward": "inward",
@@ -147,6 +160,7 @@ export function AppSidebar() {
     };
     return hasAccess(map[item.url]);
   });
+
   const filteredReports = reportItems.filter((item) => {
     if (item.url === "/reports/stocks") return hasAccess("reports_stocks");
     return hasAccess("reports_ledger"); // Both ledgers under reports_ledger

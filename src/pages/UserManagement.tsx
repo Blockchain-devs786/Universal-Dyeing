@@ -43,8 +43,13 @@ import {
 import { toast } from "sonner";
 
 const AVAILABLE_MODULES = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "define", label: "Define (Setup)" },
+  { id: "define_ms_parties", label: "Define: MS Parties" },
+  { id: "define_from_parties", label: "Define: From Parties" },
+  { id: "define_vendors", label: "Define: Vendors" },
+  { id: "define_items", label: "Define: Items" },
+  { id: "define_assets", label: "Define: Assets" },
+  { id: "define_expenses", label: "Define: Expenses" },
+  { id: "define_accounts", label: "Define: Accounts" },
   { id: "inward", label: "Inward Entry" },
   { id: "outward", label: "Outward Entry" },
   { id: "transfer", label: "Transfer Stocks" },
