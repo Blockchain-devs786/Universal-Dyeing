@@ -347,6 +347,12 @@ async function routeAction(
             measurement: query.measurement ? Number(query.measurement) : data.measurement,
             amount_type: (query.amount_type as 'debit' | 'credit') || data.amount_type
           });
+        case 'financial_ledger':
+          return reportsService.getFinancialLedger(
+            Number(query.ms_party_id || data.ms_party_id),
+            (query.from_date as string) || data.from_date,
+            (query.to_date as string) || data.to_date
+          );
         default:
           throw new Error(`Unknown operation: ${operation} for reports`);
       }

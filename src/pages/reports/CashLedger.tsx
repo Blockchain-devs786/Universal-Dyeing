@@ -1,5 +1,283 @@
-import PlaceholderPage from "@/components/PlaceholderPage";
-import { Banknote } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { 
+  Banknote, 
+  Search, 
+  Printer, 
+  RefreshCw, 
+  Calendar, 
+  ChevronsUpDown,
+  Filter,
+  FileSpreadsheet
+} from "lucide-react";
+import { 
+  reportsApi, 
+  msPartiesApi, 
+  type MsParty 
+} from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+    Popover, 
+    PopoverContent, 
+    PopoverTrigger 
+} from "@/components/ui/popover";
+import { 
+    Command, 
+    CommandEmpty, 
+    CommandGroup, 
+    CommandInput, 
+    CommandItem, 
+    CommandList 
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { format, subDays } from "date-fns";
+
 export default function CashLedger() {
-  return <PlaceholderPage title="Cash Ledger" description="Track cash flow and financial transactions." icon={Banknote} />;
+  const [msPartyId, setMsPartyId] = useState<string>("all");
+  const [fromDate, setFromDate] = useState<string>(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [toDate, setToDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [msPartyOpen, setMsPartyOpen] = useState(false);
+  const [isGenerated, setIsGenerated] = useState(false);
+
+  // Queries
+  const { data: msParties = [] } = useQuery({
+    queryKey: ["ms_parties"],
+    queryFn: () => msPartiesApi.list(),
+  });
+
+  const { 
+    data: ledger = [], 
+    isLoading, 
+    refetch,
+    isFetching 
+  } = useQuery({
+    queryKey: ["financial_ledger_report", msPartyId], 
+    queryFn: () => reportsApi.getFinancialLedger(Number(msPartyId), fromDate, toDate),
+    enabled: false
+  });
+
+  // Default to "Dyeing" party on load
+  useEffect(() => {
+    if (msParties.length > 0 && msPartyId === "all") {
+        const dyeing = msParties.find(p => p.name.toLowerCase() === 'dyeing');
+        if (dyeing) setMsPartyId(String(dyeing.id));
+    }
+  }, [msParties]);
+
+  const handleGenerate = () => {
+    if (msPartyId === "all") return;
+    setIsGenerated(true);
+    refetch();
+  };
+
+  const selectedMsParty = msParties.find(p => String(p.id) === msPartyId);
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      
+      {/* Header */}
+      <div className="bg-slate-900 text-white rounded-2xl shadow-elevated border border-slate-800 p-6 print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-600/20 rounded-xl">
+              <Banknote className="h-8 w-8 text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Cash Ledgers</h1>
+              <p className="text-slate-400 text-sm mt-1">Track financial histories for parties & internal accounts.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-end">
+            <div className="space-y-1.5 w-full sm:w-64">
+              <Label className="text-slate-400 text-[10px] uppercase font-bold tracking-widest px-1 flex items-center gap-1.5 font-sans">
+                <Search className="h-3 w-3" /> Select Ledger:
+              </Label>
+              <Popover open={msPartyOpen} onOpenChange={setMsPartyOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-white text-slate-900 border-none h-11 shadow-inner ring-offset-slate-900 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <span className="truncate">
+                      {msPartyId === "all" ? "-- Select Ledger --" : 
+                        (selectedMsParty?.name.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
+                        selectedMsParty?.name}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search ledger..." />
+                    <CommandList>
+                      <CommandEmpty>No ledger found.</CommandEmpty>
+                      <CommandGroup>
+                        {msParties.map((party) => (
+                          <CommandItem
+                            key={party.id}
+                            value={party.name}
+                            onSelect={() => {
+                              setMsPartyId(String(party.id));
+                              setMsPartyOpen(false);
+                              setIsGenerated(false);
+                            }}
+                            className="flex items-center justify-between"
+                          >
+                            <span>{party.name}</span>
+                            {String(party.id) === msPartyId && <Search className="h-4 w-4 text-blue-500" />}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <Button 
+                onClick={handleGenerate} 
+                disabled={isLoading || isFetching || msPartyId === "all"}
+                className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg transition-all active:scale-95"
+            >
+              {isLoading || isFetching ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Generate Report
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Overlay */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-white p-6 rounded-2xl border shadow-sm print:hidden">
+        <div className="md:col-span-1 flex items-center gap-3 border-r pr-6">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
+                <Filter className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-slate-800">Reports Filters</h3>
+        </div>
+        
+        <div className="space-y-1.5 flex-1">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
+              <Calendar className="h-3 w-3" /> From Date
+          </Label>
+          <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-10 border-slate-200" />
+        </div>
+        
+        <div className="space-y-1.5 flex-1">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
+              <Calendar className="h-3 w-3" /> To Date
+          </Label>
+          <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="h-10 border-slate-200" />
+        </div>
+
+        <div className="flex items-end">
+            <Button variant="outline" className="h-10 w-full border-dashed" onClick={() => window.print()} disabled={!isGenerated}>
+                <Printer className="mr-2 h-4 w-4" /> Print PDF
+            </Button>
+        </div>
+      </div>
+
+      {/* Report Content */}
+      {isGenerated && (
+        <div className="bg-white rounded-2xl shadow-elevated border overflow-hidden min-h-[600px] print:border-none print:shadow-none">
+          <div className="p-6 border-b bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:p-0 print:border-none">
+            <div className="flex items-center gap-3">
+                <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">{selectedMsParty?.name}</h2>
+                    <p className="text-slate-500 text-xs font-medium">Financial Statement Ledger</p>
+                </div>
+            </div>
+            <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Period: {format(new Date(fromDate), 'dd MMM yyyy')} - {format(new Date(toDate), 'dd MMM yyyy')}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-900">
+                <TableRow className="hover:bg-slate-900 border-none h-12">
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[120px]">Date</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Particulars</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Invoice/Voucher</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Description</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Debit (PKR)</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Credit (PKR)</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Balance</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ledger.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={7} className="h-32 text-center text-slate-400 font-medium italic">
+                            No financial transactions found for the selected period.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                    ledger.map((row, idx) => (
+                      <TableRow key={idx} className="h-14 hover:bg-slate-50/80 transition-colors border-slate-100">
+                        <TableCell className="font-medium text-slate-600">{format(new Date(row.date), 'yyyy-MM-dd')}</TableCell>
+                        <TableCell className="font-bold text-slate-900 uppercase text-xs">{row.particulars}</TableCell>
+                        <TableCell className="font-bold text-blue-600 text-xs">{row.ref_no}</TableCell>
+                        <TableCell className="text-slate-500 text-xs max-w-xs truncate">{row.description}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-700">
+                            {row.debit > 0 ? row.debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-red-600">
+                            {row.credit > 0 ? row.credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                        </TableCell>
+                        <TableCell className={cn(
+                            "text-right font-black",
+                            row.balance < 0 ? "text-red-700" : "text-emerald-700"
+                        )}>
+                            {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <div className="p-8 bg-slate-50 border-t print:hidden">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="bg-white p-4 rounded-xl border shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Debits</p>
+                    <p className="text-xl font-black text-blue-700">
+                        {ledger.reduce((s, r) => s + r.debit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Credits</p>
+                    <p className="text-xl font-black text-red-600">
+                        {ledger.reduce((s, r) => s + r.credit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                </div>
+                <div className="md:col-span-2 bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-center text-white">
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Final Outstanding Balance</p>
+                        <p className="text-2xl font-black">
+                            {ledger.length > 0 ? ledger[ledger.length - 1].balance.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                        </p>
+                    </div>
+                    <div className="p-2 bg-white/10 rounded-lg">
+                        <Banknote className="h-8 w-8 text-blue-400" />
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

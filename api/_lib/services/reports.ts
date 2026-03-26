@@ -30,6 +30,16 @@ export interface StockLedgerRow {
   description: string;
 }
 
+export interface FinancialLedgerRow {
+  date: string;
+  particulars: string;
+  ref_no: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance?: number;
+}
+
 export const reportsService = {
   async getStockReport(ms_party_id?: number, item_id?: number) {
     const sql = getDb();
@@ -261,5 +271,75 @@ export const reportsService = {
       debit: Number(row.debit || 0),
       credit: Number(row.credit || 0)
     }));
+  },
+
+  async getFinancialLedger(ms_party_id: number, from_date?: string, to_date?: string) {
+    const sql = getDb();
+
+    // Get Dyeing Party ID
+    const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
+    const isDyeing = dyeingParty && dyeingParty.id === ms_party_id;
+
+    const query = await sql`
+      WITH entries AS (
+        -- 1. Invoices
+        SELECT 
+          i.date,
+          m.name as particulars,
+          i.invoice_no as ref_no,
+          'Service Income' as description,
+          CASE WHEN ${isDyeing} THEN 0 ELSE i.total_amount END as debit,
+          CASE WHEN ${isDyeing} THEN i.total_amount ELSE 0 END as credit,
+          i.created_at
+        FROM invoices i
+        JOIN ms_parties m ON i.ms_party_id = m.id
+        WHERE 
+          (${isDyeing} OR i.ms_party_id = ${ms_party_id})
+          AND (${from_date || null}::date IS NULL OR i.date >= ${from_date}::date)
+          AND (${to_date || null}::date IS NULL OR i.date <= ${to_date}::date)
+
+        UNION ALL
+
+        -- 2. Voucher Entries for MS Party
+        SELECT 
+          v.date,
+          CASE WHEN ve.debit > 0 THEN 'To Account' ELSE 'By Account' END as particulars,
+          v.voucher_no as ref_no,
+          ve.description,
+          ve.debit,
+          ve.credit,
+          v.created_at
+        FROM voucher_entries ve
+        JOIN vouchers v ON ve.voucher_id = v.id
+        WHERE 
+          ve.account_type = 'MS Party' 
+          AND ve.account_id = ${ms_party_id}
+          AND (${from_date || null}::date IS NULL OR v.date >= ${from_date}::date)
+          AND (${to_date || null}::date IS NULL OR v.date <= ${to_date}::date)
+      )
+      SELECT * FROM entries 
+      ORDER BY date ASC, created_at ASC
+    `;
+
+    let balance = 0;
+    // Get opening balance from MS Party
+    const [party] = await sql`SELECT opening_balance FROM ms_parties WHERE id = ${ms_party_id}`;
+    if (party) {
+        // If it's a customer, opening balance is usually debit? 
+        // In this system we just use it as positive base.
+        balance = Number(party.opening_balance || 0);
+    }
+
+    return query.map(row => {
+      const debit = Number(row.debit || 0);
+      const credit = Number(row.credit || 0);
+      balance += (debit - credit);
+      return {
+        ...row,
+        debit,
+        credit,
+        balance
+      };
+    });
   }
 };

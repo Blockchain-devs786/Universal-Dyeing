@@ -85,9 +85,14 @@ export const invoicesService = {
     const last = await sql`SELECT invoice_no FROM invoices ORDER BY id DESC LIMIT 1`;
     let nextNo = "INV-000001";
     if (last.length > 0) {
-      const num = parseInt(last[0].invoice_no.split('-')[1]) + 1;
+      const parts = last[0].invoice_no.split('-');
+      const num = parseInt(parts[1]) + 1;
       nextNo = `INV-${num.toString().padStart(6, '0')}`;
     }
+
+    // Find Dyeing Party (Default)
+    const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
+    if (!dyeingParty) throw new Error("Default 'Dyeing' MS Party not found. Please create it first.");
 
     const [invoice] = await sql`
       INSERT INTO invoices (
@@ -106,13 +111,20 @@ export const invoicesService = {
       await sql`INSERT INTO invoice_items (invoice_id, outward_id) VALUES (${invoice.id}, ${outId})`;
     }
 
+    // --- ACCCOUNTING ENTRIES ---
+    // 1. Debit the customer (MS Party)
+    await sql`UPDATE ms_parties SET debit = debit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
+    // 2. Credit the factory (Dyeing MS Party)
+    await sql`UPDATE ms_parties SET credit = credit + ${data.total_amount} WHERE id = ${dyeingParty.id}`;
+
     return this.getById(invoice.id);
   },
 
   async update(id: number, data: Partial<Invoice>) {
     const sql = getDb();
+    const old = await this.getById(id);
+    if (!old) throw new Error('Invoice not found');
     
-    // Only allow updating internal values as per user requirement
     const [invoice] = await sql`
       UPDATE invoices SET
         sub_total = COALESCE(${data.sub_total ?? null}, sub_total),
@@ -127,12 +139,28 @@ export const invoicesService = {
       RETURNING *
     `;
 
-    if (!invoice) throw new Error('Invoice not found');
+    // Update balances if amount changed
+    if (data.total_amount !== undefined && data.total_amount !== old.total_amount) {
+        const diff = data.total_amount - old.total_amount;
+        const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
+        await sql`UPDATE ms_parties SET debit = debit + ${diff} WHERE id = ${old.ms_party_id}`;
+        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit + ${diff} WHERE id = ${dyeingParty.id}`;
+    }
+
     return this.getById(id);
   },
 
   async delete(id: number) {
     const sql = getDb();
+    const invoice = await sql`SELECT ms_party_id, total_amount FROM invoices WHERE id = ${id}`;
+    if (invoice.length > 0) {
+        const { ms_party_id, total_amount } = invoice[0];
+        const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
+        // Reverse
+        await sql`UPDATE ms_parties SET debit = debit - ${total_amount} WHERE id = ${ms_party_id}`;
+        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${dyeingParty.id}`;
+    }
+
     // invoice_items will be deleted automatically due to ON DELETE CASCADE
     await sql`DELETE FROM invoices WHERE id = ${id}`;
     return { success: true };

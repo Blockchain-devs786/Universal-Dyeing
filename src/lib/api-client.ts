@@ -471,6 +471,12 @@ export const reportsApi = {
     if (filters.amount_type) params.amount_type = filters.amount_type;
     
     return coreRequest<StockLedgerRow[]>('reports.stock_ledger', {}, params);
+  },
+  getFinancialLedger: (ms_party_id: number, from_date?: string, to_date?: string) => {
+    const params: Record<string, string> = { ms_party_id: String(ms_party_id) };
+    if (from_date) params.from_date = from_date;
+    if (to_date) params.to_date = to_date;
+    return coreRequest<any[]>('reports.financial_ledger', {}, params);
   }
 };
 
