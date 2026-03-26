@@ -157,8 +157,9 @@ export const usersService = {
     });
 
     if (error) {
-      console.error('[Resend Error]', error);
-      throw new Error('Failed to send verification email');
+      console.error('[Resend Error Details]:', JSON.stringify(error, null, 2));
+      console.error('[Attempted From Email]:', fromEmail);
+      throw new Error(`Failed to send verification email: ${error.message || 'Unknown error'}`);
     }
     return data;
   },
