@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api-client";
 
 import {
   Sidebar,
