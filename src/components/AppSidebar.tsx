@@ -22,8 +22,6 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { authApi } from "@/lib/api-client";
 
 import {
   Sidebar,
@@ -124,31 +122,10 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const queryClient = useQueryClient();
 
   // Get user from localStorage
   const userStr = localStorage.getItem("user");
-  const initialUser = userStr ? JSON.parse(userStr) : null;
-
-  // Refresh user data from server to catch permission changes
-  const { data: currentUser } = useQuery({
-    queryKey: ["current_user", initialUser?.email],
-    queryFn: async () => {
-        if (!initialUser?.email) return null;
-        const allUsers = await authApi.listUsers();
-        const found = allUsers.find(u => u.email === initialUser.email);
-        if (found) {
-            // Update localStorage with fresh data
-            localStorage.setItem("user", JSON.stringify(found));
-            return found;
-        }
-        return initialUser;
-    },
-    initialData: initialUser,
-    staleTime: 60000, // Refresh every minute
-  });
-
-  const user = currentUser || initialUser;
+  const user = userStr ? JSON.parse(userStr) : null;
   const access = user?.module_access || "";
   const isAdmin = user?.role === "admin" || access === "all";
 

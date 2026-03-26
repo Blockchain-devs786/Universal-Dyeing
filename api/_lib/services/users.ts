@@ -193,7 +193,8 @@ export const usersService = {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        module_access: user.module_access
       }
     };
   }
