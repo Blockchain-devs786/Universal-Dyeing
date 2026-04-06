@@ -421,19 +421,29 @@ export default function StockReport() {
       </div>
 
       {/* Main Table */}
-      <div className="bg-white shadow-sm rounded-xl overflow-hidden border">
-        <Table>
-          <TableHeader className="bg-slate-50 border-b">
+      <div className="bg-white shadow-sm rounded-xl overflow-hidden border print:border-none print:shadow-none">
+        <div className="hidden print:block mb-4 p-2 border-b-2 border-black flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Stock Report</h2>
+              <p className="text-sm font-medium">MS Party: {filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name} | Item: {filterItemId === "all" ? "All Items" : selectedItemObj?.name}</p>
+            </div>
+            <div className="text-right text-xs">
+              Printed on: {new Date().toLocaleString()}
+            </div>
+        </div>
+
+        <Table className="print:border-collapse print:w-full">
+          <TableHeader className="bg-slate-50 border-b print:bg-white print:border-b-2 print:border-black">
             <TableRow>
-              <TableHead className="py-4 font-semibold text-slate-600">Item Name</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">MSR</TableHead>
-              <TableHead className="font-semibold text-slate-600">MS Party</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">Total Inward</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">Total Outward</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">Total Transfer</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">Transfer IN</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center">Transfer OUT</TableHead>
-              <TableHead className="font-semibold text-blue-600 bg-blue-50/50 text-center">Remaining</TableHead>
+              <TableHead className="py-4 font-semibold text-slate-600 print:text-black print:font-bold">Item Name</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">MSR</TableHead>
+              <TableHead className="font-semibold text-slate-600 print:text-black print:font-bold">MS Party</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Inward</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Outward</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Transfer</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Transfer IN</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Transfer OUT</TableHead>
+              <TableHead className="font-semibold text-blue-600 bg-blue-50/50 text-center print:text-black print:font-bold print:bg-white">Remaining</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -449,16 +459,16 @@ export default function StockReport() {
               </TableRow>
             ) : (
               stocks.map((row, idx) => (
-                <TableRow key={idx} className="transition-colors hover:bg-slate-50/80 group">
-                  <TableCell className="font-medium text-slate-800 py-3">{row.item_name}</TableCell>
-                  <TableCell className="text-center font-medium">{row.msr}</TableCell>
-                  <TableCell className="font-medium text-slate-600">{row.ms_party_name}</TableCell>
-                  <TableCell className="text-center font-semibold text-blue-600/80">{row.total_inward || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-orange-500/80">{row.total_outward || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-purple-500/80">{row.total_transfer || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-emerald-500/80">{row.transfer_in || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-red-500/80">{row.transfer_out || '-'}</TableCell>
-                  <TableCell className="text-center font-bold text-blue-700 bg-blue-50/30">
+                <TableRow key={idx} className="transition-colors hover:bg-slate-50/80 group print:h-auto print:border-black">
+                  <TableCell className="font-medium text-slate-800 py-3 print:py-2">{row.item_name}</TableCell>
+                  <TableCell className="text-center font-medium print:py-2">{row.msr}</TableCell>
+                  <TableCell className="font-medium text-slate-600 print:py-2">{row.ms_party_name}</TableCell>
+                  <TableCell className="text-center font-semibold text-blue-600/80 print:py-2">{row.total_inward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-orange-500/80 print:py-2">{row.total_outward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-purple-500/80 print:py-2">{row.total_transfer || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-emerald-500/80 print:py-2">{row.transfer_in || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-red-500/80 print:py-2">{row.transfer_out || '-'}</TableCell>
+                  <TableCell className="text-center font-bold text-blue-700 bg-blue-50/30 print:font-black print:bg-white print:py-2">
                     {row.remaining}
                   </TableCell>
                 </TableRow>

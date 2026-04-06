@@ -303,30 +303,30 @@ export default function CashLedger() {
       {/* Report Content */}
       {isGenerated && (
         <div className="bg-white rounded-2xl shadow-elevated border overflow-hidden min-h-[600px] print:border-none print:shadow-none">
-          <div className="p-6 border-b bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:p-0 print:border-none">
+          <div className="p-6 border-b bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:p-2 print:mb-4 print:border-b-2 print:border-black print:flex-row print:justify-between">
             <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
+                <FileSpreadsheet className="h-6 w-6 text-emerald-600 print:hidden" />
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">{selectedLedger?.name || 'Unknown Account'}</h2>
-                    <p className="text-slate-500 text-xs font-medium">{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
+                    <h2 className="text-xl font-bold text-slate-900 print:text-2xl">{selectedLedger?.name || 'Unknown Account'}</h2>
+                    <p className="text-slate-500 text-xs font-medium print:text-black">{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
                 </div>
             </div>
-            <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest print:bg-transparent print:p-0 print:text-black print:text-xs">
                 Period: {fromDate ? format(new Date(fromDate), 'dd MMM yyyy') : ''} - {toDate ? format(new Date(toDate), 'dd MMM yyyy') : ''}
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-900">
-                <TableRow className="hover:bg-slate-900 border-none h-12">
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[120px]">Date</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Particulars</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Invoice/Voucher</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider">Description</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Debit (PKR)</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Credit (PKR)</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right">Balance</TableHead>
+          <div className="overflow-x-auto print:overflow-visible">
+            <Table className="print:border-collapse print:w-full">
+              <TableHeader className="bg-slate-900 print:bg-white">
+                <TableRow className="hover:bg-slate-900 border-none h-12 print:h-10 print:border-b-2 print:border-black">
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[120px] print:text-black print:font-bold">Date</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Particulars</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Invoice/Voucher</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Description</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Debit (PKR)</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Credit (PKR)</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -338,19 +338,19 @@ export default function CashLedger() {
                     </TableRow>
                 ) : (
                     ledger.map((row, idx) => (
-                      <TableRow key={idx} className="h-14 hover:bg-slate-50/80 transition-colors border-slate-100">
-                        <TableCell className="font-medium text-slate-600">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
-                        <TableCell className="font-bold text-slate-900 uppercase text-xs">{row.particulars}</TableCell>
-                        <TableCell className="font-bold text-blue-600 text-xs">{row.ref_no}</TableCell>
-                        <TableCell className="text-slate-500 text-xs max-w-xs truncate">{row.description}</TableCell>
-                        <TableCell className="text-right font-bold text-blue-700">
+                      <TableRow key={idx} className="h-14 hover:bg-slate-50/80 transition-colors border-slate-100 print:h-auto print:border-black">
+                        <TableCell className="font-medium text-slate-600 print:py-2">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell className="font-bold text-slate-900 uppercase text-xs print:py-2">{row.particulars}</TableCell>
+                        <TableCell className="font-bold text-blue-600 text-xs print:py-2">{row.ref_no}</TableCell>
+                        <TableCell className="text-slate-500 text-xs max-w-xs truncate print:whitespace-normal print:py-2">{row.description}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-700 print:py-2">
                             {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-red-600">
+                        <TableCell className="text-right font-bold text-red-600 print:py-2">
                             {(row.credit || 0) > 0 ? (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
                         <TableCell className={cn(
-                            "text-right font-black",
+                            "text-right font-black print:py-2",
                             (row.balance || 0) < 0 ? "text-red-700" : "text-emerald-700"
                         )}>
                             {(row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
