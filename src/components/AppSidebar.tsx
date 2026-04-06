@@ -45,7 +45,7 @@ import {
 const defineItems = [
   { title: "MS Parties", url: "/define/ms-parties", icon: Building2 },
   { title: "From Parties", url: "/define/from-parties", icon: Building2 },
-  { title: "Vendors", url: "/define/vendors", icon: Truck },
+  { title: "Suppliers", url: "/define/suppliers", icon: Truck },
   { title: "Items", url: "/define/items", icon: Package },
   { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },
@@ -141,7 +141,7 @@ export function AppSidebar() {
       const map: Record<string, string> = {
           "/define/ms-parties": "define_ms_parties",
           "/define/from-parties": "define_from_parties",
-          "/define/vendors": "define_vendors",
+          "/define/suppliers": "define_suppliers",
           "/define/items": "define_items",
           "/define/assets": "define_assets",
           "/define/expenses": "define_expenses",

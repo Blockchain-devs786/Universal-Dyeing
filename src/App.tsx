@@ -8,7 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
 import MsParties from "@/pages/define/MsParties";
 import FromParties from "@/pages/define/FromParties";
-import Vendors from "@/pages/define/Vendors";
+import Suppliers from "@/pages/define/Suppliers";
 import Items from "@/pages/define/Items";
 import Assets from "@/pages/define/Assets";
 import Expenses from "@/pages/define/Expenses";
@@ -60,7 +60,7 @@ const App = () => (
           
           <Route path="/define/ms-parties" element={<AuthGuard><LayoutWrapper><MsParties /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} />
-          <Route path="/define/vendors" element={<AuthGuard><LayoutWrapper><Vendors /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/suppliers" element={<AuthGuard><LayoutWrapper><Suppliers /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/items" element={<AuthGuard><LayoutWrapper><Items /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/assets" element={<AuthGuard><LayoutWrapper><Assets /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/expenses" element={<AuthGuard><LayoutWrapper><Expenses /></LayoutWrapper></AuthGuard>} />

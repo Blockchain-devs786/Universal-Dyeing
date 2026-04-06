@@ -48,7 +48,7 @@ export interface FromParty {
   updated_at: string;
 }
 
-export interface Vendor {
+export interface Supplier {
   id: number;
   name: string;
   phone?: string;
@@ -320,7 +320,7 @@ export interface Invoice {
 export interface VoucherEntry {
   id?: number;
   voucher_id?: number;
-  account_type: 'MS Party' | 'Vendor' | 'Expense' | 'Account' | 'Asset';
+  account_type: 'MS Party' | 'Supplier' | 'Expense' | 'Account' | 'Asset';
   account_id: number;
   debit: number;
   credit: number;
@@ -408,27 +408,27 @@ export const fromPartiesApi = {
     coreRequest<{ success: boolean }>('from_parties.delete', { id }),
 };
 
-// ─── Vendors API ─────────────────────────────────────────────────
+// ─── Suppliers API ─────────────────────────────────────────────────
 
-export const vendorsApi = {
+export const suppliersApi = {
   list: (search?: string, status?: string) => {
     const params: Record<string, string> = {};
     if (search) params.search = search;
     if (status) params.status = status;
-    return coreRequest<Vendor[]>('vendors.list', {}, params);
+    return coreRequest<Supplier[]>('suppliers.list', {}, params);
   },
   
   getById: (id: number) => 
-    coreRequest<Vendor>('vendors.get', { id }),
+    coreRequest<Supplier>('suppliers.get', { id }),
   
-  create: (data: Omit<Vendor, 'id' | 'debit' | 'credit' | 'created_at' | 'updated_at'>) => 
-    coreRequest<Vendor>('vendors.create', data),
+  create: (data: Omit<Supplier, 'id' | 'debit' | 'credit' | 'created_at' | 'updated_at'>) => 
+    coreRequest<Supplier>('suppliers.create', data),
   
-  update: (id: number, data: Partial<Vendor>) => 
-    coreRequest<Vendor>('vendors.update', { ...data, id }),
+  update: (id: number, data: Partial<Supplier>) => 
+    coreRequest<Supplier>('suppliers.update', { ...data, id }),
   
   delete: (id: number) => 
-    coreRequest<{ success: boolean }>('vendors.delete', { id }),
+    coreRequest<{ success: boolean }>('suppliers.delete', { id }),
 };
 
 // ─── Outward Parties API ─────────────────────────────────────────

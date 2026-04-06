@@ -47,9 +47,9 @@ export async function initializeDatabase() {
     console.error("Migration error for ms_parties rates:", err);
   }
 
-  // Vendors table
+  // Suppliers table
   await db`
-    CREATE TABLE IF NOT EXISTS vendors (
+    CREATE TABLE IF NOT EXISTS suppliers (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
       phone VARCHAR(50),
@@ -63,6 +63,22 @@ export async function initializeDatabase() {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Migration: Rename vendors to suppliers if exists
+  try {
+    const tableExists = await db`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'vendors'
+      )
+    `;
+    if (tableExists[0].exists) {
+      await db`ALTER TABLE vendors RENAME TO suppliers`;
+      console.log("Renamed vendors table to suppliers");
+    }
+  } catch (err) {
+    console.error("Migration error renaming vendors to suppliers:", err);
+  }
 
   // From Parties table (synced with MS Parties occasionally or manually managed)
   await db`
@@ -391,7 +407,7 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS voucher_entries (
       id SERIAL PRIMARY KEY,
       voucher_id INTEGER REFERENCES vouchers(id) ON DELETE CASCADE,
-      account_type VARCHAR(50) NOT NULL CHECK (account_type IN ('MS Party', 'Vendor', 'Expense', 'Account', 'Asset')),
+      account_type VARCHAR(50) NOT NULL CHECK (account_type IN ('MS Party', 'Supplier', 'Expense', 'Account', 'Asset')),
       account_id INTEGER NOT NULL,
       debit DECIMAL(15,2) DEFAULT 0,
       credit DECIMAL(15,2) DEFAULT 0,

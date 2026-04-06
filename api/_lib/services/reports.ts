@@ -312,7 +312,7 @@ export const reportsService = {
               CASE 
                 WHEN ve2.account_type = 'MS Party' THEN 'MS: ' || mp.name
                 WHEN ve2.account_type = 'Account' THEN 'Acc: ' || acc.name
-                WHEN ve2.account_type = 'Vendor' THEN 'Ven: ' || ven.name
+                WHEN ve2.account_type = 'Supplier' THEN 'Sup: ' || sup.name
                 WHEN ve2.account_type = 'Expense' THEN 'Exp: ' || exp.name
                 WHEN ve2.account_type = 'Asset' THEN 'Ast: ' || ast.name
                 ELSE ve2.account_type || ': ' || ve2.account_id
@@ -320,7 +320,7 @@ export const reportsService = {
             FROM voucher_entries ve2
             LEFT JOIN ms_parties mp ON ve2.account_id = mp.id AND ve2.account_type = 'MS Party'
             LEFT JOIN accounts acc ON ve2.account_id = acc.id AND ve2.account_type = 'Account'
-            LEFT JOIN vendors ven ON ve2.account_id = ven.id AND ve2.account_type = 'Vendor'
+            LEFT JOIN suppliers sup ON ve2.account_id = sup.id AND ve2.account_type = 'Supplier'
             LEFT JOIN expenses exp ON ve2.account_id = exp.id AND ve2.account_type = 'Expense'
             LEFT JOIN assets ast ON ve2.account_id = ast.id AND ve2.account_type = 'Asset'
             WHERE ve2.voucher_id = v.id AND ve2.id != ve.id
@@ -348,7 +348,7 @@ export const reportsService = {
     let openingTable = '';
     switch(account_type) {
       case 'MS Party': openingTable = 'ms_parties'; break;
-      case 'Vendor': openingTable = 'vendors'; break;
+      case 'Supplier': openingTable = 'suppliers'; break;
       case 'Account': openingTable = 'accounts'; break;
       case 'Expense': openingTable = 'expenses'; break;
       case 'Asset': openingTable = 'assets'; break;
@@ -357,7 +357,7 @@ export const reportsService = {
     if (openingTable) {
         let rows: any[] = [];
         if (openingTable === 'ms_parties') rows = await sql`SELECT opening_balance FROM ms_parties WHERE id = ${account_id}`;
-        else if (openingTable === 'vendors') rows = await sql`SELECT opening_balance FROM vendors WHERE id = ${account_id}`;
+        else if (openingTable === 'suppliers') rows = await sql`SELECT opening_balance FROM suppliers WHERE id = ${account_id}`;
         else if (openingTable === 'accounts') rows = await sql`SELECT opening_balance FROM accounts WHERE id = ${account_id}`;
         else if (openingTable === 'expenses') rows = await sql`SELECT opening_balance FROM expenses WHERE id = ${account_id}`;
         else if (openingTable === 'assets') rows = await sql`SELECT opening_balance FROM assets WHERE id = ${account_id}`;

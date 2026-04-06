@@ -8,7 +8,7 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { 
-  vouchersApi, msPartiesApi, vendorsApi, 
+  vouchersApi, msPartiesApi, suppliersApi, 
   expensesApi, accountsApi, assetsApi,
   type Voucher, type VoucherEntry 
 } from "@/lib/api-client";
@@ -43,7 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
-type AccountType = 'MS Party' | 'Vendor' | 'Expense' | 'Account' | 'Asset';
+type AccountType = 'MS Party' | 'Supplier' | 'Expense' | 'Account' | 'Asset';
 
 interface FormEntry {
   account_type: AccountType;
@@ -72,18 +72,18 @@ export default function Vouchers() {
 
   // Fetching Account Data for Dropdowns
   const { data: msParties = [] } = useQuery({ queryKey: ["ms_parties"], queryFn: () => msPartiesApi.list() });
-  const { data: vendors = [] } = useQuery({ queryKey: ["vendors"], queryFn: () => vendorsApi.list() });
+  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list() });
   const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: () => expensesApi.list() });
   const { data: bankAccounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list() });
   const { data: assets = [] } = useQuery({ queryKey: ["assets"], queryFn: () => assetsApi.list() });
 
   const accountOptions = useMemo(() => ({
     'MS Party': msParties,
-    'Vendor': vendors,
+    'Supplier': suppliers,
     'Expense': expenses,
     'Account': bankAccounts,
     'Asset': assets,
-  }), [msParties, vendors, expenses, bankAccounts, assets]);
+  }), [msParties, suppliers, expenses, bankAccounts, assets]);
 
   // Fetch Vouchers
   const { data: vouchers = [], isLoading } = useQuery({
@@ -100,7 +100,7 @@ export default function Vouchers() {
       queryClient.invalidateQueries({ queryKey: ["vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["ms_parties"] });
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success("Voucher posted successfully");
       setIsDialogOpen(false);
       resetForm();
@@ -114,7 +114,7 @@ export default function Vouchers() {
       queryClient.invalidateQueries({ queryKey: ["vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["ms_parties"] });
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success("Voucher deleted and balances reversed");
     },
     onError: (error: Error) => toast.error(error.message),
@@ -305,7 +305,7 @@ export default function Vouchers() {
                                                   <SelectContent>
                                                       <SelectItem value="Account">Bank/Cash</SelectItem>
                                                       <SelectItem value="MS Party">MS Party</SelectItem>
-                                                      <SelectItem value="Vendor">Vendor</SelectItem>
+                                                      <SelectItem value="Supplier">Supplier</SelectItem>
                                                       <SelectItem value="Expense">Expense</SelectItem>
                                                       <SelectItem value="Asset">Asset</SelectItem>
                                                   </SelectContent>
@@ -633,7 +633,7 @@ export default function Vouchers() {
                       <TableCell className="pl-6 font-bold text-slate-800">
                         {
                             entry.account_type === 'MS Party' ? msParties.find(p => p.id === entry.account_id)?.name :
-                            entry.account_type === 'Vendor' ? vendors.find(p => p.id === entry.account_id)?.name :
+                            entry.account_type === 'Supplier' ? suppliers.find(p => p.id === entry.account_id)?.name :
                             entry.account_type === 'Expense' ? expenses.find(p => p.id === entry.account_id)?.name :
                             entry.account_type === 'Account' ? bankAccounts.find(p => p.id === entry.account_id)?.name :
                             assets.find(p => p.id === entry.account_id)?.name

@@ -94,9 +94,9 @@ export const vouchersService = {
           WHERE id = ${entry.account_id}
         `;
         break;
-      case 'Vendor':
+      case 'Supplier':
         await db`
-          UPDATE vendors SET 
+          UPDATE suppliers SET 
             debit = debit + ${debit}, 
             credit = credit + ${credit},
             updated_at = NOW()

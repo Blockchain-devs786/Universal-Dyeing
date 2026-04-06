@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Truck, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { vendorsApi, type Vendor } from "@/lib/api-client";
+import { suppliersApi, type Supplier } from "@/lib/api-client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,11 +25,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-export default function Vendors() {
+export default function Suppliers() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -42,17 +42,17 @@ export default function Vendors() {
   });
 
   // Fetch
-  const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ["vendors", search],
-    queryFn: () => vendorsApi.list(search),
+  const { data: suppliers = [], isLoading } = useQuery({
+    queryKey: ["suppliers", search],
+    queryFn: () => suppliersApi.list(search),
   });
 
   // Create
   const createMutation = useMutation({
-    mutationFn: (data: Omit<Vendor, 'id' | 'created_at' | 'updated_at'>) => vendorsApi.create(data),
+    mutationFn: (data: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>) => suppliersApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor created successfully");
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("Supplier created successfully");
       closeDialog();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -60,10 +60,10 @@ export default function Vendors() {
 
   // Update
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Vendor> }) => vendorsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Supplier> }) => suppliersApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("Supplier updated successfully");
       closeDialog();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -71,28 +71,28 @@ export default function Vendors() {
 
   // Delete
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => vendorsApi.delete(id),
+    mutationFn: (id: number) => suppliersApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("Supplier deleted successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   // Handlers
-  const handleOpenDialog = (vendor?: Vendor) => {
-    if (vendor) {
-      setEditingVendor(vendor);
+  const handleOpenDialog = (supplier?: Supplier) => {
+    if (supplier) {
+      setEditingSupplier(supplier);
       setFormData({
-        name: vendor.name,
-        phone: vendor.phone || "",
-        address: vendor.address || "",
-        city: vendor.city || "",
-        opening_balance: vendor.opening_balance || 0,
-        status: vendor.status || "active",
+        name: supplier.name,
+        phone: supplier.phone || "",
+        address: supplier.address || "",
+        city: supplier.city || "",
+        opening_balance: supplier.opening_balance || 0,
+        status: supplier.status || "active",
       });
     } else {
-      setEditingVendor(null);
+      setEditingSupplier(null);
       setFormData({
         name: "",
         phone: "",
@@ -107,23 +107,23 @@ export default function Vendors() {
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setEditingVendor(null);
+    setEditingSupplier(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) return toast.error("Name is required");
 
-    if (editingVendor) {
-      updateMutation.mutate({ id: editingVendor.id, data: formData });
+    if (editingSupplier) {
+      updateMutation.mutate({ id: editingSupplier.id, data: formData });
     } else {
       createMutation.mutate(formData);
     }
   };
 
-  const handleStatusToggle = (vendor: Vendor, checked: boolean) => {
+  const handleStatusToggle = (supplier: Supplier, checked: boolean) => {
     const newStatus = checked ? "active" : "inactive";
-    updateMutation.mutate({ id: vendor.id, data: { status: newStatus } });
+    updateMutation.mutate({ id: supplier.id, data: { status: newStatus } });
   };
 
   return (
@@ -134,7 +134,7 @@ export default function Vendors() {
             <Truck className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Vendors</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
             <p className="text-white/80 mt-1">Manage suppliers and their accounts.</p>
           </div>
         </div>
@@ -142,13 +142,13 @@ export default function Vendors() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenDialog()} className="bg-white text-primary hover:bg-white/90 shadow-md transition-all">
-              <Plus className="mr-2 h-4 w-4" /> Add Vendor
+              <Plus className="mr-2 h-4 w-4" /> Add Supplier
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>{editingVendor ? "Edit Vendor" : "Add New Vendor"}</DialogTitle>
+                <DialogTitle>{editingSupplier ? "Edit Supplier" : "Add New Supplier"}</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
@@ -213,7 +213,7 @@ export default function Vendors() {
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingVendor ? "Save Changes" : "Create Vendor"}
+                  {editingSupplier ? "Save Changes" : "Create Supplier"}
                 </Button>
               </DialogFooter>
             </form>
@@ -226,7 +226,7 @@ export default function Vendors() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search specific vendor..."
+              placeholder="Search specific supplier..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-white"
@@ -249,36 +249,36 @@ export default function Vendors() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Loading vendors...</TableCell>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Loading suppliers...</TableCell>
               </TableRow>
-            ) : vendors.length === 0 ? (
+            ) : suppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No vendors found.</TableCell>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No suppliers found.</TableCell>
               </TableRow>
             ) : (
-              vendors.map((vendor) => (
-                <TableRow key={vendor.id} className="transition-colors hover:bg-muted/50 group">
-                  <TableCell className="font-medium whitespace-nowrap">{vendor.name}</TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">{vendor.phone || "-"}</TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{vendor.city || "-"}</TableCell>
+              suppliers.map((supplier) => (
+                <TableRow key={supplier.id} className="transition-colors hover:bg-muted/50 group">
+                  <TableCell className="font-medium whitespace-nowrap">{supplier.name}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">{supplier.phone || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{supplier.city || "-"}</TableCell>
                   <TableCell className="text-right font-medium text-emerald-600 whitespace-nowrap">
-                    Rs {Number(vendor.opening_balance || 0).toLocaleString()}
+                    Rs {Number(supplier.opening_balance || 0).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-center mobile-hide-column">
                     <Switch 
-                      checked={vendor.status === "active"} 
-                      onCheckedChange={(c) => handleStatusToggle(vendor, c)}
+                      checked={supplier.status === "active"} 
+                      onCheckedChange={(c) => handleStatusToggle(supplier, c)}
                       disabled={updateMutation.isPending}
                     />
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenDialog(vendor)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenDialog(supplier)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                        if(confirm('Are you sure you want to delete this vendor?')) {
-                          deleteMutation.mutate(vendor.id);
+                        if(confirm('Are you sure you want to delete this supplier?')) {
+                          deleteMutation.mutate(supplier.id);
                         }
                       }}>
                         <Trash2 className="h-4 w-4" />
