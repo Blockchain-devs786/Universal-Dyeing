@@ -67,7 +67,20 @@ export default function StockReport() {
 
   const generatePDFBlob = async (): Promise<Blob> => {
     if (!printRef.current) return new Blob();
-    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+    const el = printRef.current;
+    // Temporarily make element visible for capture
+    el.style.visibility = 'visible';
+    el.style.opacity = '1';
+    el.style.zIndex = '9999';
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      windowWidth: 894,
+    });
+    // Hide again after capture
+    el.style.visibility = 'hidden';
+    el.style.opacity = '0';
+    el.style.zIndex = '-2';
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -356,52 +369,50 @@ export default function StockReport() {
       </div>
 
       {/* Hidden Print Container for HTML-to-PDF */}
-      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
-        <div className="p-8">
-          <div className="mb-6 border-b pb-4">
-            <h1 className="text-2xl font-bold">Stock Report</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              MS Party: {filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name} |
-              Item: {filterItemId === "all" ? "All Items" : selectedItemObj?.name}
-            </p>
-          </div>
-          <div className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 font-semibold shadow-sm text-center text-sm mb-6">
-            <div><span className="text-xs text-slate-500 block mb-1">Total Inward</span><span className="text-blue-600 font-bold">{aggregates.total_inward.toLocaleString()}</span></div>
-            <div><span className="text-xs text-slate-500 block mb-1">Total Outward</span><span className="text-orange-500 font-bold">{aggregates.total_outward.toLocaleString()}</span></div>
-            <div><span className="text-xs text-slate-500 block mb-1">Total Transfer</span><span className="text-purple-500 font-bold">{aggregates.total_transfer.toLocaleString()}</span></div>
-            <div><span className="text-xs text-slate-500 block mb-1">Transfer IN</span><span className="text-emerald-500 font-bold">{aggregates.transfer_in.toLocaleString()}</span></div>
-            <div><span className="text-xs text-slate-500 block mb-1">Transfer OUT</span><span className="text-red-500 font-bold">{aggregates.transfer_out.toLocaleString()}</span></div>
-            <div className="border-l border-slate-300 pl-4 py-1">
-              <span className="text-xs text-slate-500 block mb-1">Net Remaining</span>
-              <span className="text-blue-700 font-bold">{aggregates.net_remaining.toLocaleString()}</span>
+      <div ref={printRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: -2, width: '794px', background: 'white', visibility: 'hidden', opacity: 0, color: '#1e293b', fontSize: '14px' }}>
+        <div style={{ padding: '40px 40px 20px 40px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 'bold', marginBottom: '4px' }}>Stock Report</h1>
+          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
+            MS Party: {filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name} |
+            Item: {filterItemId === "all" ? "All Items" : selectedItemObj?.name}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc', marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>
+            <div style={{ textAlign: 'center' }}><span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Total Inward</span><span style={{ color: '#2563eb' }}>{aggregates.total_inward.toLocaleString() || '-'}</span></div>
+            <div style={{ textAlign: 'center' }}><span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Total Outward</span><span style={{ color: '#f97316' }}>{aggregates.total_outward.toLocaleString() || '-'}</span></div>
+            <div style={{ textAlign: 'center' }}><span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Total Transfer</span><span style={{ color: '#a855f7' }}>{aggregates.total_transfer.toLocaleString() || '-'}</span></div>
+            <div style={{ textAlign: 'center' }}><span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Transfer IN</span><span style={{ color: '#10b981' }}>{aggregates.transfer_in.toLocaleString() || '-'}</span></div>
+            <div style={{ textAlign: 'center' }}><span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Transfer OUT</span><span style={{ color: '#ef4444' }}>{aggregates.transfer_out.toLocaleString() || '-'}</span></div>
+            <div style={{ borderLeft: '1px solid #cbd5e1', paddingLeft: '16px', marginLeft: '8px' }}>
+              <span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Net Remaining</span>
+              <span style={{ color: '#1d4ed8', fontWeight: 'bold' }}>{aggregates.net_remaining.toLocaleString()}</span>
             </div>
           </div>
-          <table className="w-full text-sm border-collapse">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
-              <tr className="bg-slate-100">
-                <th className="border py-2 px-3 text-left font-semibold text-slate-600">Item Name</th>
-                <th className="border py-2 px-3 text-center font-semibold text-slate-600">MSR</th>
-                <th className="border py-2 px-3 text-left font-semibold text-slate-600">MS Party</th>
-                <th className="border py-2 px-3 text-center font-semibold text-blue-600">Total Inward</th>
-                <th className="border py-2 px-3 text-center font-semibold text-orange-500">Total Outward</th>
-                <th className="border py-2 px-3 text-center font-semibold text-purple-500">Total Transfer</th>
-                <th className="border py-2 px-3 text-center font-semibold text-emerald-500">Transfer IN</th>
-                <th className="border py-2 px-3 text-center font-semibold text-red-500">Transfer OUT</th>
-                <th className="border py-2 px-3 text-center font-bold text-blue-700">Remaining</th>
+              <tr style={{ background: '#f1f5f9' }}>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Item Name</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>MSR</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>MS Party</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#2563eb', fontWeight: '600' }}>Total Inward</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#f97316', fontWeight: '600' }}>Total Outward</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#a855f7', fontWeight: '600' }}>Total Transfer</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#10b981', fontWeight: '600' }}>Transfer IN</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', color: '#ef4444', fontWeight: '600' }}>Transfer OUT</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', borderRadius: '0 8px 8px 0', color: '#1d4ed8', fontWeight: '700' }}>Remaining</th>
               </tr>
             </thead>
             <tbody>
               {stocks.map((row, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                  <td className="border py-2 px-3 font-medium">{row.item_name}</td>
-                  <td className="border py-2 px-3 text-center">{row.msr}</td>
-                  <td className="border py-2 px-3">{row.ms_party_name}</td>
-                  <td className="border py-2 px-3 text-center font-semibold text-blue-600">{row.total_inward || '-'}</td>
-                  <td className="border py-2 px-3 text-center font-semibold text-orange-500">{row.total_outward || '-'}</td>
-                  <td className="border py-2 px-3 text-center font-semibold text-purple-500">{row.total_transfer || '-'}</td>
-                  <td className="border py-2 px-3 text-center font-semibold text-emerald-500">{row.transfer_in || '-'}</td>
-                  <td className="border py-2 px-3 text-center font-semibold text-red-500">{row.transfer_out || '-'}</td>
-                  <td className="border py-2 px-3 text-center font-bold text-blue-700">{row.remaining}</td>
+                <tr key={idx} style={{ background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', fontWeight: '500' }}>{row.item_name}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '500' }}>{row.msr}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px' }}>{row.ms_party_name}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#2563eb' }}>{row.total_inward || '-'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#f97316' }}>{row.total_outward || '-'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#a855f7' }}>{row.total_transfer || '-'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#10b981' }}>{row.transfer_in || '-'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#ef4444' }}>{row.transfer_out || '-'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '10px 12px', textAlign: 'center', fontWeight: '700', color: '#1d4ed8' }}>{row.remaining}</td>
                 </tr>
               ))}
             </tbody>

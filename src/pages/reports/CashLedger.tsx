@@ -393,52 +393,52 @@ export default function CashLedger() {
       )}
 
       {/* Hidden Print Container for HTML-to-PDF */}
-      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
-        <div className="p-8">
-          <div className="mb-6 border-b pb-4 flex justify-between items-end">
+      <div ref={printRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: -2, width: '794px', background: 'white', visibility: 'hidden', opacity: 0, color: '#1e293b', fontSize: '13px' }}>
+        <div style={{ padding: '40px 40px 20px 40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
             <div>
-              <h1 className="text-2xl font-bold">{selectedLedger?.name || 'Unknown Account'}</h1>
-              <p className="text-sm text-slate-500">{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>{selectedLedger?.name || 'Unknown Account'}</h1>
+              <p style={{ fontSize: '14px', color: '#64748b' }}>{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
             </div>
-            <p className="text-xs text-slate-500">
+            <p style={{ fontSize: '13px', color: '#64748b' }}>
               Period: {fromDate ? format(new Date(fromDate), 'dd MMM yyyy') : ''} - {toDate ? format(new Date(toDate), 'dd MMM yyyy') : ''}
             </p>
           </div>
-          <table className="w-full text-xs border-collapse">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
-              <tr className="bg-slate-900 text-white">
-                <th className="border py-2 px-3 text-left">Date</th>
-                <th className="border py-2 px-3 text-left">Particulars</th>
-                <th className="border py-2 px-3 text-left">Invoice/Voucher</th>
-                <th className="border py-2 px-3 text-left">Description</th>
-                <th className="border py-2 px-3 text-right">Debit (PKR)</th>
-                <th className="border py-2 px-3 text-right">Credit (PKR)</th>
-                <th className="border py-2 px-3 text-right">Balance</th>
+              <tr style={{ background: '#1e293b', color: 'white' }}>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Date</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Particulars</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Invoice/Voucher</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Description</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'right' }}>Debit (PKR)</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'right' }}>Credit (PKR)</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'right' }}>Balance</th>
               </tr>
             </thead>
             <tbody>
               {ledger.map((row, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                  <td className="border py-2 px-3 text-slate-600">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</td>
-                  <td className="border py-2 px-3 text-slate-900 uppercase text-xs">{row.particulars}</td>
-                  <td className="border py-2 px-3 text-blue-600 text-xs">{row.ref_no}</td>
-                  <td className="border py-2 px-3 text-slate-500 text-xs">{row.description}</td>
-                  <td className="border py-2 px-3 text-right text-blue-700 font-bold">
+                <tr key={idx} style={{ background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#475569' }}>{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', fontWeight: '600', textTransform: 'uppercase' }}>{row.particulars}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#2563eb' }}>{row.ref_no}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#64748b' }}>{row.description}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#1d4ed8', fontWeight: '600' }}>
                     {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                   </td>
-                  <td className="border py-2 px-3 text-right text-red-600 font-bold">
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#dc2626', fontWeight: '600' }}>
                     {(row.credit || 0) > 0 ? (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                   </td>
-                  <td className={`border py-2 px-3 text-right font-bold ${(row.balance || 0) < 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', fontWeight: '700', color: (row.balance || 0) < 0 ? '#dc2626' : '#059669' }}>
                     {(row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}
-              <tr className="bg-slate-100 font-bold">
-                <td colSpan={4} className="border py-2 px-3">TOTALS</td>
-                <td className="border py-2 px-3 text-right text-blue-700">{totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td className="border py-2 px-3 text-right text-red-600">{totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td className="border py-2 px-3 text-right">{finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              <tr style={{ background: '#f1f5f9', fontWeight: '700' }}>
+                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px' }} colSpan={4}>TOTALS</td>
+                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#1d4ed8' }}>{totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#dc2626' }}>{totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right' }}>{finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
               </tr>
             </tbody>
           </table>

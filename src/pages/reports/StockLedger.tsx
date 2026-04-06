@@ -515,61 +515,61 @@ export default function StockLedger() {
       )}
 
       {/* Hidden Print Container for HTML-to-PDF */}
-      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
-        <div className="p-8">
-          <div className="mb-6 border-b pb-4 flex justify-between items-end">
+      <div ref={printRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: -2, width: '794px', background: 'white', visibility: 'hidden', opacity: 0, color: '#1e293b', fontSize: '12px' }}>
+        <div style={{ padding: '40px 40px 20px 40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
             <div>
-              <h1 className="text-2xl font-bold">Stock Ledger Report</h1>
-              <p className="text-sm text-slate-500">{selectedMsPartyObj?.name || 'All Ledgers'} | Item: {itemId === 'all' ? 'All' : selectedItemObj?.name} | {fromDate} to {toDate}</p>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Stock Ledger Report</h1>
+              <p style={{ fontSize: '13px', color: '#64748b' }}>{selectedMsPartyObj?.name || 'All Ledgers'} | Item: {itemId === 'all' ? 'All' : selectedItemObj?.name} | {format(new Date(fromDate), 'dd MMM yyyy')} to {format(new Date(toDate), 'dd MMM yyyy')}</p>
             </div>
           </div>
-          {groupedData.map((group, gi) => (
-            <div key={gi} className="mb-8">
-              <h2 className="text-lg font-bold mb-2 bg-slate-100 px-2 py-1">{group.itemName}</h2>
-              <table className="w-full text-xs border-collapse mb-4">
+          {groupedData.map((group) => (
+            <div key={group.itemId} style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', background: '#f1f5f9', padding: '8px 12px' }}>{group.itemName}</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', marginBottom: '8px' }}>
                 <thead>
-                  <tr className="bg-slate-800 text-white">
-                    <th className="border py-2 px-3 text-left">Date</th>
-                    <th className="border py-2 px-3 text-left">Type / Ref</th>
-                    <th className="border py-2 px-3 text-left">Particulars</th>
-                    <th className="border py-2 px-3 text-center">MSR</th>
-                    <th className="border py-2 px-3 text-left">Description</th>
-                    <th className="border py-2 px-3 text-center text-blue-300">Debit (+)</th>
-                    <th className="border py-2 px-3 text-center text-orange-300">Credit (-)</th>
-                    <th className="border py-2 px-3 text-center">Balance</th>
+                  <tr style={{ background: '#1e293b', color: 'white' }}>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'left' }}>Date</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'left' }}>Type / Ref</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'left' }}>Particulars</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>MSR</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'left' }}>Description</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>Debit (+)</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>Credit (-)</th>
+                    <th style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>Balance</th>
                   </tr>
                 </thead>
                 <tbody>
                   {group.transactions.map((tx, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                      <td className="border py-2 px-3">{format(new Date(tx.date), 'dd/MM/yyyy')}</td>
-                      <td className="border py-2 px-3"><span className="font-bold">{tx.type}</span><br/><span className="text-slate-400 text-[10px]">{tx.ref_no}</span></td>
-                      <td className="border py-2 px-3">{tx.particulars}</td>
-                      <td className="border py-2 px-3 text-center">{tx.measurement}"</td>
-                      <td className="border py-2 px-3 text-slate-500 text-[10px]" title={tx.description}>{tx.description}</td>
-                      <td className="border py-2 px-3 text-center text-blue-700 font-bold">
+                    <tr key={idx} style={{ background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px' }}>{format(new Date(tx.date), 'dd/MM/yyyy')}</td>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px' }}><span style={{ fontWeight: 'bold' }}>{tx.type}</span><br/><span style={{ color: '#94a3b8', fontSize: '10px' }}>{tx.ref_no}</span></td>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px' }}>{tx.particulars}</td>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>{tx.measurement}"</td>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', color: '#94a3b8', fontSize: '10px' }}>{tx.description}</td>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center', color: '#1d4ed8', fontWeight: 'bold' }}>
                         {tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : "-"}
                       </td>
-                      <td className="border py-2 px-3 text-center text-orange-600 font-bold">
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center', color: '#ea580c', fontWeight: 'bold' }}>
                         {tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : "-"}
                       </td>
-                      <td className={`border py-2 px-3 text-center font-bold ${tx.balance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+                      <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center', fontWeight: 'bold', color: tx.balance >= 0 ? '#1e293b' : '#ef4444' }}>
                         {tx.balance.toLocaleString()}
                       </td>
                     </tr>
                   ))}
-                  <tr className="bg-slate-100 font-bold">
-                    <td colSpan={5} className="border py-2 px-3 text-right">Totals - {group.itemName}</td>
-                    <td className="border py-2 px-3 text-center text-blue-700">+{group.totalDebit.toLocaleString()}</td>
-                    <td className="border py-2 px-3 text-center text-orange-600">-{group.totalCredit.toLocaleString()}</td>
-                    <td className="border py-2 px-3 text-center">{group.finalBalance.toLocaleString()}</td>
+                  <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'right' }} colSpan={5}>Totals - {group.itemName}</td>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center', color: '#1d4ed8' }}>+{group.totalDebit.toLocaleString()}</td>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center', color: '#ea580c' }}>-{group.totalCredit.toLocaleString()}</td>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 8px', textAlign: 'center' }}>{group.finalBalance.toLocaleString()}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           ))}
           {groupedData.length === 0 && (
-            <p className="text-center text-slate-400 py-10 italic">No data</p>
+            <p style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontStyle: 'italic' }}>No data</p>
           )}
         </div>
       </div>
