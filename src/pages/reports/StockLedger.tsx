@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { sharePDF } from "@/lib/shareUtils";
+import { sharePDF, mailPDF } from "@/lib/shareUtils";
 
 type GroupedLedger = {
   itemId: number;
@@ -71,6 +71,7 @@ export default function StockLedger() {
   const [isGenerated, setIsGenerated] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
+  const [isPreparing, setIsPreparing] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Queries
@@ -388,48 +389,45 @@ export default function StockLedger() {
              </h2>
              <div className="flex gap-2">
                <Button
-                 variant="outline"
-                 size="sm"
-                 className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
-                 onClick={async () => {
-                   const blob = await generatePDFBlob();
-                   const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-                   await sharePDF(blob, filename);
-               }}
-               >
-                 <Share2 className="h-4 w-4 mr-2" /> Share
-               </Button>
-               <Button
-                 variant="outline"
-                 size="sm"
-                 className="bg-slate-700 hover:bg-slate-800 text-white border-none shadow-sm"
-                 onClick={async () => {
-                   const email = getSetting("email");
-                   const subject = `Stock Ledger: ${selectedMsPartyObj?.name || 'All'}`;
-                   const body = `Stock Ledger Report\nParty: ${selectedMsPartyObj?.name || 'All'}\nPeriod: ${fromDate} to ${toDate}`;
-                   const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}.pdf`;
-                   const blob = await generatePDFBlob();
-
-                   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
-                     const file = new File([blob], filename, { type: "application/pdf" });
-                     if (navigator.canShare?.({ files: [file] })) {
-                       const shareData: ShareData = { files: [file], text: body };
-                       await navigator.share(shareData);
-                       return;
-                     }
-                   }
-
-                   const url = URL.createObjectURL(blob);
-                   const link = document.createElement('a');
-                   link.href = url;
-                   link.download = filename;
-                   link.click();
-                   URL.revokeObjectURL(url);
-                   window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                 }}
-               >
-                 <Mail className="h-4 w-4 mr-2" /> Mail Report
-               </Button>
+                  variant="outline"
+                  size="sm"
+                  disabled={isPreparing}
+                  className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
+                  onClick={async () => {
+                    setIsPreparing(true);
+                    try {
+                        const blob = await generatePDFBlob();
+                        const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                        await sharePDF(blob, filename);
+                    } finally {
+                        setIsPreparing(false);
+                    }
+                }}
+                >
+                  {isPreparing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Share2 className="h-4 w-4 mr-2" />}
+                  Share
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isPreparing}
+                  className="bg-slate-700 hover:bg-slate-800 text-white border-none shadow-sm"
+                  onClick={async () => {
+                    setIsPreparing(true);
+                    try {
+                        const email = getSetting("email");
+                        const body = `Stock Ledger Report\nParty: ${selectedMsPartyObj?.name || 'All'}\nPeriod: ${fromDate} to ${toDate}\nPDF attached.`;
+                        const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}.pdf`;
+                        const blob = await generatePDFBlob();
+                        await mailPDF(blob, filename, body, email);
+                    } finally {
+                        setIsPreparing(false);
+                    }
+                  }}
+                >
+                  {isPreparing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  Mail Report
+                </Button>
                <Button variant="outline" size="sm" onClick={() => window.print()} className="shadow-sm">
                  <Printer className="h-4 w-4 mr-2" /> Print Report
                </Button>

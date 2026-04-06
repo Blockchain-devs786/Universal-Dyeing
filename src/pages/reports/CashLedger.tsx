@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
-import { sharePDF } from "@/lib/shareUtils";
+import { sharePDF, mailPDF } from "@/lib/shareUtils";
 
 export default function CashLedger() {
   const [accountId, setAccountId] = useState<string>("all");
@@ -60,6 +60,7 @@ export default function CashLedger() {
   const [msPartyOpen, setMsPartyOpen] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
 
+  const [isPreparing, setIsPreparing] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Queries
@@ -236,50 +237,41 @@ export default function CashLedger() {
               <div className="flex gap-2 print:hidden">
                 <Button
                   variant="outline"
+                  disabled={isPreparing}
                   className="h-11 px-4 bg-green-500 hover:bg-green-600 text-white border-none shadow-md"
                   onClick={async () => {
-                    const blob = await generatePDFBlob();
-                    const filename = `Ledger_${selectedLedger?.name}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-                    await sharePDF(blob, filename);
+                    setIsPreparing(true);
+                    try {
+                        const blob = await generatePDFBlob();
+                        const filename = `Ledger_${selectedLedger?.name}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                        await sharePDF(blob, filename);
+                    } finally {
+                        setIsPreparing(false);
+                    }
                   }}
                 >
-                  <Share2 className="h-4 w-4 mr-2" />
+                  {isPreparing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Share2 className="h-4 w-4 mr-2" />}
                   Share
                 </Button>
                 <Button
                   variant="outline"
+                  disabled={isPreparing}
                   className="h-11 px-4 bg-slate-700 hover:bg-slate-800 text-white border-none shadow-md"
                   onClick={async () => {
-                    const email = getSetting("email");
-                    const balance = finalBalance || 0;
-                    const subject = `Ledger Summary: ${selectedLedger?.name}`;
-                    const body = `Please find the ledger summary below:\n\nParty: ${selectedLedger?.name}\nType: ${selectedLedger?.type}\nPeriod: ${fromDate} to ${toDate}\nBalance: PKR ${balance.toLocaleString()}`;
-
-                    const blob = await generatePDFBlob();
-                    const filename = `Ledger_${selectedLedger?.name}.pdf`;
-
-                    // On mobile, use native share to auto-attach the file
-                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
-                      const file = new File([blob], filename, { type: "application/pdf" });
-                      if (navigator.canShare?.({ files: [file] })) {
-                        const shareData: ShareData = { files: [file], text: body };
-                        await navigator.share(shareData);
-                        return;
-                      }
+                    setIsPreparing(true);
+                    try {
+                        const email = getSetting("email");
+                        const balance = finalBalance || 0;
+                        const body = `Please find the ledger summary for ${selectedLedger?.name} (${selectedLedger?.type}) attached.\n\nPeriod: ${fromDate} to ${toDate}\nBalance: PKR ${balance.toLocaleString()}\nReport Generated via Universal Dyeing.`;
+                        const blob = await generatePDFBlob();
+                        const filename = `Ledger_${selectedLedger?.name}.pdf`;
+                        await mailPDF(blob, filename, body, email);
+                    } finally {
+                        setIsPreparing(false);
                     }
-
-                    // Desktop fallback: download + open mailto
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = filename;
-                    link.click();
-                    URL.revokeObjectURL(url);
-
-                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
                   }}
                 >
-                  <Mail className="h-4 w-4 mr-2" />
+                  {isPreparing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
                   Mail Report
                 </Button>
               </div>
