@@ -355,7 +355,13 @@ export const reportsService = {
     }
 
     if (openingTable) {
-        const rows = await sql.query(`SELECT opening_balance FROM ${openingTable} WHERE id = $1`, [account_id]);
+        let rows: any[] = [];
+        if (openingTable === 'ms_parties') rows = await sql`SELECT opening_balance FROM ms_parties WHERE id = ${account_id}`;
+        else if (openingTable === 'vendors') rows = await sql`SELECT opening_balance FROM vendors WHERE id = ${account_id}`;
+        else if (openingTable === 'accounts') rows = await sql`SELECT opening_balance FROM accounts WHERE id = ${account_id}`;
+        else if (openingTable === 'expenses') rows = await sql`SELECT opening_balance FROM expenses WHERE id = ${account_id}`;
+        else if (openingTable === 'assets') rows = await sql`SELECT opening_balance FROM assets WHERE id = ${account_id}`;
+        
         if (rows.length > 0) {
             balance = Number(rows[0].opening_balance || 0);
         }

@@ -9,7 +9,9 @@ import {
   FileSpreadsheet,
   Share2,
   Mail,
-  MessageSquare
+  MessageSquare,
+  ChevronsUpDown,
+  Filter
 } from "lucide-react";
 import { 
   reportsApi, 
@@ -83,8 +85,8 @@ export default function CashLedger() {
 
   // Default to "Dyeing" party on load
   useEffect(() => {
-    if (msParties.length > 0 && accountId === "all" && accountType === "MS Party") {
-        const dyeing = msParties.find(p => p.name.toLowerCase() === 'dyeing');
+    if (msParties && msParties.length > 0 && accountId === "all" && accountType === "MS Party") {
+        const dyeing = msParties.find(p => p.name?.toLowerCase() === 'dyeing');
         if (dyeing) setAccountId(String(dyeing.id));
     }
   }, [msParties]);
@@ -134,8 +136,8 @@ export default function CashLedger() {
                   >
                     <span className="truncate">
                       {accountId === "all" ? "-- Select Ledger --" : 
-                        (selectedLedger?.name.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
-                        `[${selectedLedger?.type}] ` + selectedLedger?.name}
+                        ((selectedLedger?.name?.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
+                        `[${selectedLedger?.type || ''}] ` + (selectedLedger?.name || ''))}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
@@ -253,12 +255,12 @@ export default function CashLedger() {
             <div className="flex items-center gap-3">
                 <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">{selectedLedger?.name}</h2>
-                    <p className="text-slate-500 text-xs font-medium">{selectedLedger?.type} - Financial Statement Ledger</p>
+                    <h2 className="text-xl font-bold text-slate-900">{selectedLedger?.name || 'Unknown Account'}</h2>
+                    <p className="text-slate-500 text-xs font-medium">{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
                 </div>
             </div>
             <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Period: {format(new Date(fromDate), 'dd MMM yyyy')} - {format(new Date(toDate), 'dd MMM yyyy')}
+                Period: {fromDate ? format(new Date(fromDate), 'dd MMM yyyy') : ''} - {toDate ? format(new Date(toDate), 'dd MMM yyyy') : ''}
             </div>
           </div>
 
@@ -285,21 +287,21 @@ export default function CashLedger() {
                 ) : (
                     ledger.map((row, idx) => (
                       <TableRow key={idx} className="h-14 hover:bg-slate-50/80 transition-colors border-slate-100">
-                        <TableCell className="font-medium text-slate-600">{format(new Date(row.date), 'yyyy-MM-dd')}</TableCell>
+                        <TableCell className="font-medium text-slate-600">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                         <TableCell className="font-bold text-slate-900 uppercase text-xs">{row.particulars}</TableCell>
                         <TableCell className="font-bold text-blue-600 text-xs">{row.ref_no}</TableCell>
                         <TableCell className="text-slate-500 text-xs max-w-xs truncate">{row.description}</TableCell>
                         <TableCell className="text-right font-bold text-blue-700">
-                            {row.debit > 0 ? row.debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                            {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
                         <TableCell className="text-right font-bold text-red-600">
-                            {row.credit > 0 ? row.credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                            {(row.credit || 0) > 0 ? (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
                         <TableCell className={cn(
                             "text-right font-black",
-                            row.balance < 0 ? "text-red-700" : "text-emerald-700"
+                            (row.balance || 0) < 0 ? "text-red-700" : "text-emerald-700"
                         )}>
-                            {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {(row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </TableCell>
                       </TableRow>
                     ))
