@@ -319,15 +319,16 @@ export default function UserManagement() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500 pl-6">Profile</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Modules</TableHead>
-                    <TableHead className="text-right text-[10px] font-black uppercase text-slate-500 pr-6">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead className="text-[10px] font-black uppercase text-slate-500 pl-6 whitespace-nowrap">Profile</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-slate-500 whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-slate-500 whitespace-nowrap mobile-hide-column">Modules</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase text-slate-500 pr-6 whitespace-nowrap">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {isLoadingUsers ? (
                     <TableRow>
@@ -369,7 +370,7 @@ export default function UserManagement() {
                                 )}
                             </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="mobile-hide-column">
                             <div className="max-w-[150px] truncate text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
                                 {user.module_access === 'all' ? 'ALL ACCESS' : user.module_access.replace(/_/g, ' ').toUpperCase() || 'NO ACCESS'}
                             </div>
@@ -416,7 +417,8 @@ export default function UserManagement() {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
+            </div>
+          </CardContent>
           </Card>
         </div>
       </div>

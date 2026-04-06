@@ -422,65 +422,67 @@ export default function Inward() {
 
       {/* Main Table */}
       <div className="bg-white shadow-sm rounded-xl overflow-hidden border">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-[50px]">
-                <input 
-                  type="checkbox" 
-                  checked={inwards.length > 0 && selectedRows.size === inwards.length}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                />
-              </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Inward No</TableHead>
-              <TableHead>GP No</TableHead>
-              <TableHead>Sr No</TableHead>
-              <TableHead>MS Party</TableHead>
-              <TableHead>From Party</TableHead>
-              <TableHead className="text-right">Total Qty</TableHead>
-              <TableHead className="text-center w-28">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Loading inward entries...</TableCell>
+                <TableHead className="w-[50px]">
+                  <input 
+                    type="checkbox" 
+                    checked={inwards.length > 0 && selectedRows.size === inwards.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                  />
+                </TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Inward No</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
+                <TableHead className="whitespace-nowrap">MS Party</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">From Party</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
+                <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ) : inwards.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <ArrowDownToLine className="h-8 w-8 text-muted-foreground/40" />
-                    <span>No inward entries found.</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              inwards.map((inward) => (
-                <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
-                  <TableCell>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedRows.has(inward.id!)}
-                      onChange={() => toggleSelectRow(inward.id!)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                    />
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Loading inward entries...</TableCell>
+                </TableRow>
+              ) : inwards.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <ArrowDownToLine className="h-8 w-8 text-muted-foreground/40" />
+                      <span>No inward entries found.</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(inward.date), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
-                  <TableCell>{inward.gp_no || "-"}</TableCell>
-                  <TableCell>{inward.sr_no || "-"}</TableCell>
-                  <TableCell className="font-medium">{inward.ms_party_name || "-"}</TableCell>
-                  <TableCell>{inward.from_party_name || "-"}</TableCell>
-                  <TableCell className="text-right font-semibold text-emerald-600">
-                    {Number(inward.total_qty || 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                </TableRow>
+              ) : (
+                inwards.map((inward) => (
+                  <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
+                    <TableCell>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedRows.has(inward.id!)}
+                        onChange={() => toggleSelectRow(inward.id!)}
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="sm:inline hidden">{format(new Date(inward.date), "MMM dd, yyyy")}</span>
+                      <span className="sm:hidden inline">{format(new Date(inward.date), "dd/MM")}</span>
+                    </TableCell>
+                    <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
+                    <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[120px]">{inward.ms_party_name || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
+                    <TableCell className="text-right font-semibold text-emerald-600">
+                      {Number(inward.total_qty || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
                         <Printer className="h-4 w-4" />
                       </Button>
@@ -499,8 +501,9 @@ export default function Inward() {
                 </TableRow>
               ))
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Create / Edit Dialog */}

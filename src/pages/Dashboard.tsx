@@ -46,16 +46,16 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 max-w-6xl">
       {/* Welcome */}
-      <div className="page-header-gradient rounded-2xl p-10 text-primary-foreground shadow-premium border-none relative overflow-hidden">
+      <div className="page-header-gradient rounded-2xl p-6 sm:p-10 text-primary-foreground shadow-premium border-none relative overflow-hidden">
         {/* Subtle decorative background element */}
         <div className="absolute top-0 right-0 -m-8 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         
         <div className="relative z-10 flex flex-col gap-2">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 uppercase flex items-center gap-3">
-                <LayoutDashboard className="h-8 w-8 sm:h-10 sm:w-10 opacity-50" />
-                Welcome Back, <span className="text-white underline decoration-white/20 underline-offset-8 decoration-4">{user?.username || 'User'}</span>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight mb-2 uppercase flex items-center gap-3">
+                <LayoutDashboard className="h-6 w-6 sm:h-10 sm:w-10 opacity-50 transition-all group-hover:scale-110" />
+                Welcome Back, <span className="text-white underline decoration-white/20 underline-offset-4 sm:underline-offset-8 decoration-2 sm:decoration-4">{user?.username || 'User'}</span>
             </h1>
-            <p className="text-primary-foreground/80 text-lg font-medium opacity-90 max-w-2xl leading-relaxed">
+            <p className="text-primary-foreground/80 text-sm sm:text-lg font-medium opacity-90 max-w-2xl leading-relaxed">
               {isAdmin 
                 ? "Your management command center is ready. You have complete oversight of all organizational modules and reports."
                 : "Your personal workspace is active. Use the side menu to begin your daily tasks and movements."}

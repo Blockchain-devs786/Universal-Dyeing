@@ -192,4 +192,28 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
   }
+
+  /* Mobile Experience Optimizations */
+  @media (max-width: 640px) {
+    .mobile-stack-grid {
+      @apply grid-cols-1 !important;
+    }
+    
+    .mobile-compact-padding {
+      @apply p-4 !important;
+    }
+
+    .mobile-header-text {
+      @apply text-xl sm:text-2xl !important;
+    }
+
+    .mobile-hide-column {
+      @apply hidden !important;
+    }
+  }
+
+  /* Professional Card Effects */
+  .shadow-premium {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1), 0 20px 25px -5px rgb(0 0 0 / 0.05);
+  }
 }

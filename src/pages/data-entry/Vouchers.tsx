@@ -436,41 +436,41 @@ export default function Vouchers() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-4 shadow-sm group hover:border-primary/30 transition-all cursor-pointer" onClick={() => setTypeFilter('all')}>
-              <div className="p-2.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                  <Search className="h-5 w-5" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-100 flex items-center gap-3 sm:gap-4 shadow-sm group hover:border-primary/30 transition-all cursor-pointer" onClick={() => setTypeFilter('all')}>
+              <div className="p-2 sm:p-2.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Filter</p>
-                  <p className="text-sm font-black text-slate-800">All Vouchers</p>
+                  <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Filter</p>
+                  <p className="text-xs sm:text-sm font-black text-slate-800">All</p>
               </div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-4 shadow-sm group hover:border-emerald-300 transition-all cursor-pointer" onClick={() => setTypeFilter('CRV')}>
-              <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-500 group-hover:bg-emerald-100 transition-colors">
-                  <ArrowDownCircle className="h-5 w-5" />
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-100 flex items-center gap-3 sm:gap-4 shadow-sm group hover:border-emerald-300 transition-all cursor-pointer" onClick={() => setTypeFilter('CRV')}>
+              <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-50 text-emerald-500 group-hover:bg-emerald-100 transition-colors">
+                  <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Receipts</p>
-                  <p className="text-sm font-black text-slate-800">CRV Vouchers</p>
+                  <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Receipts</p>
+                  <p className="text-xs sm:text-sm font-black text-slate-800">CRV</p>
               </div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-4 shadow-sm group hover:border-rose-300 transition-all cursor-pointer" onClick={() => setTypeFilter('CPV')}>
-              <div className="p-2.5 rounded-lg bg-rose-50 text-rose-500 group-hover:bg-rose-100 transition-colors">
-                  <ArrowUpCircle className="h-5 w-5" />
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-100 flex items-center gap-3 sm:gap-4 shadow-sm group hover:border-rose-300 transition-all cursor-pointer" onClick={() => setTypeFilter('CPV')}>
+              <div className="p-2 sm:p-2.5 rounded-lg bg-rose-50 text-rose-500 group-hover:bg-rose-100 transition-colors">
+                  <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Payments</p>
-                  <p className="text-sm font-black text-slate-800">CPV Vouchers</p>
+                  <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Payments</p>
+                  <p className="text-xs sm:text-sm font-black text-slate-800">CPV</p>
               </div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-4 shadow-sm group hover:border-blue-300 transition-all cursor-pointer" onClick={() => setTypeFilter('JV')}>
-              <div className="p-2.5 rounded-lg bg-blue-50 text-blue-500 group-hover:bg-blue-100 transition-colors">
-                  <Scale className="h-5 w-5" />
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-100 flex items-center gap-3 sm:gap-4 shadow-sm group hover:border-blue-300 transition-all cursor-pointer" onClick={() => setTypeFilter('JV')}>
+              <div className="p-2 sm:p-2.5 rounded-lg bg-blue-50 text-blue-500 group-hover:bg-blue-100 transition-colors">
+                  <Scale className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Adjustments</p>
-                  <p className="text-sm font-black text-slate-800">JV Vouchers</p>
+                  <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Adjustments</p>
+                  <p className="text-xs sm:text-sm font-black text-slate-800">JV</p>
               </div>
             </div>
         </div>
@@ -494,18 +494,19 @@ export default function Vouchers() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent bg-slate-50/50">
-                <TableHead className="w-[120px]">Date</TableHead>
-                <TableHead className="w-[120px]">Voucher #</TableHead>
-                <TableHead className="w-[100px] text-center">Type</TableHead>
-                <TableHead>Narration</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right px-6">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent bg-slate-50/50">
+                  <TableHead className="w-[120px] whitespace-nowrap">Date</TableHead>
+                  <TableHead className="w-[120px] whitespace-nowrap">Voucher #</TableHead>
+                  <TableHead className="w-[100px] text-center whitespace-nowrap">Type</TableHead>
+                  <TableHead className="whitespace-nowrap">Narration</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+                  <TableHead className="text-center whitespace-nowrap mobile-hide-column">Status</TableHead>
+                  <TableHead className="text-right px-6 whitespace-nowrap">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
@@ -544,10 +545,10 @@ export default function Vouchers() {
                       <p className="text-xs text-slate-600 line-clamp-1">{v.description || "No narration"}</p>
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">Ref: {v.ref_no || "-"}</p>
                     </TableCell>
-                    <TableCell className="text-right font-black text-slate-900">
+                    <TableCell className="text-right font-black text-slate-900 whitespace-nowrap">
                       Rs {Number(v.total_amount).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center mobile-hide-column">
                       <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-black uppercase tracking-widest px-2.5">
                           {v.status || 'Posted'}
                       </Badge>
@@ -569,8 +570,9 @@ export default function Vouchers() {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 

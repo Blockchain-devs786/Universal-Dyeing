@@ -482,30 +482,31 @@ export default function OutwardPage() {
 
       {/* Main Table */}
       <div className="bg-white shadow-sm rounded-xl overflow-hidden border">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-[50px]">
-                <input 
-                  type="checkbox" 
-                  checked={outwards.length > 0 && selectedRows.size === outwards.length}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                />
-              </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Outward No</TableHead>
-              <TableHead>GP No</TableHead>
-              <TableHead>Sr No</TableHead>
-              <TableHead>MS Party</TableHead>
-              <TableHead>From</TableHead>
-              <TableHead>Outward To</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead className="text-right">Total Qty</TableHead>
-              <TableHead className="text-center w-28">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead className="w-[50px]">
+                  <input 
+                    type="checkbox" 
+                    checked={outwards.length > 0 && selectedRows.size === outwards.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                  />
+                </TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="whitespace-nowrap">Outward No</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
+                <TableHead className="whitespace-nowrap">MS Party</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">From</TableHead>
+                <TableHead className="whitespace-nowrap">Outward To</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">Vehicle</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">Driver</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
+                <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
@@ -520,33 +521,34 @@ export default function OutwardPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              outwards.map((outw) => (
-                <TableRow key={outw.id} className="transition-colors hover:bg-muted/50 group">
-                  <TableCell>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedRows.has(outw.id!)}
-                      onChange={() => toggleSelectRow(outw.id!)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                    />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(outw.date), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
-                  <TableCell>{outw.gp_no || "-"}</TableCell>
-                  <TableCell>{outw.sr_no || "-"}</TableCell>
-                  <TableCell className="font-medium">{outw.ms_party_name || "-"}</TableCell>
-                  <TableCell>{outw.from_party_name || "-"}</TableCell>
-                  <TableCell className="font-medium text-orange-600">{outw.outward_to_party_name || "-"}</TableCell>
-                  <TableCell>{outw.vehicle_no || "-"}</TableCell>
-                  <TableCell>{outw.driver_name || "-"}</TableCell>
-                  <TableCell className="text-right font-semibold text-emerald-600">
-                    {Number(outw.total_qty || 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              ) : (
+                outwards.map((outw) => (
+                  <TableRow key={outw.id} className="transition-colors hover:bg-muted/50 group">
+                    <TableCell>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedRows.has(outw.id!)}
+                        onChange={() => toggleSelectRow(outw.id!)}
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="sm:inline hidden">{format(new Date(outw.date), "MMM dd, yyyy")}</span>
+                      <span className="sm:hidden inline">{format(new Date(outw.date), "dd/MM")}</span>
+                    </TableCell>
+                    <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
+                    <TableCell className="mobile-hide-column">{outw.gp_no || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[120px]">{outw.ms_party_name || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
+                    <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">{outw.outward_to_party_name || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
+                    <TableCell className="text-right font-semibold text-emerald-600">
+                      {Number(outw.total_qty || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(outw.id!)} disabled={isPrinting}>
                         <Printer className="h-4 w-4" />
                       </Button>
@@ -565,8 +567,9 @@ export default function OutwardPage() {
                 </TableRow>
               ))
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Primary Party Selection Dialog before Form */}

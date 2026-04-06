@@ -330,15 +330,15 @@ export default function StockReport() {
       </div>
 
       {/* KPI Cards Grid (Hidden in Print) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 print:hidden">
-        <KPICard title="TOTAL INWARD" value={aggregates.total_inward} numeralColor="text-blue-600" />
-        <KPICard title="TOTAL OUTWARD" value={aggregates.total_outward} numeralColor="text-orange-500" />
-        <KPICard title="TOTAL TRANSFER" value={aggregates.total_transfer} numeralColor="text-purple-500" />
-        <KPICard title="TRANSFER IN" value={aggregates.transfer_in} numeralColor="text-emerald-500" />
-        <KPICard title="TRANSFER OUT" value={aggregates.transfer_out} numeralColor="text-red-500" />
-        <div className="bg-white p-5 rounded-xl shadow-sm border-2 border-blue-500/80 flex flex-col items-center justify-center text-center">
-          <span className="text-xs font-semibold text-muted-foreground tracking-widest mb-3 uppercase">Net Remaining</span>
-          <span className="text-3xl font-bold tracking-tight text-blue-600">{aggregates.net_remaining.toLocaleString()}</span>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 print:hidden">
+        <KPICard title="INWARD" value={aggregates.total_inward} numeralColor="text-blue-600" />
+        <KPICard title="OUTWARD" value={aggregates.total_outward} numeralColor="text-orange-500" />
+        <KPICard title="TRANSFER" value={aggregates.total_transfer} numeralColor="text-purple-500" />
+        <KPICard title="TRANS IN" value={aggregates.transfer_in} numeralColor="text-emerald-500" />
+        <KPICard title="TRANS OUT" value={aggregates.transfer_out} numeralColor="text-red-500" />
+        <div className="bg-white p-3 sm:p-5 rounded-xl shadow-sm border-2 border-blue-500/80 flex flex-col items-center justify-center text-center transition-all hover:shadow-md col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-1 sm:mb-3 uppercase">Net Stock</span>
+          <span className="text-xl sm:text-3xl font-bold tracking-tight text-blue-600">{aggregates.net_remaining.toLocaleString()}</span>
         </div>
       </div>
 
@@ -433,20 +433,21 @@ export default function StockReport() {
             </div>
         </div>
 
-        <Table className="print:border-collapse print:w-full">
-          <TableHeader className="bg-slate-50 border-b print:bg-white print:border-b-2 print:border-black">
-            <TableRow>
-              <TableHead className="py-4 font-semibold text-slate-600 print:text-black print:font-bold">Item Name</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">MSR</TableHead>
-              <TableHead className="font-semibold text-slate-600 print:text-black print:font-bold">MS Party</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Inward</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Outward</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Total Transfer</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Transfer IN</TableHead>
-              <TableHead className="font-semibold text-slate-600 text-center print:text-black print:font-bold">Transfer OUT</TableHead>
-              <TableHead className="font-semibold text-blue-600 bg-blue-50/50 text-center print:text-black print:font-bold print:bg-white">Remaining</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="overflow-x-auto">
+          <Table className="print:border-collapse print:w-full">
+            <TableHeader className="bg-slate-50 border-b print:bg-white print:border-b-2 print:border-black">
+              <TableRow>
+                <TableHead className="py-4 font-semibold text-slate-600 whitespace-nowrap print:text-black print:font-bold">Item Name</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold">MSR</TableHead>
+                <TableHead className="font-semibold text-slate-600 whitespace-nowrap print:text-black print:font-bold">MS Party</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold mobile-hide-column">Total Inward</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold mobile-hide-column">Total Outward</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold mobile-hide-column">Total Transfer</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold mobile-hide-column">Transfer IN</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center whitespace-nowrap print:text-black print:font-bold mobile-hide-column">Transfer OUT</TableHead>
+                <TableHead className="font-semibold text-blue-600 bg-blue-50/50 text-center whitespace-nowrap print:text-black print:font-bold print:bg-white">Remaining</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
@@ -463,20 +464,21 @@ export default function StockReport() {
                 <TableRow key={idx} className="transition-colors hover:bg-slate-50/80 group print:h-auto print:border-black">
                   <TableCell className="font-medium text-slate-800 py-3 print:py-2">{row.item_name}</TableCell>
                   <TableCell className="text-center font-medium print:py-2">{row.msr}</TableCell>
-                  <TableCell className="font-medium text-slate-600 print:py-2">{row.ms_party_name}</TableCell>
-                  <TableCell className="text-center font-semibold text-blue-600/80 print:py-2">{row.total_inward || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-orange-500/80 print:py-2">{row.total_outward || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-purple-500/80 print:py-2">{row.total_transfer || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-emerald-500/80 print:py-2">{row.transfer_in || '-'}</TableCell>
-                  <TableCell className="text-center font-semibold text-red-500/80 print:py-2">{row.transfer_out || '-'}</TableCell>
+                  <TableCell className="font-medium text-slate-600 print:py-2 truncate max-w-[100px]">{row.ms_party_name}</TableCell>
+                  <TableCell className="text-center font-semibold text-blue-600/80 mobile-hide-column print:py-2">{row.total_inward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-orange-500/80 mobile-hide-column print:py-2">{row.total_outward || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-purple-500/80 mobile-hide-column print:py-2">{row.total_transfer || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-emerald-500/80 mobile-hide-column print:py-2">{row.transfer_in || '-'}</TableCell>
+                  <TableCell className="text-center font-semibold text-red-500/80 mobile-hide-column print:py-2">{row.transfer_out || '-'}</TableCell>
                   <TableCell className="text-center font-bold text-blue-700 bg-blue-50/30 print:font-black print:bg-white print:py-2">
                     {row.remaining}
                   </TableCell>
                 </TableRow>
               ))
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
     </div>
@@ -485,9 +487,9 @@ export default function StockReport() {
 
 function KPICard({ title, value, numeralColor }: { title: string, value: number, numeralColor: string }) {
   return (
-    <div className="bg-white p-5 rounded-xl shadow-sm border border-border/60 flex flex-col items-center justify-center text-center transition-all hover:shadow-md">
-      <span className="text-xs font-semibold text-muted-foreground tracking-widest mb-3 uppercase">{title}</span>
-      <span className={`text-3xl font-bold tracking-tight ${numeralColor}`}>
+    <div className="bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-border/60 flex flex-col items-center justify-center text-center transition-all hover:shadow-md">
+      <span className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-1 sm:mb-3 uppercase">{title}</span>
+      <span className={`text-xl sm:text-3xl font-bold tracking-tight ${numeralColor}`}>
         {value.toLocaleString()}
       </span>
     </div>

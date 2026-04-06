@@ -289,22 +289,22 @@ export default function CashLedger() {
       </div>
 
       {/* Filters Overlay */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-white p-6 rounded-2xl border shadow-sm print:hidden">
-        <div className="md:col-span-1 flex items-center gap-3 border-r pr-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 bg-white p-4 sm:p-6 rounded-2xl border shadow-sm print:hidden">
+        <div className="sm:col-span-2 md:col-span-1 flex items-center gap-3 border-b sm:border-b-0 sm:border-r pb-4 sm:pb-0 sm:pr-6">
             <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
                 <Filter className="h-5 w-5" />
             </div>
             <h3 className="font-bold text-slate-800">Reports Filters</h3>
         </div>
 
-        <div className="space-y-1.5 flex-1">
+        <div className="space-y-1.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
               <Calendar className="h-3 w-3" /> From Date
           </Label>
           <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-10 border-slate-200" />
         </div>
 
-        <div className="space-y-1.5 flex-1">
+        <div className="space-y-1.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
               <Calendar className="h-3 w-3" /> To Date
           </Label>
@@ -338,13 +338,13 @@ export default function CashLedger() {
             <Table className="print:border-collapse print:w-full">
               <TableHeader className="bg-slate-900 print:bg-white">
                 <TableRow className="hover:bg-slate-900 border-none h-12 print:h-10 print:border-b-2 print:border-black">
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[120px] print:text-black print:font-bold">Date</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Particulars</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Invoice/Voucher</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider print:text-black print:font-bold">Description</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Debit (PKR)</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Credit (PKR)</TableHead>
-                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right print:text-black print:font-bold">Balance</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[100px] whitespace-nowrap print:text-black print:font-bold">Date</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap print:text-black print:font-bold">Particulars</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap mobile-hide-column print:text-black print:font-bold">Invoice/Voucher</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap mobile-hide-column print:text-black print:font-bold">Description</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right whitespace-nowrap print:text-black print:font-bold">Debit</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right whitespace-nowrap print:text-black print:font-bold">Credit</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right whitespace-nowrap print:text-black print:font-bold">Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -357,18 +357,20 @@ export default function CashLedger() {
                 ) : (
                     ledger.map((row, idx) => (
                       <TableRow key={idx} className="h-14 hover:bg-slate-50/80 transition-colors border-slate-100 print:h-auto print:border-black">
-                        <TableCell className="font-medium text-slate-600 print:py-2">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
-                        <TableCell className="font-bold text-slate-900 uppercase text-xs print:py-2">{row.particulars}</TableCell>
-                        <TableCell className="font-bold text-blue-600 text-xs print:py-2">{row.ref_no}</TableCell>
-                        <TableCell className="text-slate-500 text-xs max-w-xs truncate print:whitespace-normal print:py-2">{row.description}</TableCell>
-                        <TableCell className="text-right font-bold text-blue-700 print:py-2">
+                        <TableCell className="font-medium text-slate-600 whitespace-nowrap print:py-2">
+                           {row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-bold text-slate-900 uppercase text-[10px] sm:text-xs print:py-2">{row.particulars}</TableCell>
+                        <TableCell className="font-bold text-blue-600 text-[10px] sm:text-xs mobile-hide-column print:py-2">{row.ref_no}</TableCell>
+                        <TableCell className="text-slate-500 text-[10px] sm:text-xs max-w-xs truncate mobile-hide-column print:whitespace-normal print:py-2">{row.description}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-700 text-[10px] sm:text-sm print:py-2">
                             {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-red-600 print:py-2">
+                        <TableCell className="text-right font-bold text-red-600 text-[10px] sm:text-sm print:py-2">
                             {(row.credit || 0) > 0 ? (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
                         </TableCell>
                         <TableCell className={cn(
-                            "text-right font-black print:py-2",
+                            "text-right font-black text-[10px] sm:text-sm print:py-2",
                             (row.balance || 0) < 0 ? "text-red-700" : "text-emerald-700"
                         )}>
                             {(row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -380,29 +382,29 @@ export default function CashLedger() {
             </Table>
           </div>
 
-          <div className="p-8 bg-slate-50 border-t print:hidden">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="bg-white p-4 rounded-xl border shadow-sm">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Debits</p>
-                    <p className="text-xl font-black text-blue-700">
+          <div className="p-4 sm:p-8 bg-slate-50 border-t print:hidden">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-white p-3 sm:p-4 rounded-xl border shadow-sm">
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Debits</p>
+                    <p className="text-sm sm:text-xl font-black text-blue-700">
                         {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border shadow-sm">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Credits</p>
-                    <p className="text-xl font-black text-red-600">
+                <div className="bg-white p-3 sm:p-4 rounded-xl border shadow-sm">
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Credits</p>
+                    <p className="text-sm sm:text-xl font-black text-red-600">
                         {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                 </div>
-                <div className="md:col-span-2 bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-center text-white">
+                <div className="col-span-2 bg-slate-900 p-3 sm:p-4 rounded-xl shadow-lg flex justify-between items-center text-white">
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Final Outstanding Balance</p>
-                        <p className="text-2xl font-black">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Net Balance</p>
+                        <p className="text-base sm:text-2xl font-black">
                             {finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                     </div>
-                    <div className="p-2 bg-white/10 rounded-lg">
-                        <Banknote className="h-8 w-8 text-blue-400" />
+                    <div className="p-1 sm:p-2 bg-white/10 rounded-lg">
+                        <Banknote className="h-5 w-5 sm:h-8 sm:w-8 text-blue-400" />
                     </div>
                 </div>
             </div>

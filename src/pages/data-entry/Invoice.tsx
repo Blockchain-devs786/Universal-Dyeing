@@ -253,62 +253,64 @@ export default function Invoice() {
 
       {/* List Table */}
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden print:hidden">
-        <div className="p-4 border-b bg-slate-50 flex items-center gap-4">
-           <div className="relative flex-1 max-w-sm">
+        <div className="p-4 border-b bg-slate-50">
+           <div className="relative max-w-sm">
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
              <Input placeholder="Search invoice or party..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 h-10 bg-white" />
            </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]">
-                 <Checkbox checked={bulkSelectedIds.length > 0 && bulkSelectedIds.length === invoices.length} onCheckedChange={toggleSelectAll} />
-              </TableHead>
-              <TableHead>Invoice #</TableHead>
-              <TableHead>MS Party</TableHead>
-              <TableHead className="text-center">No. of Items</TableHead>
-              <TableHead className="text-right">Discount</TableHead>
-              <TableHead className="text-right">Total Amount</TableHead>
-              <TableHead className="text-center">Date</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-               <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">Loading invoices...</TableCell></TableRow>
-            ) : invoices.length === 0 ? (
-               <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">No invoices found.</TableCell></TableRow>
-            ) : invoices.map((invoice: any) => (
-              <TableRow key={invoice.id} className="group transition-colors hover:bg-slate-50">
-                <TableCell>
-                   <Checkbox checked={bulkSelectedIds.includes(invoice.id)} onCheckedChange={() => {
-                      setBulkSelectedIds(prev => prev.includes(invoice.id) ? prev.filter(id => id !== invoice.id) : [...prev, invoice.id]);
-                   }} />
-                </TableCell>
-                <TableCell className="font-bold">{invoice.invoice_no}</TableCell>
-                <TableCell className="font-medium">{invoice.ms_party_name}</TableCell>
-                <TableCell className="text-center">{invoice.item_count}</TableCell>
-                <TableCell className="text-right text-orange-600 font-medium">{Number(invoice.discount_amount).toLocaleString()}</TableCell>
-                <TableCell className="text-right font-black text-blue-600 text-lg">{Number(invoice.total_amount).toLocaleString()}</TableCell>
-                <TableCell className="text-center text-slate-500 font-medium">{format(new Date(invoice.date), 'yyyy-MM-dd')}</TableCell>
-                <TableCell className="text-center">
-                   <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" onClick={() => handlePrint(invoice)} className="h-8 w-8 text-blue-600">
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleEditOpen(invoice.id)} className="h-8 w-8 text-emerald-600">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => confirm('Delete this invoice?') && deleteMutation.mutate(invoice.id)} className="h-8 w-8 text-red-600">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                   </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">
+                   <Checkbox checked={bulkSelectedIds.length > 0 && bulkSelectedIds.length === invoices.length} onCheckedChange={toggleSelectAll} />
+                </TableHead>
+                <TableHead className="whitespace-nowrap">Invoice #</TableHead>
+                <TableHead className="whitespace-nowrap">MS Party</TableHead>
+                <TableHead className="text-center whitespace-nowrap mobile-hide-column">Items</TableHead>
+                <TableHead className="text-right whitespace-nowrap mobile-hide-column">Discount</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+                <TableHead className="text-center whitespace-nowrap mobile-hide-column">Date</TableHead>
+                <TableHead className="text-center whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                 <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">Loading invoices...</TableCell></TableRow>
+              ) : invoices.length === 0 ? (
+                 <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400">No invoices found.</TableCell></TableRow>
+              ) : invoices.map((invoice: any) => (
+                <TableRow key={invoice.id} className="group transition-colors hover:bg-slate-50">
+                  <TableCell>
+                     <Checkbox checked={bulkSelectedIds.includes(invoice.id)} onCheckedChange={() => {
+                        setBulkSelectedIds(prev => prev.includes(invoice.id) ? prev.filter(id => id !== invoice.id) : [...prev, invoice.id]);
+                     }} />
+                  </TableCell>
+                  <TableCell className="font-bold">{invoice.invoice_no}</TableCell>
+                  <TableCell className="font-medium truncate max-w-[120px]">{invoice.ms_party_name}</TableCell>
+                  <TableCell className="text-center mobile-hide-column">{invoice.item_count}</TableCell>
+                  <TableCell className="text-right text-orange-600 font-medium mobile-hide-column">{Number(invoice.discount_amount).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-black text-blue-600 sm:text-lg">{Number(invoice.total_amount).toLocaleString()}</TableCell>
+                  <TableCell className="text-center text-slate-500 font-medium mobile-hide-column">{format(new Date(invoice.date), 'yyyy-MM-dd')}</TableCell>
+                  <TableCell className="text-center">
+                     <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" onClick={() => handlePrint(invoice)} className="h-8 w-8 text-blue-600">
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEditOpen(invoice.id)} className="h-8 w-8 text-emerald-600">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => confirm('Delete this invoice?') && deleteMutation.mutate(invoice.id)} className="h-8 w-8 text-red-600">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                     </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Wizard and Edit Dialogs (Keeping them همان طور) ... */}

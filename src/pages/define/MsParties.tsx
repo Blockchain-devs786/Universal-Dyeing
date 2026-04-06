@@ -262,18 +262,19 @@ export default function MsParties() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead className="text-right">15y / 22y Rates</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="whitespace-nowrap">Name</TableHead>
+                  <TableHead className="whitespace-nowrap">Contact</TableHead>
+                  <TableHead className="whitespace-nowrap mobile-hide-column">City</TableHead>
+                  <TableHead className="text-right whitespace-nowrap mobile-hide-column">Balance</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Rates (15y/22y)</TableHead>
+                  <TableHead className="text-center whitespace-nowrap mobile-hide-column">Status</TableHead>
+                  <TableHead className="text-center whitespace-nowrap">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
@@ -286,18 +287,18 @@ export default function MsParties() {
             ) : (
               parties.map((party) => (
                 <TableRow key={party.id} className="transition-colors hover:bg-muted/50 group">
-                  <TableCell className="font-medium">{party.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{party.phone || "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">{party.city || "-"}</TableCell>
-                  <TableCell className="text-right font-medium text-emerald-600">
+                  <TableCell className="font-medium whitespace-nowrap">{party.name}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">{party.phone || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{party.city || "-"}</TableCell>
+                  <TableCell className="text-right font-medium text-emerald-600 whitespace-nowrap mobile-hide-column">
                     Rs {Number(party.opening_balance || 0).toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-medium whitespace-nowrap">
                     <span className="text-blue-600">{Number(party.rate_15 || 0).toFixed(2)}</span>
                     <span className="text-muted-foreground mx-1">/</span>
                     <span className="text-purple-600">{Number(party.rate_22 || 0).toFixed(2)}</span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center mobile-hide-column">
                     <Switch 
                       checked={party.status === "active"} 
                       onCheckedChange={(c) => handleStatusToggle(party, c)}
@@ -327,8 +328,9 @@ export default function MsParties() {
                 </TableRow>
               ))
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
