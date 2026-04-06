@@ -15,15 +15,18 @@ import {
   ChevronDown,
   ChevronRight,
   Layers,
-  BarChart3
+  BarChart3,
+  Share2,
+  Mail
 } from "lucide-react";
-import { 
-  reportsApi, 
-  msPartiesApi, 
-  itemsApi, 
-  type MsParty, 
+import {
+  reportsApi,
+  msPartiesApi,
+  itemsApi,
+  settingsApi,
+  type MsParty,
   type Item,
-  type StockLedgerRow 
+  type StockLedgerRow
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +44,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { sharePDF } from "@/lib/shareUtils";
 
 type GroupedLedger = {
   itemId: number;
@@ -77,13 +83,13 @@ export default function StockLedger() {
   });
 
   // The actual report query
-  const { 
-    data: ledger = [], 
-    isLoading, 
-    refetch, 
-    isFetching 
+  const {
+    data: ledger = [],
+    isLoading,
+    refetch,
+    isFetching
   } = useQuery({
-    queryKey: ["stock_ledger_report_internal"], 
+    queryKey: ["stock_ledger_report_internal"],
     queryFn: () => {
       const activeMeasurement = Object.keys(measurement).find(k => measurement[k]);
       return reportsApi.getStockLedger({
@@ -96,6 +102,9 @@ export default function StockLedger() {
     },
     enabled: false
   });
+
+  const { data: settings = [] } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.list() });
+  const getSetting = (key: string) => settings.find(s => s.key === key)?.value || "";
 
   // Default Party "Dyeing"
   useEffect(() => {
@@ -119,6 +128,39 @@ export default function StockLedger() {
     setItemId("all");
     setIsGenerated(false);
     setExpandedItems(new Set());
+  };
+
+  const generatePDFBlob = (): Blob => {
+    const doc = new jsPDF();
+    const title = "Stock Ledger Report";
+    const subtitle = `${selectedMsPartyObj?.name || 'All'} | Item: ${itemId === 'all' ? 'All' : selectedItemObj?.name} | ${format(new Date(fromDate), 'dd MMM yyyy')} - ${format(new Date(toDate), 'dd MMM yyyy')}`;
+    doc.setFontSize(20);
+    doc.text(title, 14, 20);
+    doc.setFontSize(10);
+    doc.text(subtitle, 14, 30);
+
+    let yOffset = 38;
+    groupedData.forEach((group) => {
+      autoTable(doc, {
+        startY: yOffset,
+        head: [[`Item: ${group.itemName}`]],
+        body: group.transactions.map(tx => [
+          format(new Date(tx.date), 'dd/MM/yyyy'),
+          `${tx.type} / ${tx.ref_no}`,
+          tx.particulars,
+          tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : '-',
+          tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : '-',
+          tx.balance.toLocaleString()
+        ]),
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 9 },
+        styles: { fontSize: 8 },
+        margin: { left: 14, right: 14 },
+        theme: 'grid',
+      });
+      yOffset = (doc as any).lastAutoTable?.finalY + 10;
+    });
+
+    return doc.output('blob');
   };
 
   const toggleItem = (itemId: number) => {
@@ -334,9 +376,54 @@ export default function StockLedger() {
              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                <TableIcon className="h-5 w-5 text-blue-600" /> Items List Summary
              </h2>
-             <Button variant="outline" size="sm" onClick={() => window.print()} className="shadow-sm">
-               <Printer className="h-4 w-4 mr-2" /> Print Report
-             </Button>
+             <div className="flex gap-2">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
+                 onClick={async () => {
+                   const blob = generatePDFBlob();
+                   const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                   await sharePDF(blob, filename);
+               }}
+               >
+                 <Share2 className="h-4 w-4 mr-2" /> Share
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="bg-slate-700 hover:bg-slate-800 text-white border-none shadow-sm"
+                 onClick={async () => {
+                   const email = getSetting("email");
+                   const subject = `Stock Ledger: ${selectedMsPartyObj?.name || 'All'}`;
+                   const body = `Stock Ledger Report\nParty: ${selectedMsPartyObj?.name || 'All'}\nPeriod: ${fromDate} to ${toDate}`;
+                   const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}.pdf`;
+                   const blob = generatePDFBlob();
+
+                   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
+                     const file = new File([blob], filename, { type: "application/pdf" });
+                     if (navigator.canShare?.({ files: [file] })) {
+                       const shareData: ShareData = { files: [file], text: body };
+                       await navigator.share(shareData);
+                       return;
+                     }
+                   }
+
+                   const url = URL.createObjectURL(blob);
+                   const link = document.createElement('a');
+                   link.href = url;
+                   link.download = filename;
+                   link.click();
+                   URL.revokeObjectURL(url);
+                   window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                 }}
+               >
+                 <Mail className="h-4 w-4 mr-2" /> Mail Report
+               </Button>
+               <Button variant="outline" size="sm" onClick={() => window.print()} className="shadow-sm">
+                 <Printer className="h-4 w-4 mr-2" /> Print Report
+               </Button>
+             </div>
           </div>
 
           {groupedData.length === 0 ? (
