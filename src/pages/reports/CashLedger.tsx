@@ -15,7 +15,7 @@ import {
 import {
   reportsApi,
   msPartiesApi,
-  vendorsApi,
+  suppliersApi,
   expensesApi,
   accountsApi,
   assetsApi,
@@ -80,7 +80,7 @@ export default function CashLedger() {
     enabled: false
   });
 
-  const { data: vendors = [] } = useQuery({ queryKey: ["vendors"], queryFn: () => vendorsApi.list() });
+  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list() });
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list() });
   const { data: assets = [] } = useQuery({ queryKey: ["assets"], queryFn: () => assetsApi.list() });
   const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: () => expensesApi.list() });
@@ -140,7 +140,7 @@ export default function CashLedger() {
 
   const allLedgers = [
     ...msParties.map(p => ({ id: String(p.id), name: p.name, type: "MS Party" })),
-    ...vendors.map(v => ({ id: String(v.id), name: v.name, type: "Vendor" })),
+    ...suppliers.map(v => ({ id: String(v.id), name: v.name, type: "Supplier" })),
     ...accounts.map(a => ({ id: String(a.id), name: a.name, type: "Account" })),
     ...assets.map(a => ({ id: String(a.id), name: a.name, type: "Asset" })),
     ...expenses.map(e => ({ id: String(e.id), name: e.name, type: "Expense" })),

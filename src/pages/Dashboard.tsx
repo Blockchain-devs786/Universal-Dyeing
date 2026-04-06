@@ -7,7 +7,7 @@ const sections = [
     description: "Set up master data for your organization",
     icon: Settings,
     color: "from-primary to-primary/80",
-    items: ["MS Parties", "Vendors", "Assets", "Expenses"],
+    items: ["MS Parties", "Suppliers", "Assets", "Expenses"],
     link: "/define/ms-parties",
   },
   {
