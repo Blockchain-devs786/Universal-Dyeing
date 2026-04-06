@@ -39,6 +39,8 @@ export default function MsParties() {
     city: "",
     opening_balance: 0,
     status: "active",
+    rate_15: 0,
+    rate_22: 0,
   });
 
   // Fetch
@@ -90,6 +92,8 @@ export default function MsParties() {
         city: party.city || "",
         opening_balance: party.opening_balance || 0,
         status: party.status || "active",
+        rate_15: party.rate_15 || 0,
+        rate_22: party.rate_22 || 0,
       });
     } else {
       setEditingParty(null);
@@ -100,6 +104,8 @@ export default function MsParties() {
         city: "",
         opening_balance: 0,
         status: "active",
+        rate_15: 0,
+        rate_22: 0,
       });
     }
     setIsDialogOpen(true);
@@ -198,6 +204,28 @@ export default function MsParties() {
                     onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rate_15">15 Yards Rate</Label>
+                    <Input 
+                      id="rate_15" 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.rate_15} 
+                      onChange={e => setFormData({...formData, rate_15: parseFloat(e.target.value) || 0})} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rate_22">22 Yards Rate</Label>
+                    <Input 
+                      id="rate_22" 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.rate_22} 
+                      onChange={e => setFormData({...formData, rate_22: parseFloat(e.target.value) || 0})} 
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center justify-between mt-2">
                   <Label htmlFor="status">Status</Label>
                   <div className="flex items-center space-x-2">
@@ -241,6 +269,7 @@ export default function MsParties() {
               <TableHead>Contact</TableHead>
               <TableHead>City</TableHead>
               <TableHead className="text-right">Balance</TableHead>
+              <TableHead className="text-right">15y / 22y Rates</TableHead>
               <TableHead className="text-center">Status</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
@@ -262,6 +291,11 @@ export default function MsParties() {
                   <TableCell className="text-muted-foreground">{party.city || "-"}</TableCell>
                   <TableCell className="text-right font-medium text-emerald-600">
                     Rs {Number(party.opening_balance || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    <span className="text-blue-600">{Number(party.rate_15 || 0).toFixed(2)}</span>
+                    <span className="text-muted-foreground mx-1">/</span>
+                    <span className="text-purple-600">{Number(party.rate_22 || 0).toFixed(2)}</span>
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch 

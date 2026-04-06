@@ -6,13 +6,19 @@ import {
   Printer, 
   RefreshCw, 
   Calendar, 
-  ChevronsUpDown,
-  Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Share2,
+  Mail,
+  MessageSquare
 } from "lucide-react";
 import { 
   reportsApi, 
   msPartiesApi, 
+  vendorsApi,
+  expensesApi,
+  accountsApi,
+  assetsApi,
+  settingsApi,
   type MsParty 
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -43,7 +49,8 @@ import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 
 export default function CashLedger() {
-  const [msPartyId, setMsPartyId] = useState<string>("all");
+  const [accountId, setAccountId] = useState<string>("all");
+  const [accountType, setAccountType] = useState<string>("MS Party");
   const [fromDate, setFromDate] = useState<string>(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [toDate, setToDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [msPartyOpen, setMsPartyOpen] = useState(false);
@@ -61,26 +68,42 @@ export default function CashLedger() {
     refetch,
     isFetching 
   } = useQuery({
-    queryKey: ["financial_ledger_report", msPartyId], 
-    queryFn: () => reportsApi.getFinancialLedger(Number(msPartyId), fromDate, toDate),
+    queryKey: ["financial_ledger_report", accountId, accountType], 
+    queryFn: () => reportsApi.getFinancialLedger(Number(accountId), fromDate, toDate, accountType),
     enabled: false
   });
 
+  const { data: vendors = [] } = useQuery({ queryKey: ["vendors"], queryFn: () => vendorsApi.list() });
+  const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list() });
+  const { data: assets = [] } = useQuery({ queryKey: ["assets"], queryFn: () => assetsApi.list() });
+  const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: () => expensesApi.list() });
+  const { data: settings = [] } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.list() });
+
+  const getSetting = (key: string) => settings.find(s => s.key === key)?.value || "";
+
   // Default to "Dyeing" party on load
   useEffect(() => {
-    if (msParties.length > 0 && msPartyId === "all") {
+    if (msParties.length > 0 && accountId === "all" && accountType === "MS Party") {
         const dyeing = msParties.find(p => p.name.toLowerCase() === 'dyeing');
-        if (dyeing) setMsPartyId(String(dyeing.id));
+        if (dyeing) setAccountId(String(dyeing.id));
     }
   }, [msParties]);
 
+  const allLedgers = [
+    ...msParties.map(p => ({ id: String(p.id), name: p.name, type: "MS Party" })),
+    ...vendors.map(v => ({ id: String(v.id), name: v.name, type: "Vendor" })),
+    ...accounts.map(a => ({ id: String(a.id), name: a.name, type: "Account" })),
+    ...assets.map(a => ({ id: String(a.id), name: a.name, type: "Asset" })),
+    ...expenses.map(e => ({ id: String(e.id), name: e.name, type: "Expense" })),
+  ];
+
   const handleGenerate = () => {
-    if (msPartyId === "all") return;
+    if (accountId === "all") return;
     setIsGenerated(true);
     refetch();
   };
 
-  const selectedMsParty = msParties.find(p => String(p.id) === msPartyId);
+  const selectedLedger = allLedgers.find(l => l.id === accountId && l.type === accountType);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -110,32 +133,36 @@ export default function CashLedger() {
                     className="w-full justify-between bg-white text-slate-900 border-none h-11 shadow-inner ring-offset-slate-900 focus:ring-2 focus:ring-blue-500"
                   >
                     <span className="truncate">
-                      {msPartyId === "all" ? "-- Select Ledger --" : 
-                        (selectedMsParty?.name.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
-                        selectedMsParty?.name}
+                      {accountId === "all" ? "-- Select Ledger --" : 
+                        (selectedLedger?.name.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
+                        `[${selectedLedger?.type}] ` + selectedLedger?.name}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-64 p-0" align="start">
+                <PopoverContent className="w-80 p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search ledger..." />
+                    <CommandInput placeholder="Search ledger type or name..." />
                     <CommandList>
                       <CommandEmpty>No ledger found.</CommandEmpty>
                       <CommandGroup>
-                        {msParties.map((party) => (
+                        {allLedgers.map((l) => (
                           <CommandItem
-                            key={party.id}
-                            value={party.name}
+                            key={`${l.type}-${l.id}`}
+                            value={`${l.type} ${l.name}`}
                             onSelect={() => {
-                              setMsPartyId(String(party.id));
+                              setAccountId(l.id);
+                              setAccountType(l.type);
                               setMsPartyOpen(false);
                               setIsGenerated(false);
                             }}
                             className="flex items-center justify-between"
                           >
-                            <span>{party.name}</span>
-                            {String(party.id) === msPartyId && <Search className="h-4 w-4 text-blue-500" />}
+                            <div className="flex flex-col">
+                                <span className="font-medium">{l.name}</span>
+                                <span className="text-[10px] uppercase text-muted-foreground">{l.type}</span>
+                            </div>
+                            {l.id === accountId && l.type === accountType && <Search className="h-4 w-4 text-blue-500" />}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -147,12 +174,44 @@ export default function CashLedger() {
             
             <Button 
                 onClick={handleGenerate} 
-                disabled={isLoading || isFetching || msPartyId === "all"}
+                disabled={isLoading || isFetching || accountId === "all"}
                 className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg transition-all active:scale-95"
             >
               {isLoading || isFetching ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               Generate Report
             </Button>
+
+            {isGenerated && (
+              <div className="flex gap-2 print:hidden">
+                <Button 
+                  variant="outline" 
+                  className="h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md"
+                  onClick={() => {
+                    const wa = getSetting("whatsapp_no");
+                    const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+                    const text = `*Financial Ledger Summary*\n*Party:* ${selectedLedger?.name}\n*Type:* ${selectedLedger?.type}\n*Period:* ${fromDate} to ${toDate}\n*Outstanding Balance:* PKR ${balance.toLocaleString()}\n\nGenerated by Universal Dyeing`;
+                    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-11 px-4 bg-slate-700 hover:bg-slate-800 text-white border-none shadow-md"
+                  onClick={() => {
+                    const email = getSetting("email");
+                    const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+                    const subject = `Ledger Summary: ${selectedLedger?.name}`;
+                    const body = `Financial Ledger Summary\nParty: ${selectedLedger?.name}\nType: ${selectedLedger?.type}\nPeriod: ${fromDate} to ${toDate}\nOutstanding Balance: PKR ${balance.toLocaleString()}\n\nGenerated by Universal Dyeing`;
+                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                  }}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -194,8 +253,8 @@ export default function CashLedger() {
             <div className="flex items-center gap-3">
                 <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">{selectedMsParty?.name}</h2>
-                    <p className="text-slate-500 text-xs font-medium">Financial Statement Ledger</p>
+                    <h2 className="text-xl font-bold text-slate-900">{selectedLedger?.name}</h2>
+                    <p className="text-slate-500 text-xs font-medium">{selectedLedger?.type} - Financial Statement Ledger</p>
                 </div>
             </div>
             <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest">

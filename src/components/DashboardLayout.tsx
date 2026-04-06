@@ -18,6 +18,7 @@ const routeTitles: Record<string, string> = {
   "/reports/stock-ledger": "Stock Ledger",
   "/reports/cash-ledger": "Cash Ledger",
   "/reports/vouchers": "Vouchers",
+  "/settings": "Settings",
 };
 
 const routeBreadcrumbs: Record<string, string[]> = {
@@ -36,6 +37,7 @@ const routeBreadcrumbs: Record<string, string[]> = {
   "/reports/stock-ledger": ["Reports", "Stock Ledger"],
   "/reports/cash-ledger": ["Reports", "Cash Ledger"],
   "/reports/vouchers": ["Reports", "Vouchers"],
+  "/settings": ["Settings"],
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -8,6 +8,8 @@ export interface MsParty {
   city?: string;
   opening_balance?: number;
   status?: string;
+  rate_15?: number;
+  rate_22?: number;
 }
 
 async function logActivity(entityType: string, entityId: number | null, action: string, details: Record<string, unknown> = {}) {
@@ -52,9 +54,10 @@ export const msPartiesService = {
       throw new Error(`MS Party with name "${data.name}" already exists`);
     }
     const rows = await sql`
-      INSERT INTO ms_parties (name, phone, address, city, opening_balance, status)
+      INSERT INTO ms_parties (name, phone, address, city, opening_balance, status, rate_15, rate_22)
       VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
-              ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'})
+              ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'},
+              ${data.rate_15 || 0}, ${data.rate_22 || 0})
       RETURNING *
     `;
     
@@ -95,6 +98,8 @@ export const msPartiesService = {
         city = COALESCE(${data.city ?? null}, city),
         opening_balance = COALESCE(${data.opening_balance ?? null}, opening_balance),
         status = COALESCE(${data.status ?? null}, status),
+        rate_15 = COALESCE(${data.rate_15 ?? null}, rate_15),
+        rate_22 = COALESCE(${data.rate_22 ?? null}, rate_22),
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *

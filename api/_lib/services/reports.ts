@@ -273,37 +273,38 @@ export const reportsService = {
     }));
   },
 
-  async getFinancialLedger(ms_party_id: number, from_date?: string, to_date?: string) {
+  async getFinancialLedger(account_type: string, account_id: number, from_date?: string, to_date?: string) {
     const sql = getDb();
 
-    // Get Dyeing Party ID
+    // Get Dyeing Party ID (as reference for MS Party logic)
     const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
-    const isDyeing = dyeingParty && dyeingParty.id === ms_party_id;
+    const isMSDyeing = account_type === 'MS Party' && dyeingParty && dyeingParty.id === account_id;
 
     const query = await sql`
       WITH entries AS (
-        -- 1. Invoices
+        -- 1. Invoices (Only for MS Parties)
         SELECT 
           i.date,
           CASE 
-            WHEN ${isDyeing} THEN 'MS: ' || m.name 
+            WHEN ${isMSDyeing} THEN 'MS: ' || m.name 
             ELSE 'MS: Dyeing' 
           END as particulars,
           i.invoice_no as ref_no,
           'Service Income' as description,
-          CASE WHEN ${isDyeing} THEN 0 ELSE i.total_amount END as debit,
-          CASE WHEN ${isDyeing} THEN i.total_amount ELSE 0 END as credit,
+          CASE WHEN ${isMSDyeing} THEN 0 ELSE i.total_amount END as debit,
+          CASE WHEN ${isMSDyeing} THEN i.total_amount ELSE 0 END as credit,
           i.created_at
         FROM invoices i
         JOIN ms_parties m ON i.ms_party_id = m.id
         WHERE 
-          (${isDyeing} OR i.ms_party_id = ${ms_party_id})
+          ${account_type} = 'MS Party'
+          AND (${isMSDyeing} OR i.ms_party_id = ${account_id})
           AND (${from_date || null}::date IS NULL OR i.date >= ${from_date}::date)
           AND (${to_date || null}::date IS NULL OR i.date <= ${to_date}::date)
 
         UNION ALL
 
-        -- 2. Voucher Entries for MS Party (Counterpart Logic)
+        -- 2. Voucher Entries (Generic for all account types)
         SELECT 
           v.date,
           (
@@ -333,8 +334,8 @@ export const reportsService = {
         FROM voucher_entries ve
         JOIN vouchers v ON ve.voucher_id = v.id
         WHERE 
-          ve.account_type = 'MS Party' 
-          AND ve.account_id = ${ms_party_id}
+          ve.account_type = ${account_type} 
+          AND ve.account_id = ${account_id}
           AND (${from_date || null}::date IS NULL OR v.date >= ${from_date}::date)
           AND (${to_date || null}::date IS NULL OR v.date <= ${to_date}::date)
       )
@@ -343,12 +344,21 @@ export const reportsService = {
     `;
 
     let balance = 0;
-    // Get opening balance from MS Party
-    const [party] = await sql`SELECT opening_balance FROM ms_parties WHERE id = ${ms_party_id}`;
-    if (party) {
-        // If it's a customer, opening balance is usually debit? 
-        // In this system we just use it as positive base.
-        balance = Number(party.opening_balance || 0);
+    // Get opening balance based on account type
+    let openingTable = '';
+    switch(account_type) {
+      case 'MS Party': openingTable = 'ms_parties'; break;
+      case 'Vendor': openingTable = 'vendors'; break;
+      case 'Account': openingTable = 'accounts'; break;
+      case 'Expense': openingTable = 'expenses'; break;
+      case 'Asset': openingTable = 'assets'; break;
+    }
+
+    if (openingTable) {
+        const rows = await sql.query(`SELECT opening_balance FROM ${openingTable} WHERE id = $1`, [account_id]);
+        if (rows.length > 0) {
+            balance = Number(rows[0].opening_balance || 0);
+        }
     }
 
     return query.map(row => {

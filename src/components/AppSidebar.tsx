@@ -212,6 +212,7 @@ export function AppSidebar() {
               )}
               
               {isAdmin && (
+                <>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -225,6 +226,20 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to="/settings"
+                        end
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <Settings className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">App Settings</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

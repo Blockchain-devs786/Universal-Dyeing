@@ -340,7 +340,12 @@ export default function Invoice() {
                            <CommandEmpty>No records found.</CommandEmpty>
                            <CommandGroup>
                              {msParties.map((party) => (
-                               <CommandItem key={party.id} value={party.name} onSelect={() => { setMsPartyId(String(party.id)); setMsPartyOpen(false); }}>
+                               <CommandItem key={party.id} value={party.name} onSelect={() => { 
+                                 setMsPartyId(String(party.id)); 
+                                 setRate15(Number(party.rate_15 || 0));
+                                 setRate22(Number(party.rate_22 || 0));
+                                 setMsPartyOpen(false); 
+                               }}>
                                  <Check className={cn("mr-2 h-4 w-4", msPartyId === String(party.id) ? "opacity-100" : "opacity-0")} />
                                  {party.name}
                                </CommandItem>

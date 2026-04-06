@@ -27,6 +27,8 @@ export interface MsParty {
   debit?: number;
   credit?: number;
   status: string;
+  rate_15?: number;
+  rate_22?: number;
   created_at: string;
   updated_at: string;
 }
@@ -472,8 +474,11 @@ export const reportsApi = {
     
     return coreRequest<StockLedgerRow[]>('reports.stock_ledger', {}, params);
   },
-  getFinancialLedger: (ms_party_id: number, from_date?: string, to_date?: string) => {
-    const params: Record<string, string> = { ms_party_id: String(ms_party_id) };
+  getFinancialLedger: (accountId: number, from_date?: string, to_date?: string, accountType: string = 'MS Party') => {
+    const params: Record<string, string> = { 
+        account_id: String(accountId),
+        account_type: accountType
+    };
     if (from_date) params.from_date = from_date;
     if (to_date) params.to_date = to_date;
     return coreRequest<any[]>('reports.financial_ledger', {}, params);
@@ -732,6 +737,15 @@ export const vouchersApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('vouchers.delete', { id }),
+};
+
+// ─── Settings API ──────────────────────────────────────────────
+
+export const settingsApi = {
+  list: () => coreRequest<any[]>('settings.list'),
+  get: (key: string) => coreRequest<any>('settings.get', { key }),
+  update: (key: string, value: string) => coreRequest<any>('settings.update', { key, value }),
+  updateMultiple: (settings: Record<string, string>) => coreRequest<any[]>('settings.update_multiple', { settings }),
 };
 
 

@@ -14,6 +14,7 @@ import { reportsService } from './_lib/services/reports.js';
 import { invoicesService, type Invoice } from './_lib/services/invoices.js';
 import { accountsService } from './_lib/services/accounts.js';
 import { vouchersService } from './_lib/services/vouchers.js';
+import { settingsService } from './_lib/services/settings.js';
 
 let dbInitialized = false;
 
@@ -349,7 +350,8 @@ async function routeAction(
           });
         case 'financial_ledger':
           return reportsService.getFinancialLedger(
-            Number(query.ms_party_id || data.ms_party_id),
+            (query.account_type as string || data.account_type as string || 'MS Party'),
+            Number(query.account_id || data.account_id || query.ms_party_id || data.ms_party_id),
             (query.from_date as string) || data.from_date,
             (query.to_date as string) || data.to_date
           );
@@ -411,7 +413,22 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for vouchers`);
       }
 
+    // ─── Settings ──────────────────────────────────────────────
+    case 'settings':
+      switch (operation) {
+        case 'list':
+          return settingsService.list();
+        case 'get':
+          return settingsService.getByKey(query.key as string || data.key as string);
+        case 'update':
+          return settingsService.updateByKey(data.key, data.value);
+        case 'update_multiple':
+          return settingsService.updateMultiple(data.settings);
+        default:
+          throw new Error(`Unknown operation: ${operation} for settings`);
+      }
+
     default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices, accounts, vouchers`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, vendors, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices, accounts, vouchers, settings`);
   }
 }

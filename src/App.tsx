@@ -22,6 +22,7 @@ import Stocks from "@/pages/reports/Stocks";
 import StockLedger from "@/pages/reports/StockLedger";
 import CashLedger from "@/pages/reports/CashLedger";
 import Vouchers from "@/pages/data-entry/Vouchers";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/auth/Login";
 import VerifyEmail from "@/pages/auth/VerifyEmail";
@@ -72,6 +73,7 @@ const App = () => (
           <Route path="/reports/stocks" element={<AuthGuard><LayoutWrapper><Stocks /></LayoutWrapper></AuthGuard>} />
           <Route path="/reports/stock-ledger" element={<AuthGuard><LayoutWrapper><StockLedger /></LayoutWrapper></AuthGuard>} />
           <Route path="/reports/cash-ledger" element={<AuthGuard><LayoutWrapper><CashLedger /></LayoutWrapper></AuthGuard>} />
+          <Route path="/settings" element={<AuthGuard><LayoutWrapper><Settings /></LayoutWrapper></AuthGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

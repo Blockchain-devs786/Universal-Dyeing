@@ -32,10 +32,20 @@ export async function initializeDatabase() {
       debit DECIMAL(15,2) DEFAULT 0,
       credit DECIMAL(15,2) DEFAULT 0,
       status VARCHAR(20) DEFAULT 'active',
+      rate_15 DECIMAL(10,2) DEFAULT 0,
+      rate_22 DECIMAL(10,2) DEFAULT 0,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safety migrations for ms_parties rates
+  try {
+    await db`ALTER TABLE ms_parties ADD COLUMN IF NOT EXISTS rate_15 DECIMAL(10,2) DEFAULT 0`;
+    await db`ALTER TABLE ms_parties ADD COLUMN IF NOT EXISTS rate_22 DECIMAL(10,2) DEFAULT 0`;
+  } catch (err) {
+    console.error("Migration error for ms_parties rates:", err);
+  }
 
   // Vendors table
   await db`
@@ -392,6 +402,23 @@ export async function initializeDatabase() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
+  `;
+
+  // Settings table
+  await db`
+    CREATE TABLE IF NOT EXISTS application_settings (
+      id SERIAL PRIMARY KEY,
+      key VARCHAR(100) UNIQUE NOT NULL,
+      value TEXT,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Seed default settings
+  await db`
+    INSERT INTO application_settings (key, value)
+    VALUES ('whatsapp_no', ''), ('email', 'admin@example.com')
+    ON CONFLICT (key) DO NOTHING
   `;
 
   // Migration for existing users
