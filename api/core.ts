@@ -15,6 +15,7 @@ import { invoicesService, type Invoice } from './_lib/services/invoices.js';
 import { accountsService } from './_lib/services/accounts.js';
 import { vouchersService } from './_lib/services/vouchers.js';
 import { settingsService } from './_lib/services/settings.js';
+import { outwardPartiesService, type OutwardParty } from './_lib/services/outward-parties.js';
 
 let dbInitialized = false;
 
@@ -137,6 +138,26 @@ async function routeAction(
           return vendorsService.delete(Number(query.id || data.id));
         default:
           throw new Error(`Unknown operation: ${operation} for vendors`);
+      }
+
+    // ─── Outward Parties ─────────────────────────────────────────
+    case 'outward_parties':
+      switch (operation) {
+        case 'list':
+          return outwardPartiesService.list(
+            (query.search as string) || data.search,
+            (query.status as string) || data.status
+          );
+        case 'get':
+          return outwardPartiesService.getById(Number(query.id || data.id));
+        case 'create':
+          return outwardPartiesService.create(data as OutwardParty);
+        case 'update':
+          return outwardPartiesService.update(Number(data.id), data);
+        case 'delete':
+          return outwardPartiesService.delete(Number(query.id || data.id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for outward_parties`);
       }
 
     // ─── Items ─────────────────────────────────────────────────

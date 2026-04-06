@@ -36,7 +36,7 @@ export const outwardsService = {
       FROM outwards o
       LEFT JOIN ms_parties m ON o.ms_party_id = m.id
       LEFT JOIN from_parties f ON o.from_party_id = f.id
-      LEFT JOIN from_parties t ON o.outward_to_party_id = t.id
+      LEFT JOIN outward_parties t ON o.outward_to_party_id = t.id
       LEFT JOIN outward_items oi ON oi.outward_id = o.id
       WHERE 
         (${ms_party_id || null}::integer IS NULL OR o.ms_party_id = ${ms_party_id || null}::integer)
@@ -60,7 +60,7 @@ export const outwardsService = {
       FROM outwards o
       LEFT JOIN ms_parties m ON o.ms_party_id = m.id
       LEFT JOIN from_parties f ON o.from_party_id = f.id
-      LEFT JOIN from_parties t ON o.outward_to_party_id = t.id
+      LEFT JOIN outward_parties t ON o.outward_to_party_id = t.id
       WHERE o.id = ${id}
     `;
     

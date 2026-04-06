@@ -13,6 +13,7 @@ import Items from "@/pages/define/Items";
 import Assets from "@/pages/define/Assets";
 import Expenses from "@/pages/define/Expenses";
 import Accounts from "@/pages/define/Accounts";
+import OutwardParties from "@/pages/define/OutwardParties";
 import Inward from "@/pages/data-entry/Inward";
 import Outward from "@/pages/data-entry/Outward";
 import Transfer from "@/pages/data-entry/Transfer";
@@ -64,6 +65,7 @@ const App = () => (
           <Route path="/define/assets" element={<AuthGuard><LayoutWrapper><Assets /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/expenses" element={<AuthGuard><LayoutWrapper><Expenses /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/accounts" element={<AuthGuard><LayoutWrapper><Accounts /></LayoutWrapper></AuthGuard>} />
+          <Route path="/define/outward-parties" element={<AuthGuard><LayoutWrapper><OutwardParties /></LayoutWrapper></AuthGuard>} />
           <Route path="/data-entry/inward" element={<AuthGuard><LayoutWrapper><Inward /></LayoutWrapper></AuthGuard>} />
           <Route path="/data-entry/outward" element={<AuthGuard><LayoutWrapper><Outward /></LayoutWrapper></AuthGuard>} />
           <Route path="/data-entry/transfer" element={<AuthGuard><LayoutWrapper><Transfer /></LayoutWrapper></AuthGuard>} />

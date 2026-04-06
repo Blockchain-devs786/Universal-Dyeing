@@ -9,6 +9,7 @@ import {
   fromPartiesApi,
   itemsApi,
   reportsApi,
+  outwardPartiesApi,
   type Outward,
   type OutwardItem,
 } from "@/lib/api-client";
@@ -112,6 +113,11 @@ export default function OutwardPage() {
   const { data: items = [] } = useQuery({
     queryKey: ["items"],
     queryFn: () => itemsApi.list(),
+  });
+
+  const { data: outwardParties = [] } = useQuery({
+    queryKey: ["outward_parties"],
+    queryFn: () => outwardPartiesApi.list(),
   });
 
   const { data: stocks = [] } = useQuery({
@@ -328,7 +334,7 @@ export default function OutwardPage() {
   
   const filterMsPartyObj = msParties.find(p => String(p.id) === filterMsPartyId);
   const selectedFromPartyObj = fromParties.find(p => String(p.id) === formData.from_party_id);
-  const selectedOutwardToPartyObj = fromParties.find(p => String(p.id) === formData.outward_to_party_id);
+  const selectedOutwardToPartyObj = outwardParties.find(p => String(p.id) === formData.outward_to_party_id);
 
   // Derive unique items and measurements available for current MS party
   const availableItems = useMemo(() => {
@@ -541,7 +547,9 @@ export default function OutwardPage() {
                     <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
                     <TableCell className="font-medium truncate max-w-[120px]">{outw.ms_party_name || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
-                    <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">{outw.outward_to_party_name || "-"}</TableCell>
+                    <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
+                      {outw.outward_to_party_name || "-"}
+                    </TableCell>
                     <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">
@@ -692,7 +700,7 @@ export default function OutwardPage() {
                         <CommandList>
                           <CommandEmpty>No records found.</CommandEmpty>
                           <CommandGroup>
-                            {fromParties.map((party) => (
+                            {outwardParties.filter(p => p.status === 'active').map((party) => (
                               <CommandItem
                                 key={party.id}
                                 value={party.name}

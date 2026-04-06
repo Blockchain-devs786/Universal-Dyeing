@@ -127,6 +127,20 @@ export async function initializeDatabase() {
     )
   `;
 
+  // Outward Parties table
+  await db`
+    CREATE TABLE IF NOT EXISTS outward_parties (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      phone VARCHAR(50),
+      address TEXT,
+      city VARCHAR(100),
+      status VARCHAR(20) DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
   // Assets table
   await db`
     CREATE TABLE IF NOT EXISTS assets (

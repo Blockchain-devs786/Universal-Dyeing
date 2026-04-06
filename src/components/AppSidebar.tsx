@@ -50,6 +50,7 @@ const defineItems = [
   { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },
   { title: "Accounts", url: "/define/accounts", icon: Landmark },
+  { title: "Outward Parties", url: "/define/outward-parties", icon: Truck },
 ];
 
 const dataEntryItems = [
@@ -145,6 +146,7 @@ export function AppSidebar() {
           "/define/assets": "define_assets",
           "/define/expenses": "define_expenses",
           "/define/accounts": "define_accounts",
+          "/define/outward-parties": "define_outward_parties",
       };
       return hasAccess(map[item.url]);
   });

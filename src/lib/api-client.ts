@@ -70,6 +70,17 @@ export interface Item {
   updated_at: string;
 }
 
+export interface OutwardParty {
+  id: number;
+  name: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InwardItem {
   id: number;
   inward_id: number;
@@ -418,6 +429,29 @@ export const vendorsApi = {
   
   delete: (id: number) => 
     coreRequest<{ success: boolean }>('vendors.delete', { id }),
+};
+
+// ─── Outward Parties API ─────────────────────────────────────────
+
+export const outwardPartiesApi = {
+  list: (search?: string, status?: string) => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    if (status) params.status = status;
+    return coreRequest<OutwardParty[]>('outward_parties.list', {}, params);
+  },
+  
+  getById: (id: number) => 
+    coreRequest<OutwardParty>('outward_parties.get', { id }),
+  
+  create: (data: Omit<OutwardParty, 'id' | 'created_at' | 'updated_at'>) => 
+    coreRequest<OutwardParty>('outward_parties.create', data),
+  
+  update: (id: number, data: Partial<OutwardParty>) => 
+    coreRequest<OutwardParty>('outward_parties.update', { ...data, id }),
+  
+  delete: (id: number) => 
+    coreRequest<{ success: boolean }>('outward_parties.delete', { id }),
 };
 
 // ─── Items API ───────────────────────────────────────────────────
