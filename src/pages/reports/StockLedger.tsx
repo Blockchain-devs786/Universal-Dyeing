@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   FileText, 
@@ -45,7 +45,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 import { sharePDF } from "@/lib/shareUtils";
 
 type GroupedLedger = {
@@ -70,6 +70,8 @@ export default function StockLedger() {
   const [itemOpen, setItemOpen] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Queries
   const { data: msParties = [] } = useQuery({
@@ -130,37 +132,27 @@ export default function StockLedger() {
     setExpandedItems(new Set());
   };
 
-  const generatePDFBlob = (): Blob => {
-    const doc = new jsPDF();
-    const title = "Stock Ledger Report";
-    const subtitle = `${selectedMsPartyObj?.name || 'All'} | Item: ${itemId === 'all' ? 'All' : selectedItemObj?.name} | ${format(new Date(fromDate), 'dd MMM yyyy')} - ${format(new Date(toDate), 'dd MMM yyyy')}`;
-    doc.setFontSize(20);
-    doc.text(title, 14, 20);
-    doc.setFontSize(10);
-    doc.text(subtitle, 14, 30);
-
-    let yOffset = 38;
-    groupedData.forEach((group) => {
-      autoTable(doc, {
-        startY: yOffset,
-        head: [[`Item: ${group.itemName}`]],
-        body: group.transactions.map(tx => [
-          format(new Date(tx.date), 'dd/MM/yyyy'),
-          `${tx.type} / ${tx.ref_no}`,
-          tx.particulars,
-          tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : '-',
-          tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : '-',
-          tx.balance.toLocaleString()
-        ]),
-        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 9 },
-        styles: { fontSize: 8 },
-        margin: { left: 14, right: 14 },
-        theme: 'grid',
-      });
-      yOffset = (doc as any).lastAutoTable?.finalY + 10;
-    });
-
-    return doc.output('blob');
+  const generatePDFBlob = async (): Promise<Blob> => {
+    if (!printRef.current) return new Blob();
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    const imgWidth = contentWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = margin;
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight - 2 * margin;
+    while (heightLeft > 0) {
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position - (pageHeight - 2 * margin), imgWidth, imgHeight);
+      heightLeft -= pageHeight - 2 * margin;
+    }
+    return pdf.output('blob');
   };
 
   const toggleItem = (itemId: number) => {
@@ -382,7 +374,7 @@ export default function StockLedger() {
                  size="sm"
                  className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
                  onClick={async () => {
-                   const blob = generatePDFBlob();
+                   const blob = await generatePDFBlob();
                    const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
                    await sharePDF(blob, filename);
                }}
@@ -398,7 +390,7 @@ export default function StockLedger() {
                    const subject = `Stock Ledger: ${selectedMsPartyObj?.name || 'All'}`;
                    const body = `Stock Ledger Report\nParty: ${selectedMsPartyObj?.name || 'All'}\nPeriod: ${fromDate} to ${toDate}`;
                    const filename = `StockLedger_${selectedMsPartyObj?.name || 'All'}.pdf`;
-                   const blob = generatePDFBlob();
+                   const blob = await generatePDFBlob();
 
                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
                      const file = new File([blob], filename, { type: "application/pdf" });
@@ -522,6 +514,65 @@ export default function StockLedger() {
         </div>
       )}
 
+      {/* Hidden Print Container for HTML-to-PDF */}
+      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
+        <div className="p-8">
+          <div className="mb-6 border-b pb-4 flex justify-between items-end">
+            <div>
+              <h1 className="text-2xl font-bold">Stock Ledger Report</h1>
+              <p className="text-sm text-slate-500">{selectedMsPartyObj?.name || 'All Ledgers'} | Item: {itemId === 'all' ? 'All' : selectedItemObj?.name} | {fromDate} to {toDate}</p>
+            </div>
+          </div>
+          {groupedData.map((group, gi) => (
+            <div key={gi} className="mb-8">
+              <h2 className="text-lg font-bold mb-2 bg-slate-100 px-2 py-1">{group.itemName}</h2>
+              <table className="w-full text-xs border-collapse mb-4">
+                <thead>
+                  <tr className="bg-slate-800 text-white">
+                    <th className="border py-2 px-3 text-left">Date</th>
+                    <th className="border py-2 px-3 text-left">Type / Ref</th>
+                    <th className="border py-2 px-3 text-left">Particulars</th>
+                    <th className="border py-2 px-3 text-center">MSR</th>
+                    <th className="border py-2 px-3 text-left">Description</th>
+                    <th className="border py-2 px-3 text-center text-blue-300">Debit (+)</th>
+                    <th className="border py-2 px-3 text-center text-orange-300">Credit (-)</th>
+                    <th className="border py-2 px-3 text-center">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.transactions.map((tx, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <td className="border py-2 px-3">{format(new Date(tx.date), 'dd/MM/yyyy')}</td>
+                      <td className="border py-2 px-3"><span className="font-bold">{tx.type}</span><br/><span className="text-slate-400 text-[10px]">{tx.ref_no}</span></td>
+                      <td className="border py-2 px-3">{tx.particulars}</td>
+                      <td className="border py-2 px-3 text-center">{tx.measurement}"</td>
+                      <td className="border py-2 px-3 text-slate-500 text-[10px]" title={tx.description}>{tx.description}</td>
+                      <td className="border py-2 px-3 text-center text-blue-700 font-bold">
+                        {tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : "-"}
+                      </td>
+                      <td className="border py-2 px-3 text-center text-orange-600 font-bold">
+                        {tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : "-"}
+                      </td>
+                      <td className={`border py-2 px-3 text-center font-bold ${tx.balance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+                        {tx.balance.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-100 font-bold">
+                    <td colSpan={5} className="border py-2 px-3 text-right">Totals - {group.itemName}</td>
+                    <td className="border py-2 px-3 text-center text-blue-700">+{group.totalDebit.toLocaleString()}</td>
+                    <td className="border py-2 px-3 text-center text-orange-600">-{group.totalCredit.toLocaleString()}</td>
+                    <td className="border py-2 px-3 text-center">{group.finalBalance.toLocaleString()}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))}
+          {groupedData.length === 0 && (
+            <p className="text-center text-slate-400 py-10 italic">No data</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

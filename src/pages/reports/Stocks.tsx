@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  RefreshCw, 
-  Printer, 
-  Search, 
-  Check, 
+import {
+  RefreshCw,
+  Printer,
+  Search,
+  Check,
   ChevronsUpDown,
   Filter,
   MessageSquare,
@@ -18,9 +18,9 @@ import {
   settingsApi,
   type StockReportRow,
 } from "@/lib/api-client";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { sharePDF } from "@/lib/shareUtils";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ export default function StockReport() {
   const [msPartyOpen, setMsPartyOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
 
+  const printRef = useRef<HTMLDivElement>(null);
+
   // Data Queries
   const { data: stocks = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ["reports_stock", filterMsPartyId, filterItemId],
@@ -63,38 +65,27 @@ export default function StockReport() {
   const { data: settings = [] } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.list() });
   const getSetting = (key: string) => settings.find(s => s.key === key)?.value || "";
 
-  const generatePDFBlob = (): Blob => {
-    const doc = new jsPDF();
-    const title = "Stock Report";
-    const subtitle = `Party: ${filterMsPartyId === "all" ? "All" : selectedMsPartyObj?.name} | Item: ${filterItemId === "all" ? "All" : selectedItemObj?.name}`;
-    
-    doc.setFontSize(22);
-    doc.text(title, 14, 20);
-    doc.setFontSize(11);
-    doc.text(subtitle, 14, 30);
-    
-    const tableData = stocks.map(row => [
-      row.item_name,
-      row.msr,
-      row.ms_party_name,
-      row.total_inward || 0,
-      row.total_outward || 0,
-      row.total_transfer || 0,
-      row.transfer_in || 0,
-      row.transfer_out || 0,
-      row.remaining || 0
-    ]);
-
-    autoTable(doc, {
-      startY: 35,
-      head: [['Item', 'MSR', 'Party', 'Inward', 'Outward', 'Trf', 'T-In', 'T-Out', 'Rem']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42] },
-      styles: { fontSize: 7 }
-    });
-
-    return doc.output('blob');
+  const generatePDFBlob = async (): Promise<Blob> => {
+    if (!printRef.current) return new Blob();
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    const imgWidth = contentWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = margin;
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight - 2 * margin;
+    while (heightLeft > 0) {
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position - (pageHeight - 2 * margin), imgWidth, imgHeight);
+      heightLeft -= pageHeight - 2 * margin;
+    }
+    return pdf.output('blob');
   };
 
 
@@ -128,29 +119,29 @@ export default function StockReport() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Stock Report</h1>
           <p className="text-white/80 mt-1">Monitor inventory levels across all MS Parties and items.</p>
         </div>
-        
+
         <div className="flex gap-3 print:hidden">
-          <Button 
-            variant="outline" 
-            onClick={() => refetch()} 
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
             disabled={isFetching}
             className="shadow-sm bg-white text-slate-800"
           >
-            <RefreshCw className={cn("mr-2 h-4 w-4 text-slate-800", isFetching && "animate-spin")} /> 
+            <RefreshCw className={cn("mr-2 h-4 w-4 text-slate-800", isFetching && "animate-spin")} />
             Refresh
           </Button>
-          <Button 
-            onClick={handlePrint} 
+          <Button
+            onClick={handlePrint}
             className="bg-white hover:bg-white/90 text-primary shadow-sm"
           >
-            <Printer className="mr-2 h-4 w-4" /> 
+            <Printer className="mr-2 h-4 w-4" />
             Print
           </Button>
 
@@ -158,7 +149,7 @@ export default function StockReport() {
             variant="outline"
             className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
             onClick={async () => {
-              const blob = generatePDFBlob();
+              const blob = await generatePDFBlob();
               const filename = `StockReport_${format(new Date(), 'yyyyMMdd')}.pdf`;
               await sharePDF(blob, filename);
             }}
@@ -175,7 +166,7 @@ export default function StockReport() {
               const subject = `Stock Report: ${filterMsPartyId === "all" ? "Combined" : selectedMsPartyObj?.name}`;
               const body = `Stock Report Summary:\nParty: ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\nNet Remaining: ${aggregates.net_remaining.toLocaleString()}`;
               const filename = `StockReport_${format(new Date(), 'yyyyMMdd')}.pdf`;
-              const blob = generatePDFBlob();
+              const blob = await generatePDFBlob();
 
               // On mobile, use native share to auto-attach the file
               if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
@@ -210,7 +201,7 @@ export default function StockReport() {
           <Filter className="h-4 w-4" />
           <h2 className="font-semibold text-sm">Filters</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">MS Party</Label>
@@ -350,7 +341,7 @@ export default function StockReport() {
            </div>
            <p className="text-xs text-slate-500">Printed on: {new Date().toLocaleString()}</p>
         </div>
-        
+
         <div className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 font-semibold shadow-sm text-center">
            <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total Inward</span><span className="text-blue-600 text-base">{aggregates.total_inward.toLocaleString()}</span></div>
            <div><span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total Outward</span><span className="text-orange-500 text-base">{aggregates.total_outward.toLocaleString()}</span></div>
@@ -361,6 +352,60 @@ export default function StockReport() {
              <span className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Net Remaining</span>
              <span className="text-blue-700 font-bold text-lg">{aggregates.net_remaining.toLocaleString()}</span>
            </div>
+        </div>
+      </div>
+
+      {/* Hidden Print Container for HTML-to-PDF */}
+      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
+        <div className="p-8">
+          <div className="mb-6 border-b pb-4">
+            <h1 className="text-2xl font-bold">Stock Report</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              MS Party: {filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name} |
+              Item: {filterItemId === "all" ? "All Items" : selectedItemObj?.name}
+            </p>
+          </div>
+          <div className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 font-semibold shadow-sm text-center text-sm mb-6">
+            <div><span className="text-xs text-slate-500 block mb-1">Total Inward</span><span className="text-blue-600 font-bold">{aggregates.total_inward.toLocaleString()}</span></div>
+            <div><span className="text-xs text-slate-500 block mb-1">Total Outward</span><span className="text-orange-500 font-bold">{aggregates.total_outward.toLocaleString()}</span></div>
+            <div><span className="text-xs text-slate-500 block mb-1">Total Transfer</span><span className="text-purple-500 font-bold">{aggregates.total_transfer.toLocaleString()}</span></div>
+            <div><span className="text-xs text-slate-500 block mb-1">Transfer IN</span><span className="text-emerald-500 font-bold">{aggregates.transfer_in.toLocaleString()}</span></div>
+            <div><span className="text-xs text-slate-500 block mb-1">Transfer OUT</span><span className="text-red-500 font-bold">{aggregates.transfer_out.toLocaleString()}</span></div>
+            <div className="border-l border-slate-300 pl-4 py-1">
+              <span className="text-xs text-slate-500 block mb-1">Net Remaining</span>
+              <span className="text-blue-700 font-bold">{aggregates.net_remaining.toLocaleString()}</span>
+            </div>
+          </div>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border py-2 px-3 text-left font-semibold text-slate-600">Item Name</th>
+                <th className="border py-2 px-3 text-center font-semibold text-slate-600">MSR</th>
+                <th className="border py-2 px-3 text-left font-semibold text-slate-600">MS Party</th>
+                <th className="border py-2 px-3 text-center font-semibold text-blue-600">Total Inward</th>
+                <th className="border py-2 px-3 text-center font-semibold text-orange-500">Total Outward</th>
+                <th className="border py-2 px-3 text-center font-semibold text-purple-500">Total Transfer</th>
+                <th className="border py-2 px-3 text-center font-semibold text-emerald-500">Transfer IN</th>
+                <th className="border py-2 px-3 text-center font-semibold text-red-500">Transfer OUT</th>
+                <th className="border py-2 px-3 text-center font-bold text-blue-700">Remaining</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stocks.map((row, idx) => (
+                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                  <td className="border py-2 px-3 font-medium">{row.item_name}</td>
+                  <td className="border py-2 px-3 text-center">{row.msr}</td>
+                  <td className="border py-2 px-3">{row.ms_party_name}</td>
+                  <td className="border py-2 px-3 text-center font-semibold text-blue-600">{row.total_inward || '-'}</td>
+                  <td className="border py-2 px-3 text-center font-semibold text-orange-500">{row.total_outward || '-'}</td>
+                  <td className="border py-2 px-3 text-center font-semibold text-purple-500">{row.total_transfer || '-'}</td>
+                  <td className="border py-2 px-3 text-center font-semibold text-emerald-500">{row.transfer_in || '-'}</td>
+                  <td className="border py-2 px-3 text-center font-semibold text-red-500">{row.transfer_out || '-'}</td>
+                  <td className="border py-2 px-3 text-center font-bold text-blue-700">{row.remaining}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

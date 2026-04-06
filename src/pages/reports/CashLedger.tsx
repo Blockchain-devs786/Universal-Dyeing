@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Banknote,
@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 import {
   Table,
   TableBody,
@@ -59,6 +59,8 @@ export default function CashLedger() {
   const [toDate, setToDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [msPartyOpen, setMsPartyOpen] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
+
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Queries
   const { data: msParties = [] } = useQuery({
@@ -93,43 +95,27 @@ export default function CashLedger() {
     }
   }, [msParties]);
 
-  const generatePDFBlob = (): Blob => {
-    const doc = new jsPDF();
-    const title = `${selectedLedger?.name || "Ledger"}`;
-    const subtitle = `${selectedLedger?.type || "General"} Ledger (${format(new Date(fromDate), "dd MMM yyyy")} - ${format(new Date(toDate), "dd MMM yyyy")})`;
-
-    doc.setFontSize(22);
-    doc.text(title, 14, 20);
-    doc.setFontSize(11);
-    doc.text(subtitle, 14, 30);
-
-    const tableData = ledger.map(row => [
-      format(new Date(row.date), "dd-MM-yyyy"),
-      row.particulars || "",
-      row.ref_no || "",
-      row.description || "",
-      (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-      (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-      (row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
-    ]);
-
-    autoTable(doc, {
-      startY: 35,
-      head: [['Date', 'Particulars', 'Ref#', 'Description', 'Debit', 'Credit', 'Balance']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42] },
-      styles: { fontSize: 8 },
-      foot: [[
-        'TOTALS', '', '', '',
-        ledger.reduce((s, r) => s + (r.debit || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-        ledger.reduce((s, r) => s + (r.credit || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-        ledger.length > 0 ? ledger[ledger.length - 1].balance.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'
-      ]],
-      footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' }
-    });
-
-    return doc.output('blob');
+  const generatePDFBlob = async (): Promise<Blob> => {
+    if (!printRef.current) return new Blob();
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    const imgWidth = contentWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = margin;
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight - 2 * margin;
+    while (heightLeft > 0) {
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position - (pageHeight - 2 * margin), imgWidth, imgHeight);
+      heightLeft -= pageHeight - 2 * margin;
+    }
+    return pdf.output('blob');
   };
 
 
@@ -148,6 +134,9 @@ export default function CashLedger() {
   };
 
   const selectedLedger = allLedgers.find(l => l.id === accountId && l.type === accountType);
+  const totalDebit = ledger.reduce((s, r) => s + (r.debit || 0), 0);
+  const totalCredit = ledger.reduce((s, r) => s + (r.credit || 0), 0);
+  const finalBalance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -231,7 +220,7 @@ export default function CashLedger() {
                   variant="outline"
                   className="h-11 px-4 bg-green-500 hover:bg-green-600 text-white border-none shadow-md"
                   onClick={async () => {
-                    const blob = generatePDFBlob();
+                    const blob = await generatePDFBlob();
                     const filename = `Ledger_${selectedLedger?.name}_${format(new Date(), 'yyyyMMdd')}.pdf`;
                     await sharePDF(blob, filename);
                   }}
@@ -244,11 +233,11 @@ export default function CashLedger() {
                   className="h-11 px-4 bg-slate-700 hover:bg-slate-800 text-white border-none shadow-md"
                   onClick={async () => {
                     const email = getSetting("email");
-                    const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+                    const balance = finalBalance || 0;
                     const subject = `Ledger Summary: ${selectedLedger?.name}`;
                     const body = `Please find the ledger summary below:\n\nParty: ${selectedLedger?.name}\nType: ${selectedLedger?.type}\nPeriod: ${fromDate} to ${toDate}\nBalance: PKR ${balance.toLocaleString()}`;
 
-                    const blob = generatePDFBlob();
+                    const blob = await generatePDFBlob();
                     const filename = `Ledger_${selectedLedger?.name}.pdf`;
 
                     // On mobile, use native share to auto-attach the file
@@ -378,20 +367,20 @@ export default function CashLedger() {
                 <div className="bg-white p-4 rounded-xl border shadow-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Debits</p>
                     <p className="text-xl font-black text-blue-700">
-                        {ledger.reduce((s, r) => s + r.debit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border shadow-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Credits</p>
                     <p className="text-xl font-black text-red-600">
-                        {ledger.reduce((s, r) => s + r.credit, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                 </div>
                 <div className="md:col-span-2 bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-center text-white">
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Final Outstanding Balance</p>
                         <p className="text-2xl font-black">
-                            {ledger.length > 0 ? ledger[ledger.length - 1].balance.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                            {finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                     </div>
                     <div className="p-2 bg-white/10 rounded-lg">
@@ -402,6 +391,59 @@ export default function CashLedger() {
           </div>
         </div>
       )}
+
+      {/* Hidden Print Container for HTML-to-PDF */}
+      <div ref={printRef} className="hidden fixed inset-0 bg-white z-[-1] w-[1024px] overflow-auto" style={{ color: '#1e293b' }}>
+        <div className="p-8">
+          <div className="mb-6 border-b pb-4 flex justify-between items-end">
+            <div>
+              <h1 className="text-2xl font-bold">{selectedLedger?.name || 'Unknown Account'}</h1>
+              <p className="text-sm text-slate-500">{selectedLedger?.type || 'Account'} - Financial Statement Ledger</p>
+            </div>
+            <p className="text-xs text-slate-500">
+              Period: {fromDate ? format(new Date(fromDate), 'dd MMM yyyy') : ''} - {toDate ? format(new Date(toDate), 'dd MMM yyyy') : ''}
+            </p>
+          </div>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-900 text-white">
+                <th className="border py-2 px-3 text-left">Date</th>
+                <th className="border py-2 px-3 text-left">Particulars</th>
+                <th className="border py-2 px-3 text-left">Invoice/Voucher</th>
+                <th className="border py-2 px-3 text-left">Description</th>
+                <th className="border py-2 px-3 text-right">Debit (PKR)</th>
+                <th className="border py-2 px-3 text-right">Credit (PKR)</th>
+                <th className="border py-2 px-3 text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ledger.map((row, idx) => (
+                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                  <td className="border py-2 px-3 text-slate-600">{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</td>
+                  <td className="border py-2 px-3 text-slate-900 uppercase text-xs">{row.particulars}</td>
+                  <td className="border py-2 px-3 text-blue-600 text-xs">{row.ref_no}</td>
+                  <td className="border py-2 px-3 text-slate-500 text-xs">{row.description}</td>
+                  <td className="border py-2 px-3 text-right text-blue-700 font-bold">
+                    {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                  </td>
+                  <td className="border py-2 px-3 text-right text-red-600 font-bold">
+                    {(row.credit || 0) > 0 ? (row.credit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
+                  </td>
+                  <td className={`border py-2 px-3 text-right font-bold ${(row.balance || 0) < 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                    {(row.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-slate-100 font-bold">
+                <td colSpan={4} className="border py-2 px-3">TOTALS</td>
+                <td className="border py-2 px-3 text-right text-blue-700">{totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td className="border py-2 px-3 text-right text-red-600">{totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td className="border py-2 px-3 text-right">{finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
