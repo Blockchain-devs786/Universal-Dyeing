@@ -97,7 +97,25 @@ export default function CashLedger() {
 
   const generatePDFBlob = async (): Promise<Blob> => {
     if (!printRef.current) return new Blob();
-    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+    const el = printRef.current;
+    
+    // Temporarily make element visible for capture
+    el.style.visibility = 'visible';
+    el.style.opacity = '1';
+    el.style.zIndex = '9999';
+
+    const canvas = await html2canvas(el, { 
+      scale: 2, 
+      useCORS: true,
+      logging: false,
+      allowTaint: true
+    });
+
+    // Hide again after capture
+    el.style.visibility = 'hidden';
+    el.style.opacity = '0';
+    el.style.zIndex = '-2';
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();

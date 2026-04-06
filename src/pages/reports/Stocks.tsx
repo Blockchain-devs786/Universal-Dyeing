@@ -75,7 +75,8 @@ export default function StockReport() {
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
-      windowWidth: 894,
+      logging: false,
+      allowTaint: true
     });
     // Hide again after capture
     el.style.visibility = 'hidden';
