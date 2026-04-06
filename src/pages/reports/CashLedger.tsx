@@ -1,58 +1,56 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Banknote, 
-  Search, 
-  Printer, 
-  RefreshCw, 
-  Calendar, 
+import {
+  Banknote,
+  Search,
+  Printer,
+  RefreshCw,
+  Calendar,
   FileSpreadsheet,
   Share2,
   Mail,
-  MessageSquare,
-  Share2,
   ChevronsUpDown,
   Filter
 } from "lucide-react";
-import { 
-  reportsApi, 
-  msPartiesApi, 
+import {
+  reportsApi,
+  msPartiesApi,
   vendorsApi,
   expensesApi,
   accountsApi,
   assetsApi,
   settingsApi,
-  type MsParty 
+  type MsParty
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
-import { 
-    Popover, 
-    PopoverContent, 
-    PopoverTrigger 
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
 } from "@/components/ui/popover";
-import { 
-    Command, 
-    CommandEmpty, 
-    CommandGroup, 
-    CommandInput, 
-    CommandItem, 
-    CommandList 
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
-import { shareWhatsAppPDF } from "@/lib/shareUtils";
+import { sharePDF } from "@/lib/shareUtils";
 
 export default function CashLedger() {
   const [accountId, setAccountId] = useState<string>("all");
@@ -68,13 +66,13 @@ export default function CashLedger() {
     queryFn: () => msPartiesApi.list(),
   });
 
-  const { 
-    data: ledger = [], 
-    isLoading, 
+  const {
+    data: ledger = [],
+    isLoading,
     refetch,
-    isFetching 
+    isFetching
   } = useQuery({
-    queryKey: ["financial_ledger_report", accountId, accountType], 
+    queryKey: ["financial_ledger_report", accountId, accountType],
     queryFn: () => reportsApi.getFinancialLedger(Number(accountId), fromDate, toDate, accountType),
     enabled: false
   });
@@ -99,12 +97,12 @@ export default function CashLedger() {
     const doc = new jsPDF();
     const title = `${selectedLedger?.name || "Ledger"}`;
     const subtitle = `${selectedLedger?.type || "General"} Ledger (${format(new Date(fromDate), "dd MMM yyyy")} - ${format(new Date(toDate), "dd MMM yyyy")})`;
-    
+
     doc.setFontSize(22);
     doc.text(title, 14, 20);
     doc.setFontSize(11);
     doc.text(subtitle, 14, 30);
-    
+
     const tableData = ledger.map(row => [
       format(new Date(row.date), "dd-MM-yyyy"),
       row.particulars || "",
@@ -123,7 +121,7 @@ export default function CashLedger() {
       headStyles: { fillColor: [15, 23, 42] },
       styles: { fontSize: 8 },
       foot: [[
-        'TOTALS', '', '', '', 
+        'TOTALS', '', '', '',
         ledger.reduce((s, r) => s + (r.debit || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
         ledger.reduce((s, r) => s + (r.credit || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
         ledger.length > 0 ? ledger[ledger.length - 1].balance.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'
@@ -153,7 +151,7 @@ export default function CashLedger() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
-      
+
       {/* Header */}
       <div className="bg-slate-900 text-white rounded-2xl shadow-elevated border border-slate-800 p-6 print:hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -179,8 +177,8 @@ export default function CashLedger() {
                     className="w-full justify-between bg-white text-slate-900 border-none h-11 shadow-inner ring-offset-slate-900 focus:ring-2 focus:ring-blue-500"
                   >
                     <span className="truncate">
-                      {accountId === "all" ? "-- Select Ledger --" : 
-                        ((selectedLedger?.name?.toLowerCase() === 'dyeing' ? "\u2B50 " : "") + 
+                      {accountId === "all" ? "-- Select Ledger --" :
+                        ((selectedLedger?.name?.toLowerCase() === 'dyeing' ? "\u2B50 " : "") +
                         `[${selectedLedger?.type || ''}] ` + (selectedLedger?.name || ''))}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
@@ -217,9 +215,9 @@ export default function CashLedger() {
                 </PopoverContent>
               </Popover>
             </div>
-            
-            <Button 
-                onClick={handleGenerate} 
+
+            <Button
+                onClick={handleGenerate}
                 disabled={isLoading || isFetching || accountId === "all"}
                 className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg transition-all active:scale-95"
             >
@@ -235,30 +233,39 @@ export default function CashLedger() {
                   onClick={async () => {
                     const blob = generatePDFBlob();
                     const filename = `Ledger_${selectedLedger?.name}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-                    const wa = getSetting("whatsapp_no");
-                    const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
-                    const text = `*Ledger Summary*\n*Party:* ${selectedLedger?.name}\n*Period:* ${fromDate} to ${toDate}\n*Balance:* PKR ${balance.toLocaleString()}\n\n_Detailed PDF attached._`;
-                    await shareWhatsAppPDF(blob, filename, wa, text);
+                    await sharePDF(blob, filename);
                   }}
                 >
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share on WhatsApp
+                  Share
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-11 px-4 bg-slate-700 hover:bg-slate-800 text-white border-none shadow-md"
-                  onClick={() => {
+                  onClick={async () => {
                     const email = getSetting("email");
                     const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
                     const subject = `Ledger Summary: ${selectedLedger?.name}`;
-                    const body = `Please find the ledger summary below:\n\nParty: ${selectedLedger?.name}\nType: ${selectedLedger?.type}\nPeriod: ${fromDate} to ${toDate}\nBalance: PKR ${balance.toLocaleString()}\n\nNote: Detailed PDF was downloaded to your device for attachment.`;
-                    
-                    // Trigger download for attachment
+                    const body = `Please find the ledger summary below:\n\nParty: ${selectedLedger?.name}\nType: ${selectedLedger?.type}\nPeriod: ${fromDate} to ${toDate}\nBalance: PKR ${balance.toLocaleString()}`;
+
                     const blob = generatePDFBlob();
+                    const filename = `Ledger_${selectedLedger?.name}.pdf`;
+
+                    // On mobile, use native share to auto-attach the file
+                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
+                      const file = new File([blob], filename, { type: "application/pdf" });
+                      if (navigator.canShare?.({ files: [file] })) {
+                        const shareData: ShareData = { files: [file], text: body };
+                        await navigator.share(shareData);
+                        return;
+                      }
+                    }
+
+                    // Desktop fallback: download + open mailto
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `Ledger_${selectedLedger?.name}.pdf`;
+                    link.download = filename;
                     link.click();
                     URL.revokeObjectURL(url);
 
@@ -282,14 +289,14 @@ export default function CashLedger() {
             </div>
             <h3 className="font-bold text-slate-800">Reports Filters</h3>
         </div>
-        
+
         <div className="space-y-1.5 flex-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
               <Calendar className="h-3 w-3" /> From Date
           </Label>
           <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-10 border-slate-200" />
         </div>
-        
+
         <div className="space-y-1.5 flex-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
               <Calendar className="h-3 w-3" /> To Date
@@ -365,7 +372,7 @@ export default function CashLedger() {
               </TableBody>
             </Table>
           </div>
-          
+
           <div className="p-8 bg-slate-50 border-t print:hidden">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="bg-white p-4 rounded-xl border shadow-sm">

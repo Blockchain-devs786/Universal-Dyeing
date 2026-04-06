@@ -21,7 +21,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
-import { shareWhatsAppPDF } from "@/lib/shareUtils";
+import { sharePDF } from "@/lib/shareUtils";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -160,28 +160,38 @@ export default function StockReport() {
             onClick={async () => {
               const blob = generatePDFBlob();
               const filename = `StockReport_${format(new Date(), 'yyyyMMdd')}.pdf`;
-              const wa = getSetting("whatsapp_no");
-              const text = `*Stock Report Summary*\n*Party:* ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\n*Net Remaining:* ${aggregates.net_remaining.toLocaleString()}\n\n_Detailed PDF attached._`;
-              await shareWhatsAppPDF(blob, filename, wa, text);
+              await sharePDF(blob, filename);
             }}
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Share on WhatsApp
+            Share
           </Button>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="bg-slate-700 hover:bg-slate-800 text-white border-none shadow-sm"
-            onClick={() => {
+            onClick={async () => {
               const email = getSetting("email");
               const subject = `Stock Report: ${filterMsPartyId === "all" ? "Combined" : selectedMsPartyObj?.name}`;
-              const body = `Stock Report Summary:\nParty: ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\nNet Remaining: ${aggregates.net_remaining.toLocaleString()}\n\nNote: Detailed PDF is downloaded to your device for attachment.`;
-              
+              const body = `Stock Report Summary:\nParty: ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\nNet Remaining: ${aggregates.net_remaining.toLocaleString()}`;
+              const filename = `StockReport_${format(new Date(), 'yyyyMMdd')}.pdf`;
               const blob = generatePDFBlob();
+
+              // On mobile, use native share to auto-attach the file
+              if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && navigator.share && window.isSecureContext) {
+                const file = new File([blob], filename, { type: "application/pdf" });
+                if (navigator.canShare?.({ files: [file] })) {
+                  const shareData: ShareData = { files: [file], text: body };
+                  await navigator.share(shareData);
+                  return;
+                }
+              }
+
+              // Desktop fallback: download + open mailto
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
               link.href = url;
-              link.download = "StockReport.pdf";
+              link.download = filename;
               link.click();
               URL.revokeObjectURL(url);
 
