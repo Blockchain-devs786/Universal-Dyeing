@@ -10,6 +10,7 @@ import {
   Share2,
   Mail,
   MessageSquare,
+  Share2,
   ChevronsUpDown,
   Filter
 } from "lucide-react";
@@ -51,6 +52,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
+import { shareWhatsAppPDF } from "@/lib/shareUtils";
 
 export default function CashLedger() {
   const [accountId, setAccountId] = useState<string>("all");
@@ -132,22 +134,6 @@ export default function CashLedger() {
     return doc.output('blob');
   };
 
-  const handleNativeShare = async (blob: Blob, filename: string) => {
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })) {
-      try {
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        await navigator.share({
-          files: [file],
-          title: filename,
-          text: `Ledger summary for ${selectedLedger?.name}`
-        });
-        return true;
-      } catch (err) {
-        console.error("Native share failed", err);
-      }
-    }
-    return false;
-  };
 
   const allLedgers = [
     ...msParties.map(p => ({ id: String(p.id), name: p.name, type: "MS Party" })),
@@ -243,32 +229,20 @@ export default function CashLedger() {
 
             {isGenerated && (
               <div className="flex gap-2 print:hidden">
-                <Button 
-                  variant="outline" 
-                  className="h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md"
+                <Button
+                  variant="outline"
+                  className="h-11 px-4 bg-green-500 hover:bg-green-600 text-white border-none shadow-md"
                   onClick={async () => {
                     const blob = generatePDFBlob();
                     const filename = `Ledger_${selectedLedger?.name}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-                    
-                    const shared = await handleNativeShare(blob, filename);
-                    if (!shared) {
-                        // Fallback to text link with settings
-                        const wa = getSetting("whatsapp_no");
-                        const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
-                        const text = `*Ledger Summary (PDF Downloaded)*\n*Party:* ${selectedLedger?.name}\n*Period:* ${fromDate} to ${toDate}\n*Current Balance:* PKR ${balance.toLocaleString()}\n\n_Detailed PDF generated._`;
-                        window.open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, '_blank');
-                        // Also trigger download since native share failed
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = filename;
-                        link.click();
-                        URL.revokeObjectURL(url);
-                    }
+                    const wa = getSetting("whatsapp_no");
+                    const balance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+                    const text = `*Ledger Summary*\n*Party:* ${selectedLedger?.name}\n*Period:* ${fromDate} to ${toDate}\n*Balance:* PKR ${balance.toLocaleString()}\n\n_Detailed PDF attached._`;
+                    await shareWhatsAppPDF(blob, filename, wa, text);
                   }}
                 >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Share PDF
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share on WhatsApp
                 </Button>
                 <Button 
                   variant="outline" 

@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   Filter,
   MessageSquare,
+  Share2,
   Mail
 } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
+import { shareWhatsAppPDF } from "@/lib/shareUtils";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -95,21 +97,6 @@ export default function StockReport() {
     return doc.output('blob');
   };
 
-  const handleNativeShare = async (blob: Blob, filename: string) => {
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })) {
-      try {
-        await navigator.share({
-          files: [new File([blob], filename, { type: 'application/pdf' })],
-          title: filename,
-          text: `Stock Report - ${selectedMsPartyObj?.name || 'Combined'}`
-        });
-        return true;
-      } catch (err) {
-        console.error("Native share failed", err);
-      }
-    }
-    return false;
-  };
 
   // Calculate Aggregates for KPI cards
   const aggregates = stocks.reduce(
@@ -167,29 +154,19 @@ export default function StockReport() {
             Print
           </Button>
 
-          <Button 
-            variant="outline" 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm"
+          <Button
+            variant="outline"
+            className="bg-green-500 hover:bg-green-600 text-white border-none shadow-sm"
             onClick={async () => {
               const blob = generatePDFBlob();
               const filename = `StockReport_${format(new Date(), 'yyyyMMdd')}.pdf`;
-              const shared = await handleNativeShare(blob, filename);
-              if (!shared) {
-                const wa = getSetting("whatsapp_no");
-                const text = `*Stock Report Summary*\n*Party:* ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\n*Net Remaining:* ${aggregates.net_remaining.toLocaleString()}\n\n_PDF Downloaded for sharing._`;
-                window.open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, '_blank');
-                
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                link.click();
-                URL.revokeObjectURL(url);
-              }
+              const wa = getSetting("whatsapp_no");
+              const text = `*Stock Report Summary*\n*Party:* ${filterMsPartyId === "all" ? "All Parties" : selectedMsPartyObj?.name}\n*Net Remaining:* ${aggregates.net_remaining.toLocaleString()}\n\n_Detailed PDF attached._`;
+              await shareWhatsAppPDF(blob, filename, wa, text);
             }}
           >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Share PDF
+            <Share2 className="h-4 w-4 mr-2" />
+            Share on WhatsApp
           </Button>
 
           <Button 
