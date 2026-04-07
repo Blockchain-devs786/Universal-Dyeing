@@ -439,93 +439,116 @@ export default function StockLedger() {
               No stock data found for the selected filters.
             </div>
           ) : (
-            groupedData.map((group) => (
-              <div key={group.itemId} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden break-inside-avoid mb-6">
-                
-                {/* Accordion Header (Modified for Print) */}
-                <button 
-                  onClick={() => toggleItem(group.itemId)}
-                  className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors border-b border-transparent data-[open=true]:border-slate-200 print:bg-slate-50 print:border-slate-200"
-                  data-open={expandedItems.has(group.itemId)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-slate-100 rounded-lg print:hidden">
-                      {expandedItems.has(group.itemId) ? <ChevronDown className="h-5 w-5 text-slate-600" /> : <ChevronRight className="h-5 w-5 text-slate-600" />}
-                    </div>
+            <>
+              {groupedData.map((group) => (
+                <div key={group.itemId} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden break-inside-avoid mb-6">
+                  
+                  {/* Print-Only Item Header */}
+                  <div className="hidden print:flex justify-between items-center px-6 py-3 bg-slate-50 border-b border-slate-200">
                     <div>
                       <h3 className="text-base font-bold text-slate-900">{group.itemName}</h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5 print:hidden">{group.transactions.length} Transactions</p>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Debit</p>
+                         <p className="text-[10px] font-bold text-blue-600">+{group.totalDebit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Credit</p>
+                         <p className="text-[10px] font-bold text-orange-600">-{group.totalCredit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right pl-4 border-l border-slate-200">
+                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Bal</p>
+                         <p className="text-xs font-black text-slate-900">{group.finalBalance.toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-10">
-                    <div className="text-right">
-                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Debit</p>
-                       <p className="text-xs font-bold text-blue-600">+{group.totalDebit.toLocaleString()}</p>
+                  {/* Accordion Header (Hidden in Print) */}
+                  <button 
+                    onClick={() => toggleItem(group.itemId)}
+                    className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors border-b border-transparent data-[open=true]:border-slate-200 print:hidden"
+                    data-open={expandedItems.has(group.itemId)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-slate-100 rounded-lg">
+                        {expandedItems.has(group.itemId) ? <ChevronDown className="h-5 w-5 text-slate-600" /> : <ChevronRight className="h-5 w-5 text-slate-600" />}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">{group.itemName}</h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{group.transactions.length} Transactions</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Credit</p>
-                       <p className="text-xs font-bold text-orange-600">-{group.totalCredit.toLocaleString()}</p>
-                    </div>
-                    <div className="text-right bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 print:bg-white print:border-slate-300">
-                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Balance</p>
-                       <p className={cn("text-sm font-black", group.finalBalance >= 0 ? "text-slate-900" : "text-red-600")}>
-                         {group.finalBalance.toLocaleString()}
-                       </p>
-                    </div>
-                  </div>
-                </button>
 
-                {/* Details Table (Forced visible in print) */}
-                <div className={cn(
-                  "overflow-x-auto",
-                  !expandedItems.has(group.itemId) && "hidden print:block"
-                )}>
-                  <Table>
-                    <TableHeader className="bg-slate-50/50">
-                      <TableRow>
-                        <TableHead className="w-[110px] font-bold text-[9px] text-slate-500 uppercase tracking-widest pl-6">Date</TableHead>
-                        <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Type / Ref</TableHead>
-                        <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Particulars</TableHead>
-                        <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest text-center">MSR</TableHead>
-                        <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Description</TableHead>
-                        <TableHead className="text-center font-bold text-[9px] text-blue-600 uppercase tracking-widest">Debit (+)</TableHead>
-                        <TableHead className="text-center font-bold text-[9px] text-orange-600 uppercase tracking-widest">Credit (-)</TableHead>
-                        <TableHead className="text-center font-bold text-[9px] text-slate-900 uppercase tracking-widest bg-slate-100/50 pr-6">Run Bal</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.transactions.map((tx, idx) => (
-                        <TableRow key={idx} className="hover:bg-slate-50/80 transition-colors group/row text-[10px] font-medium border-slate-100">
-                          <TableCell className="text-slate-500 pl-6 border-slate-100">
-                            {format(new Date(tx.date), 'dd/MM/yyyy')}
-                          </TableCell>
-                          <TableCell className="border-slate-100">
-                            <span className="font-bold">{tx.type}</span>
-                            <span className="text-slate-400 block text-[8px]">{tx.ref_no}</span>
-                          </TableCell>
-                          <TableCell className="border-slate-100">{tx.particulars}</TableCell>
-                          <TableCell className="text-center border-slate-100">{tx.measurement}"</TableCell>
-                          <TableCell className="text-slate-400 border-slate-100 max-w-[120px] truncate" title={tx.description}>{tx.description}</TableCell>
-                          <TableCell className="text-center font-bold text-blue-700 bg-blue-50/5 border-slate-100">
-                            {tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : "-"}
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-orange-600 bg-orange-50/5 border-slate-100">
-                            {tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : "-"}
-                          </TableCell>
-                          <TableCell className={cn(
-                            "text-center font-black pr-6 border-slate-100",
-                            tx.balance >= 0 ? "text-slate-900" : "text-red-600"
-                          )}>
-                            {tx.balance.toLocaleString()}
-                          </TableCell>
+                    <div className="flex items-center gap-10">
+                      <div className="text-right">
+                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Debit</p>
+                         <p className="text-xs font-bold text-blue-600">+{group.totalDebit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Credit</p>
+                         <p className="text-xs font-bold text-orange-600">-{group.totalCredit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Balance</p>
+                         <p className={cn("text-sm font-black", group.finalBalance >= 0 ? "text-slate-900" : "text-red-600")}>
+                           {group.finalBalance.toLocaleString()}
+                         </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Details Table (Forced visible in print) */}
+                  <div className={cn(
+                    "overflow-x-auto",
+                    !expandedItems.has(group.itemId) && "hidden print:block"
+                  )}>
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow>
+                          <TableHead className="w-[110px] font-bold text-[9px] text-slate-500 uppercase tracking-widest pl-6">Date</TableHead>
+                          <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Type / Ref</TableHead>
+                          <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Particulars</TableHead>
+                          <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest text-center">MSR</TableHead>
+                          <TableHead className="font-bold text-[9px] text-slate-500 uppercase tracking-widest">Description</TableHead>
+                          <TableHead className="text-center font-bold text-[9px] text-blue-600 uppercase tracking-widest">Debit (+)</TableHead>
+                          <TableHead className="text-center font-bold text-[9px] text-orange-600 uppercase tracking-widest">Credit (-)</TableHead>
+                          <TableHead className="text-center font-bold text-[9px] text-slate-900 uppercase tracking-widest bg-slate-100/50 pr-6">Run Bal</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {group.transactions.map((tx, idx) => (
+                          <TableRow key={idx} className="hover:bg-slate-50/80 transition-colors group/row text-[10px] font-medium border-slate-100">
+                            <TableCell className="text-slate-500 pl-6 border-slate-100">
+                              {format(new Date(tx.date), 'dd/MM/yyyy')}
+                            </TableCell>
+                            <TableCell className="border-slate-100">
+                              <span className="font-bold">{tx.type}</span>
+                              <span className="text-slate-400 block text-[8px]">{tx.ref_no}</span>
+                            </TableCell>
+                            <TableCell className="border-slate-100">{tx.particulars}</TableCell>
+                            <TableCell className="text-center border-slate-100">{tx.measurement}"</TableCell>
+                            <TableCell className="text-slate-400 border-slate-100 max-w-[120px] truncate" title={tx.description}>{tx.description}</TableCell>
+                            <TableCell className="text-center font-bold text-blue-700 bg-blue-50/5 border-slate-100">
+                              {tx.debit > 0 ? `+${tx.debit.toLocaleString()}` : "-"}
+                            </TableCell>
+                            <TableCell className="text-center font-bold text-orange-600 bg-orange-50/5 border-slate-100">
+                              {tx.credit > 0 ? `-${tx.credit.toLocaleString()}` : "-"}
+                            </TableCell>
+                            <TableCell className={cn(
+                              "text-center font-black pr-6 border-slate-100",
+                              tx.balance >= 0 ? "text-slate-900" : "text-red-600"
+                            )}>
+                              {tx.balance.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </>
           )}
         </div>
       )}
