@@ -72,7 +72,6 @@ export default function Inward() {
     vehicle_no: "",
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
-    reference: "",
     items: [] as InwardItem[],
   });
 
@@ -111,12 +110,6 @@ export default function Inward() {
     queryFn: () => itemsApi.list(),
   });
   
-  const { data: references = [] } = useQuery({
-    queryKey: ["inwards_references", formData.ms_party_id],
-    queryFn: () => inwardsApi.getReferences(Number(formData.ms_party_id)),
-    enabled: !!formData.ms_party_id,
-  });
-
   const activeItems = useMemo(() => {
     return items.filter(it => it.status === 'active' || formData.items.some(fi => fi.item_id === it.id));
   }, [items, formData.items]);
@@ -193,7 +186,6 @@ export default function Inward() {
       vehicle_no: "",
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
-      reference: "",
       items: [{ id: 0, inward_id: 0, item_id: 0, measurement: 15, quantity: 0 }],
     });
     setIsDialogOpen(true);
@@ -210,7 +202,6 @@ export default function Inward() {
         vehicle_no: data.vehicle_no || "",
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
-        reference: data.reference || "",
         items: data.items || [],
       });
       setIsDialogOpen(true);
@@ -457,7 +448,6 @@ export default function Inward() {
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
                 <TableHead className="whitespace-nowrap">MS Party</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">From Party</TableHead>
-                <TableHead className="whitespace-nowrap mobile-hide-column">Reference</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
                 <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
               </TableRow>
@@ -496,9 +486,6 @@ export default function Inward() {
                     <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
                     <TableCell className="font-medium truncate max-w-[120px]">{inward.ms_party_name || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">
-                      {inward.reference ? <span className="text-blue-600 font-medium">{inward.reference}</span> : "-"}
-                    </TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">
                       {Number(inward.total_qty || 0).toLocaleString()}
                     </TableCell>
@@ -678,25 +665,6 @@ export default function Inward() {
                     onChange={e => setFormData({...formData, driver_name: e.target.value})} 
                     placeholder="Driver Name" 
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Reference (Optional)</Label>
-                  <Select 
-                    value={formData.reference || "none"} 
-                    onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Reference..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None / Clear</SelectItem>
-                      {references.map((ref: any) => (
-                        <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
                 </div>
 
                 <div className="space-y-2">

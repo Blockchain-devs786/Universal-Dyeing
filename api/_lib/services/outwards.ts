@@ -21,6 +21,10 @@ export interface Outward {
   driver_name?: string;
   date: string;
   reference?: string;
+  inward_id?: number;
+  inward_no?: string;
+  inward_sr_no?: string;
+  inward_gp_no?: string;
   items?: OutwardItem[];
 }
 
@@ -34,11 +38,13 @@ export const outwardsService = {
         m.name as ms_party_name,
         f.name as from_party_name,
         t.name as outward_to_party_name,
+        i.inward_no,
         COALESCE(SUM(oi.quantity), 0) as total_qty
       FROM outwards o
       LEFT JOIN ms_parties m ON o.ms_party_id = m.id
       LEFT JOIN from_parties f ON o.from_party_id = f.id
       LEFT JOIN outward_parties t ON o.outward_to_party_id = t.id
+      LEFT JOIN inwards i ON o.inward_id = i.id
       LEFT JOIN outward_items oi ON oi.outward_id = o.id
       WHERE 
         (${ms_party_id || null}::integer IS NULL OR o.ms_party_id = ${ms_party_id || null}::integer)
@@ -46,7 +52,7 @@ export const outwardsService = {
         AND (${query_gp_no || null}::text IS NULL OR o.gp_no ILIKE ${'%' + (query_gp_no || '') + '%'})
         AND (${from_date || null}::date IS NULL OR o.date >= ${from_date || null}::date)
         AND (${to_date || null}::date IS NULL OR o.date <= ${to_date || null}::date)
-      GROUP BY o.id, m.name, f.name, t.name
+      GROUP BY o.id, m.name, f.name, t.name, i.inward_no
       ORDER BY o.created_at DESC
     `;
   },
@@ -58,11 +64,13 @@ export const outwardsService = {
         o.*,
         m.name as ms_party_name,
         f.name as from_party_name,
-        t.name as outward_to_party_name
+        t.name as outward_to_party_name,
+        i.inward_no
       FROM outwards o
       LEFT JOIN ms_parties m ON o.ms_party_id = m.id
       LEFT JOIN from_parties f ON o.from_party_id = f.id
       LEFT JOIN outward_parties t ON o.outward_to_party_id = t.id
+      LEFT JOIN inwards i ON o.inward_id = i.id
       WHERE o.id = ${id}
     `;
     
@@ -98,9 +106,16 @@ export const outwardsService = {
 
     // Insert outward record
     const outwardRows = await sql`
-      INSERT INTO outwards (ms_party_id, from_party_id, outward_to_party_id, vehicle_no, driver_name, date, reference)
-      VALUES (${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, ${data.vehicle_no || null}, 
-              ${data.driver_name || null}, ${data.date}, ${data.reference || null})
+      INSERT INTO outwards (
+        ms_party_id, from_party_id, outward_to_party_id, 
+        vehicle_no, driver_name, date, reference,
+        inward_id, inward_sr_no, inward_gp_no
+      )
+      VALUES (
+        ${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, 
+        ${data.vehicle_no || null}, ${data.driver_name || null}, ${data.date}, ${data.reference || null},
+        ${data.inward_id || null}, ${data.inward_sr_no || null}, ${data.inward_gp_no || null}
+      )
       RETURNING id
     `;
     
@@ -162,7 +177,7 @@ export const outwardsService = {
       outward_to_party_id = party[0].id;
     }
 
-    if (data.ms_party_id || data.from_party_id || outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined') {
+    if (data.ms_party_id || data.from_party_id || outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined' || typeof data.inward_id !== 'undefined') {
       await sql`
         UPDATE outwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
@@ -173,6 +188,9 @@ export const outwardsService = {
           date = COALESCE(${data.date ?? null}, date),
           sr_no = COALESCE(${newSrNo ?? null}, sr_no),
           reference = COALESCE(${data.reference ?? null}, reference),
+          inward_id = COALESCE(${data.inward_id ?? null}, inward_id),
+          inward_sr_no = COALESCE(${data.inward_sr_no ?? null}, inward_sr_no),
+          inward_gp_no = COALESCE(${data.inward_gp_no ?? null}, inward_gp_no),
           updated_at = NOW()
         WHERE id = ${id}
       `;

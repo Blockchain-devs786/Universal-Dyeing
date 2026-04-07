@@ -251,17 +251,23 @@ export async function initializeDatabase() {
       driver_name VARCHAR(100),
       date DATE NOT NULL,
       reference VARCHAR(255),
+      inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL,
+      inward_sr_no VARCHAR(50),
+      inward_gp_no VARCHAR(50),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
 
-  // Safety migration for outwards reference
+  // Safety migration for outwards reference and inward links
   try {
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS reference VARCHAR(255)`;
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL`;
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_sr_no VARCHAR(50)`;
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_gp_no VARCHAR(50)`;
   } catch (err) {
-    console.error("Migration error for outwards reference:", err);
+    console.error("Migration error for outwards reference and inward links:", err);
   }
 
   // Outward details (items)

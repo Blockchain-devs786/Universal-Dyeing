@@ -134,6 +134,10 @@ export interface Outward {
   driver_name?: string;
   date: string;
   reference?: string;
+  inward_id?: number;
+  inward_no?: string;
+  inward_sr_no?: string;
+  inward_gp_no?: string;
   total_qty?: number;
   status: string;
   items?: OutwardItem[];

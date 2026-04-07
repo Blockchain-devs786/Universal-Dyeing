@@ -80,6 +80,9 @@ export default function OutwardPage() {
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
     reference: "",
+    inward_id: undefined as number | undefined,
+    inward_sr_no: "",
+    inward_gp_no: "",
     items: [] as OutwardItem[],
   });
 
@@ -140,9 +143,9 @@ export default function OutwardPage() {
     return stocks.filter(s => String(s.ms_party_id) === currentPartyId);
   }, [stocks, currentPartyId]);
 
-  const { data: references = [] } = useQuery({
-    queryKey: ["inwards_references", currentPartyId],
-    queryFn: () => inwardsApi.getReferences(Number(currentPartyId)),
+  const { data: inwardRecords = [] } = useQuery({
+    queryKey: ["inwards_for_party", currentPartyId],
+    queryFn: () => inwardsApi.list({ ms_party_id: Number(currentPartyId) }),
     enabled: !!currentPartyId,
   });
 
@@ -232,6 +235,9 @@ export default function OutwardPage() {
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
       reference: "",
+      inward_id: undefined,
+      inward_sr_no: "",
+      inward_gp_no: "",
       items: [{ id: 0, outward_id: 0, item_id: 0, measurement: 15, quantity: 0 }],
     });
     setIsPartyDialogOpen(false);
@@ -251,6 +257,9 @@ export default function OutwardPage() {
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
         reference: data.reference || "",
+        inward_id: data.inward_id,
+        inward_sr_no: data.inward_sr_no || "",
+        inward_gp_no: data.inward_gp_no || "",
         items: data.items || [],
       });
       setIsFormDialogOpen(true);
@@ -330,6 +339,9 @@ export default function OutwardPage() {
       driver_name: formData.driver_name,
       date: formData.date,
       reference: formData.reference,
+      inward_id: formData.inward_id,
+      inward_sr_no: formData.inward_sr_no,
+      inward_gp_no: formData.inward_gp_no,
       status: "active",
       items: formData.items.map(item => ({
         item_id: Number(item.item_id),
@@ -567,7 +579,15 @@ export default function OutwardPage() {
                     <TableCell className="font-medium truncate max-w-[120px]">{outw.ms_party_name || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
                     <TableCell>
-                      {outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"}
+                      {outw.inward_no ? (
+                        <div className="flex flex-col text-[11px]">
+                          <span className="font-semibold text-blue-700">{outw.inward_no}</span>
+                          {outw.inward_sr_no && <span>SR: {outw.inward_sr_no}</span>}
+                          {outw.inward_gp_no && <span>GP: {outw.inward_gp_no}</span>}
+                        </div>
+                      ) : (
+                        outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"
+                      )}
                     </TableCell>
                     <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
                       {outw.outward_to_party_name || "-"}
@@ -779,23 +799,60 @@ export default function OutwardPage() {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Inward No (Optional)</Label>
+                    <Select 
+                      value={formData.inward_id ? String(formData.inward_id) : "none"} 
+                      onValueChange={(val) => {
+                        const id = val === "none" ? undefined : Number(val);
+                        const record = inwardRecords.find(r => r.id === id);
+                        setFormData({
+                          ...formData, 
+                          inward_id: id,
+                          inward_sr_no: record?.sr_no || "",
+                          inward_gp_no: record?.gp_no || ""
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Inward..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None / Clear</SelectItem>
+                        {inwardRecords.map((r: any) => (
+                          <SelectItem key={r.id} value={String(r.id)}>{r.inward_no}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Inward SR#</Label>
+                    <Input 
+                      value={formData.inward_sr_no} 
+                      onChange={e => setFormData({...formData, inward_sr_no: e.target.value})} 
+                      placeholder="Fetch auto..." 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Inward GP#</Label>
+                    <Input 
+                      value={formData.inward_gp_no} 
+                      onChange={e => setFormData({...formData, inward_gp_no: e.target.value})} 
+                      placeholder="Fetch auto..." 
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Reference (Optional)</Label>
-                  <Select 
-                    value={formData.reference || "none"} 
-                    onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Reference..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None / Clear</SelectItem>
-                      {references.map((ref: any) => (
-                        <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
+                  <Label>Reference Note</Label>
+                  <Input 
+                    value={formData.reference} 
+                    onChange={e => setFormData({...formData, reference: e.target.value})} 
+                    placeholder="Any other reference..." 
+                  />
                 </div>
 
                 <div className="space-y-2">

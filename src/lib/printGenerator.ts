@@ -82,16 +82,39 @@ export const generateAndPrintHTML = (
   `;
 
   const getReferenceHtml = (doc: any) => {
-    if (!doc.reference) return '';
-    return (
-      '<div class="meta-row">' +
+    let html = '';
+    
+    // Check for Inward linkage first
+    if (doc.inward_no || doc.inward_sr_no || doc.inward_gp_no) {
+      html += '<div class="meta-row">';
+      if (doc.inward_no) {
+        html += '<div class="meta-item"><span class="meta-label">INW NO:</span><span class="meta-value">' + doc.inward_no + '</span></div>';
+      }
+      if (doc.inward_sr_no) {
+        html += '<div class="meta-item"><span class="meta-label">INW SR:</span><span class="meta-value">' + doc.inward_sr_no + '</span></div>';
+      }
+      html += '</div>';
+      
+      if (doc.inward_gp_no) {
+        html += '<div class="meta-row">';
+        html += '<div class="meta-item"><span class="meta-label">INW GP:</span><span class="meta-value">' + doc.inward_gp_no + '</span></div>';
+        html += '<div class="meta-item"></div>';
+        html += '</div>';
+      }
+    }
+
+    // Generic reference note
+    if (doc.reference) {
+      html += '<div class="meta-row">' +
         '<div class="meta-item">' +
-          '<span class="meta-label">REFERENCE:</span>' +
+          '<span class="meta-label">REF NOTE:</span>' +
           '<span class="meta-value">' + doc.reference + '</span>' +
         '</div>' +
         '<div class="meta-item"></div>' +
-      '</div>'
-    );
+      '</div>';
+    }
+    
+    return html;
   };
 
   const buildFormHtml = (doc: any) => {
