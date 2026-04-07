@@ -20,6 +20,7 @@ export interface Outward {
   vehicle_no?: string;
   driver_name?: string;
   date: string;
+  reference?: string;
   items?: OutwardItem[];
 }
 
@@ -97,9 +98,9 @@ export const outwardsService = {
 
     // Insert outward record
     const outwardRows = await sql`
-      INSERT INTO outwards (ms_party_id, from_party_id, outward_to_party_id, vehicle_no, driver_name, date)
+      INSERT INTO outwards (ms_party_id, from_party_id, outward_to_party_id, vehicle_no, driver_name, date, reference)
       VALUES (${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, ${data.vehicle_no || null}, 
-              ${data.driver_name || null}, ${data.date})
+              ${data.driver_name || null}, ${data.date}, ${data.reference || null})
       RETURNING id
     `;
     
@@ -161,7 +162,7 @@ export const outwardsService = {
       outward_to_party_id = party[0].id;
     }
 
-    if (data.ms_party_id || data.from_party_id || outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
+    if (data.ms_party_id || data.from_party_id || outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined') {
       await sql`
         UPDATE outwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
@@ -171,6 +172,7 @@ export const outwardsService = {
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),
           sr_no = COALESCE(${newSrNo ?? null}, sr_no),
+          reference = COALESCE(${data.reference ?? null}, reference),
           updated_at = NOW()
         WHERE id = ${id}
       `;

@@ -10,6 +10,7 @@ import {
   itemsApi,
   reportsApi,
   outwardPartiesApi,
+  inwardsApi,
   type Outward,
   type OutwardItem,
 } from "@/lib/api-client";
@@ -78,6 +79,7 @@ export default function OutwardPage() {
     vehicle_no: "",
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
+    reference: "",
     items: [] as OutwardItem[],
   });
 
@@ -137,6 +139,12 @@ export default function OutwardPage() {
   const currentPartyStocks = useMemo(() => {
     return stocks.filter(s => String(s.ms_party_id) === currentPartyId);
   }, [stocks, currentPartyId]);
+
+  const { data: references = [] } = useQuery({
+    queryKey: ["inwards_references", currentPartyId],
+    queryFn: () => inwardsApi.getReferences(Number(currentPartyId)),
+    enabled: !!currentPartyId,
+  });
 
   // Mutations
   const createMutation = useMutation({
@@ -223,6 +231,7 @@ export default function OutwardPage() {
       vehicle_no: "",
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
+      reference: "",
       items: [{ id: 0, outward_id: 0, item_id: 0, measurement: 15, quantity: 0 }],
     });
     setIsPartyDialogOpen(false);
@@ -241,6 +250,7 @@ export default function OutwardPage() {
         vehicle_no: data.vehicle_no || "",
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
+        reference: data.reference || "",
         items: data.items || [],
       });
       setIsFormDialogOpen(true);
@@ -319,6 +329,7 @@ export default function OutwardPage() {
       vehicle_no: formData.vehicle_no,
       driver_name: formData.driver_name,
       date: formData.date,
+      reference: formData.reference,
       status: "active",
       items: formData.items.map(item => ({
         item_id: Number(item.item_id),
@@ -513,6 +524,7 @@ export default function OutwardPage() {
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
                 <TableHead className="whitespace-nowrap">MS Party</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">From</TableHead>
+                <TableHead className="whitespace-nowrap">Reference</TableHead>
                 <TableHead className="whitespace-nowrap">Outward To</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Vehicle</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Driver</TableHead>
@@ -554,6 +566,9 @@ export default function OutwardPage() {
                     <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
                     <TableCell className="font-medium truncate max-w-[120px]">{outw.ms_party_name || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
+                    <TableCell>
+                      {outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"}
+                    </TableCell>
                     <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
                       {outw.outward_to_party_name || "-"}
                     </TableCell>
@@ -762,6 +777,25 @@ export default function OutwardPage() {
                     onChange={e => setFormData({...formData, driver_name: e.target.value})} 
                     placeholder="Driver Name" 
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Reference (Optional)</Label>
+                  <Select 
+                    value={formData.reference || "none"} 
+                    onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Reference..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None / Clear</SelectItem>
+                      {references.map((ref: any) => (
+                        <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
                 </div>
 
                 <div className="space-y-2">

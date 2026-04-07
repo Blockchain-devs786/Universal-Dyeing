@@ -193,6 +193,8 @@ async function routeAction(
           );
         case 'get':
           return inwardsService.getById(Number(query.id || data.id));
+        case 'get_references':
+          return inwardsService.getReferencesByMsParty(Number(query.ms_party_id || data.ms_party_id));
         case 'create':
           return inwardsService.create(data as Inward);
         case 'update':

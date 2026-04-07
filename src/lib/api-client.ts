@@ -102,6 +102,7 @@ export interface Inward {
   vehicle_no?: string;
   driver_name?: string;
   date: string;
+  reference?: string;
   total_qty?: number;
   status: string;
   items?: InwardItem[];
@@ -132,6 +133,7 @@ export interface Outward {
   vehicle_no?: string;
   driver_name?: string;
   date: string;
+  reference?: string;
   total_qty?: number;
   status: string;
   items?: OutwardItem[];
@@ -535,6 +537,9 @@ export const inwardsApi = {
   getById: (id: number) => 
     coreRequest<Inward>('inwards.get', { id }),
   
+  getReferences: (msPartyId: number) =>
+    coreRequest<{id: number, name: string}[]>('inwards.get_references', { ms_party_id: msPartyId }),
+
   create: (data: Omit<Inward, 'id' | 'inward_no' | 'gp_no' | 'sr_no' | 'created_at' | 'updated_at'>) => 
     coreRequest<Inward>('inwards.create', data),
   

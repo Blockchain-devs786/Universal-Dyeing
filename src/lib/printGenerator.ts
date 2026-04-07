@@ -81,6 +81,19 @@ export const generateAndPrintHTML = (
     }
   `;
 
+  const getReferenceHtml = (doc: any) => {
+    if (!doc.reference) return '';
+    return (
+      '<div class="meta-row">' +
+        '<div class="meta-item">' +
+          '<span class="meta-label">REFERENCE:</span>' +
+          '<span class="meta-value">' + doc.reference + '</span>' +
+        '</div>' +
+        '<div class="meta-item"></div>' +
+      '</div>'
+    );
+  };
+
   const buildFormHtml = (doc: any) => {
     const items: any[] = doc.items || [];
     const formattedDate = doc.date ? new Date(doc.date).toLocaleDateString('en-GB') : '';
@@ -130,6 +143,7 @@ export const generateAndPrintHTML = (
             '</div>' +
             '<div class="meta-item">' + getToPartyHtml(doc) + '</div>' +
           '</div>' +
+          getReferenceHtml(doc) +
         '</div>' +
         '<table class="items-table" style="flex-grow: 1;">' +
           '<thead><tr>' +

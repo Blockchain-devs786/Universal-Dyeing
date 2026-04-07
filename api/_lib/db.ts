@@ -212,11 +212,19 @@ export async function initializeDatabase() {
       vehicle_no VARCHAR(100),
       driver_name VARCHAR(100),
       date DATE NOT NULL,
+      reference VARCHAR(255),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safety migration for inwards reference
+  try {
+    await db`ALTER TABLE inwards ADD COLUMN IF NOT EXISTS reference VARCHAR(255)`;
+  } catch (err) {
+    console.error("Migration error for inwards reference:", err);
+  }
 
   // Inward details (items)
   await db`
@@ -242,11 +250,19 @@ export async function initializeDatabase() {
       vehicle_no VARCHAR(100),
       driver_name VARCHAR(100),
       date DATE NOT NULL,
+      reference VARCHAR(255),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safety migration for outwards reference
+  try {
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS reference VARCHAR(255)`;
+  } catch (err) {
+    console.error("Migration error for outwards reference:", err);
+  }
 
   // Outward details (items)
   await db`

@@ -19,6 +19,7 @@ export interface Inward {
   vehicle_no?: string;
   driver_name?: string;
   date: string;
+  reference?: string;
   items?: InwardItem[];
 }
 
@@ -76,6 +77,18 @@ export const inwardsService = {
     return { ...rows[0], items };
   },
 
+  async getReferencesByMsParty(ms_party_id: number) {
+    const sql = getDb();
+    // Return all unique from_party names linked to this MS Party in past inwards
+    return sql`
+      SELECT DISTINCT f.id, f.name
+      FROM inwards i
+      JOIN from_parties f ON i.from_party_id = f.id
+      WHERE i.ms_party_id = ${ms_party_id}
+      ORDER BY f.name ASC
+    `;
+  },
+
   async create(data: Inward) {
     const sql = getDb();
     
@@ -96,9 +109,9 @@ export const inwardsService = {
 
     // Insert inward record (without numbers initially)
     const inwardRows = await sql`
-      INSERT INTO inwards (ms_party_id, from_party_id, vehicle_no, driver_name, date)
+      INSERT INTO inwards (ms_party_id, from_party_id, vehicle_no, driver_name, date, reference)
       VALUES (${data.ms_party_id}, ${from_party_id}, ${data.vehicle_no || null}, 
-              ${data.driver_name || null}, ${data.date})
+              ${data.driver_name || null}, ${data.date}, ${data.reference || null})
       RETURNING id
     `;
     
@@ -164,7 +177,7 @@ export const inwardsService = {
     }
 
     // Only update core fields if they are provided
-    if (data.ms_party_id || from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
+    if (data.ms_party_id || from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined') {
       await sql`
         UPDATE inwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
@@ -173,6 +186,7 @@ export const inwardsService = {
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),
           sr_no = COALESCE(${newSrNo ?? null}, sr_no),
+          reference = COALESCE(${data.reference ?? null}, reference),
           updated_at = NOW()
         WHERE id = ${id}
       `;
