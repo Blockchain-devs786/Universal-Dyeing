@@ -457,7 +457,7 @@ export default function StockReport() {
                 <TableRow key={idx} className="transition-colors hover:bg-slate-50/80 group print:h-auto print:border-black">
                   <TableCell className="font-medium text-slate-800 py-3 print:py-2">{row.item_name}</TableCell>
                   <TableCell className="text-center font-medium print:py-2">{row.msr}</TableCell>
-                  <TableCell className="font-medium text-slate-600 print:py-2 truncate max-w-[100px]">{row.ms_party_name}</TableCell>
+                  <TableCell className="font-medium text-slate-600 print:py-2">{row.ms_party_name}</TableCell>
                   <TableCell className="text-center font-semibold text-blue-600/80 mobile-hide-column print:py-2">{row.total_inward || '-'}</TableCell>
                   <TableCell className="text-center font-semibold text-orange-500/80 mobile-hide-column print:py-2">{row.total_outward || '-'}</TableCell>
                   <TableCell className="text-center font-semibold text-purple-500/80 mobile-hide-column print:py-2">{row.total_transfer || '-'}</TableCell>
