@@ -714,170 +714,192 @@ export default function OutwardPage() {
 
           <div className="p-6 overflow-y-auto max-h-[60vh]">
             <form id="outward-form" onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="space-y-2">
-                  <Label>MS Party</Label>
-                  <Input 
-                    value={msParties.find(p => String(p.id) === formData.ms_party_id)?.name || ""} 
-                    disabled 
-                    className="bg-muted cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>From Party (Default) *</Label>
-                  <Input 
-                    value={fromParties.find(p => String(p.id) === formData.from_party_id)?.name || ""} 
-                    disabled 
-                    className="bg-muted cursor-not-allowed font-medium text-slate-700"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Outward To Party *</Label>
-                  <Popover open={outwardToGroupOpen} onOpenChange={setOutwardToGroupOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal text-orange-600 border-orange-200 hover:bg-orange-50">
-                        <span className="truncate">{formData.outward_to_party_id ? (outwardParties.find(p => String(p.id) === formData.outward_to_party_id)?.name) : (formData.outward_to_party_name || "Select or Type Outward To...")}</span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search or type new party..." 
-                          onValueChange={(val) => {
-                            if (!outwardParties.some(p => p.name.toLowerCase() === val.toLowerCase())) {
-                              setFormData({ ...formData, outward_to_party_id: "", outward_to_party_name: val });
-                            }
-                          }}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            {formData.outward_to_party_name && (
-                              <div 
-                                className="p-2 cursor-pointer hover:bg-muted text-primary font-medium"
-                                onClick={() => {
-                                  setOutwardToGroupOpen(false);
-                                }}
-                              >
-                                Add "{formData.outward_to_party_name}"
-                              </div>
-                            )}
-                            {!formData.outward_to_party_name && "No records found."}
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {outwardParties.filter(p => p.status === 'active').map((party) => (
-                              <CommandItem
-                                key={party.id}
-                                value={party.name}
-                                onSelect={() => {
-                                  setFormData({...formData, outward_to_party_id: String(party.id), outward_to_party_name: party.name});
-                                  setOutwardToGroupOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", formData.outward_to_party_id === String(party.id) ? "opacity-100" : "opacity-0")} />
-                                {party.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Vehicle No</Label>
-                  <Input 
-                    value={formData.vehicle_no} 
-                    onChange={e => setFormData({...formData, vehicle_no: e.target.value})} 
-                    placeholder="Vehicle No" 
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Driver Name</Label>
-                  <Input 
-                    value={formData.driver_name} 
-                    onChange={e => setFormData({...formData, driver_name: e.target.value})} 
-                    placeholder="Driver Name" 
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-6 pt-2 pb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Inward No (Optional)</Label>
+                    <Label>MS Party</Label>
+                    <Input 
+                      value={msParties.find(p => String(p.id) === formData.ms_party_id)?.name || ""} 
+                      disabled 
+                      className="bg-muted cursor-not-allowed font-medium text-slate-700"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>From Party (Default) *</Label>
+                    <Input 
+                      value={fromParties.find(p => String(p.id) === formData.from_party_id)?.name || ""} 
+                      disabled 
+                      className="bg-muted cursor-not-allowed font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Outward To Party *</Label>
+                    <Popover open={outwardToGroupOpen} onOpenChange={setOutwardToGroupOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={outwardToGroupOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          {formData.outward_to_party_id
+                            ? outwardParties.find((p) => String(p.id) === formData.outward_to_party_id)?.name
+                            : (formData.outward_to_party_name || "Select or Type Outward To...")}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <Command className="w-full">
+                          <CommandInput 
+                            placeholder="Search or type new party..." 
+                            value={formData.outward_to_party_name}
+                            onValueChange={(val) => {
+                              if (!outwardParties.some(p => p.name.toLowerCase() === val.toLowerCase())) {
+                                setFormData({ ...formData, outward_to_party_id: "", outward_to_party_name: val });
+                              }
+                            }}
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              {formData.outward_to_party_name && (
+                                <div 
+                                  className="p-2 cursor-pointer hover:bg-muted text-primary font-medium"
+                                  onClick={() => {
+                                    setOutwardToGroupOpen(false);
+                                  }}
+                                >
+                                  Add "{formData.outward_to_party_name}"
+                                </div>
+                              )}
+                              {!formData.outward_to_party_name && "No records found."}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {outwardParties.filter(p => p.status === 'active').map((party) => (
+                                <CommandItem
+                                  key={party.id}
+                                  value={party.name}
+                                  onSelect={() => {
+                                    setFormData({...formData, outward_to_party_id: String(party.id), outward_to_party_name: party.name});
+                                    setOutwardToGroupOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", formData.outward_to_party_id === String(party.id) ? "opacity-100" : "opacity-0")} />
+                                  {party.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Vehicle No</Label>
+                      <Input 
+                        value={formData.vehicle_no} 
+                        onChange={e => setFormData({...formData, vehicle_no: e.target.value})} 
+                        placeholder="Vehicle No" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Driver Name</Label>
+                      <Input 
+                        value={formData.driver_name} 
+                        onChange={e => setFormData({...formData, driver_name: e.target.value})} 
+                        placeholder="Driver Name" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center">
+                    <ArrowDownToLine className="w-4 h-4 mr-2" /> Inward Reference
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label>Inward No (Optional)</Label>
+                      <Select 
+                        value={formData.inward_id ? String(formData.inward_id) : "none"} 
+                        onValueChange={(val) => {
+                          const id = val === "none" ? undefined : Number(val);
+                          const record = inwardRecords.find(r => r.id === id);
+                          setFormData({
+                            ...formData, 
+                            inward_id: id,
+                            inward_sr_no: record?.sr_no || "",
+                            inward_gp_no: record?.gp_no || ""
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="Select Inward..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None / Clear</SelectItem>
+                          {inwardRecords.map((r: any) => (
+                            <SelectItem key={r.id} value={String(r.id)}>{r.inward_no}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Inward SR#</Label>
+                      <Input 
+                        value={formData.inward_sr_no} 
+                        onChange={e => setFormData({...formData, inward_sr_no: e.target.value})} 
+                        placeholder="SR No" 
+                        className="bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Inward GP#</Label>
+                      <Input 
+                        value={formData.inward_gp_no} 
+                        onChange={e => setFormData({...formData, inward_gp_no: e.target.value})} 
+                        placeholder="GP No" 
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Reference From Party</Label>
                     <Select 
-                      value={formData.inward_id ? String(formData.inward_id) : "none"} 
-                      onValueChange={(val) => {
-                        const id = val === "none" ? undefined : Number(val);
-                        const record = inwardRecords.find(r => r.id === id);
-                        setFormData({
-                          ...formData, 
-                          inward_id: id,
-                          inward_sr_no: record?.sr_no || "",
-                          inward_gp_no: record?.gp_no || ""
-                        });
-                      }}
+                      value={formData.reference || "none"} 
+                      onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Inward..." />
+                        <SelectValue placeholder="Select Reference..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">None / Clear</SelectItem>
-                        {inwardRecords.map((r: any) => (
-                          <SelectItem key={r.id} value={String(r.id)}>{r.inward_no}</SelectItem>
+                        {references.map((ref: any) => (
+                          <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Inward SR#</Label>
+                    <Label>Date *</Label>
                     <Input 
-                      value={formData.inward_sr_no} 
-                      onChange={e => setFormData({...formData, inward_sr_no: e.target.value})} 
-                      placeholder="Fetch auto..." 
+                      type="date"
+                      value={formData.date} 
+                      onChange={e => setFormData({...formData, date: e.target.value})} 
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Inward GP#</Label>
-                    <Input 
-                      value={formData.inward_gp_no} 
-                      onChange={e => setFormData({...formData, inward_gp_no: e.target.value})} 
-                      placeholder="Fetch auto..." 
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Reference From Party</Label>
-                  <Select 
-                    value={formData.reference || "none"} 
-                    onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Reference..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None / Clear</SelectItem>
-                      {references.map((ref: any) => (
-                        <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Date *</Label>
-                  <Input 
-                    type="date"
-                    value={formData.date} 
-                    onChange={e => setFormData({...formData, date: e.target.value})} 
-                  />
                 </div>
               </div>
 
