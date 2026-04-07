@@ -295,7 +295,7 @@ export default function StockReport() {
                         <Check className={cn("mr-2 h-4 w-4", filterItemId === "all" ? "opacity-100" : "opacity-0")} />
                         All Items
                       </CommandItem>
-                      {items.map((item) => (
+                      {items.filter(item => item.status === 'active').map((item) => (
                         <CommandItem
                           key={item.id}
                           value={item.name}

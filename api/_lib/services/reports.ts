@@ -174,13 +174,19 @@ export const reportsService = {
         -- INWARDS (Debit)
         SELECT 
           i.id, i.date, 'Inward' as type, i.inward_no as ref_no, i.ms_party_id,
-          fp.name as particulars, ii.item_id, it.name as item_name, ii.measurement,
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM ms_parties WHERE id = ${ms_party_id || null}::integer AND name = 'Dyeing')
+            THEN m.name
+            ELSE fp.name 
+          END as particulars, 
+          ii.item_id, it.name as item_name, ii.measurement,
           ii.quantity as debit, 0 as credit,
           COALESCE(i.gp_no, '') || ' ' || COALESCE(i.sr_no, '') as description,
           i.created_at
         FROM inwards i
         JOIN inward_items ii ON i.id = ii.inward_id
         JOIN items it ON ii.item_id = it.id
+        JOIN ms_parties m ON i.ms_party_id = m.id
         LEFT JOIN from_parties fp ON i.from_party_id = fp.id
         
         UNION ALL
@@ -188,13 +194,19 @@ export const reportsService = {
         -- OUTWARDS (Credit)
         SELECT 
           o.id, o.date, 'Outward' as type, o.outward_no as ref_no, o.ms_party_id,
-          fp_to.name as particulars, oi.item_id, it.name as item_name, oi.measurement,
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM ms_parties WHERE id = ${ms_party_id || null}::integer AND name = 'Dyeing')
+            THEN m.name
+            ELSE fp_to.name 
+          END as particulars,
+          oi.item_id, it.name as item_name, oi.measurement,
           0 as debit, oi.quantity as credit,
           COALESCE(o.gp_no, '') || ' ' || COALESCE(o.sr_no, '') as description,
           o.created_at
         FROM outwards o
         JOIN outward_items oi ON o.id = oi.outward_id
         JOIN items it ON oi.item_id = it.id
+        JOIN ms_parties m ON o.ms_party_id = m.id
         LEFT JOIN from_parties fp_to ON o.outward_to_party_id = fp_to.id
 
         UNION ALL
@@ -202,13 +214,19 @@ export const reportsService = {
         -- TRANSFERS (Credit)
         SELECT 
           t.id, t.date, 'Transfer' as type, t.transfer_no as ref_no, t.ms_party_id,
-          fp_to.name as particulars, ti.item_id, it.name as item_name, ti.measurement,
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM ms_parties WHERE id = ${ms_party_id || null}::integer AND name = 'Dyeing')
+            THEN m.name
+            ELSE fp_to.name 
+          END as particulars, 
+          ti.item_id, it.name as item_name, ti.measurement,
           0 as debit, ti.quantity as credit,
           COALESCE(t.gp_no, '') || ' ' || COALESCE(t.sr_no, '') as description,
           t.created_at
         FROM transfers t
         JOIN transfer_items ti ON t.id = ti.transfer_id
         JOIN items it ON ti.item_id = it.id
+        JOIN ms_parties m ON t.ms_party_id = m.id
         LEFT JOIN from_parties fp_to ON t.transfer_to_party_id = fp_to.id
 
         UNION ALL

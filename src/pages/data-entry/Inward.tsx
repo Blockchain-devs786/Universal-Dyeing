@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
@@ -109,6 +109,10 @@ export default function Inward() {
     queryKey: ["items"],
     queryFn: () => itemsApi.list(),
   });
+
+  const activeItems = useMemo(() => {
+    return items.filter(it => it.status === 'active' || formData.items.some(fi => fi.item_id === it.id));
+  }, [items, formData.items]);
 
   // Mutations
   const createMutation = useMutation({
@@ -701,8 +705,8 @@ export default function Inward() {
                             <SelectValue placeholder="Item name..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {items.map((it) => (
-                              <SelectItem key={it.id} value={String(it.id)}>{it.name}</SelectItem>
+                            {activeItems.map((it) => (
+                              <SelectItem key={it.id} value={String(it.id)}>{it.name}{it.status !== 'active' ? ' (Inactive)' : ''}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

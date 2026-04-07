@@ -333,8 +333,11 @@ export default function TransferPage() {
   // Derive unique items and measurements available for current MS party
   const availableItems = useMemo(() => {
     const itemIds = new Set(currentPartyStocks.filter(s => s.remaining > 0 || (editingTransfer)).map(s => s.item_id));
-    return items.filter(it => itemIds.has(it.id));
-  }, [items, currentPartyStocks, editingTransfer]);
+    return items.filter(it => 
+      (it.status === 'active' && itemIds.has(it.id)) || 
+      formData.items.some(fi => fi.item_id === it.id)
+    );
+  }, [items, currentPartyStocks, editingTransfer, formData.items]);
 
   
   const toggleSelectAll = () => {
@@ -769,7 +772,7 @@ export default function TransferPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {availableItems.map((it) => (
-                                <SelectItem key={it.id} value={String(it.id)}>{it.name}</SelectItem>
+                                <SelectItem key={it.id} value={String(it.id)}>{it.name}{it.status !== 'active' ? ' (Inactive)' : ''}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>

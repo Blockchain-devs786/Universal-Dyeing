@@ -334,7 +334,7 @@ export default function StockLedger() {
                      <CommandEmpty>No items found.</CommandEmpty>
                      <CommandGroup>
                         <CommandItem onSelect={() => { setItemId("all"); setItemOpen(false); }}>All Items</CommandItem>
-                        {items.map(item => (
+                        {items.filter(item => item.status === 'active').map(item => (
                           <CommandItem key={item.id} value={item.name} onSelect={() => { setItemId(String(item.id)); setItemOpen(false); }}>{item.name}</CommandItem>
                         ))}
                      </CommandGroup>

@@ -342,9 +342,12 @@ export default function OutwardPage() {
 
   // Derive unique items and measurements available for current MS party
   const availableItems = useMemo(() => {
-    const itemIds = new Set(currentPartyStocks.filter(s => s.remaining > 0 || (editingOutward)).map(s => s.item_id));
-    return items.filter(it => itemIds.has(it.id));
-  }, [items, currentPartyStocks, editingOutward]);
+    const itemIds = new Set(currentPartyStocks.filter(s => s.remaining > 0 || editingOutward).map(s => s.item_id));
+    return items.filter(it => 
+      (it.status === 'active' && itemIds.has(it.id)) || 
+      formData.items.some(fi => fi.item_id === it.id)
+    );
+  }, [items, currentPartyStocks, editingOutward, formData.items]);
 
   
   const toggleSelectAll = () => {
@@ -803,7 +806,7 @@ export default function OutwardPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {availableItems.map((it) => (
-                                <SelectItem key={it.id} value={String(it.id)}>{it.name}</SelectItem>
+                                <SelectItem key={it.id} value={String(it.id)}>{it.name}{it.status !== 'active' ? ' (Inactive)' : ''}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
