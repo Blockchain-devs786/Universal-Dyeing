@@ -16,6 +16,7 @@ export interface Outward {
   ms_party_id: number;
   from_party_id: number;
   outward_to_party_id: number;
+  outward_to_party_name?: string;
   vehicle_no?: string;
   driver_name?: string;
   date: string;
@@ -79,10 +80,25 @@ export const outwardsService = {
   async create(data: Outward) {
     const sql = getDb();
     
+    // Resolve or create outward_to_party if name is provided
+    let outward_to_party_id = data.outward_to_party_id;
+    if (data.outward_to_party_name) {
+      const party = await sql`
+        INSERT INTO outward_parties (name) VALUES (${data.outward_to_party_name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+      `;
+      outward_to_party_id = party[0].id;
+    }
+
+    if (!outward_to_party_id) {
+      throw new Error("Outward To Party ID or Name is required");
+    }
+
     // Insert outward record
     const outwardRows = await sql`
       INSERT INTO outwards (ms_party_id, from_party_id, outward_to_party_id, vehicle_no, driver_name, date)
-      VALUES (${data.ms_party_id}, ${data.from_party_id}, ${data.outward_to_party_id}, ${data.vehicle_no || null}, 
+      VALUES (${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, ${data.vehicle_no || null}, 
               ${data.driver_name || null}, ${data.date})
       RETURNING id
     `;
@@ -134,12 +150,23 @@ export const outwardsService = {
        }
     }
 
-    if (data.ms_party_id || data.from_party_id || data.outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
+    // Resolve or create outward_to_party if name is provided
+    let outward_to_party_id = data.outward_to_party_id;
+    if (data.outward_to_party_name) {
+      const party = await sql`
+        INSERT INTO outward_parties (name) VALUES (${data.outward_to_party_name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+      `;
+      outward_to_party_id = party[0].id;
+    }
+
+    if (data.ms_party_id || data.from_party_id || outward_to_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
       await sql`
         UPDATE outwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
           from_party_id = COALESCE(${data.from_party_id ?? null}, from_party_id),
-          outward_to_party_id = COALESCE(${data.outward_to_party_id ?? null}, outward_to_party_id),
+          outward_to_party_id = COALESCE(${outward_to_party_id ?? null}, outward_to_party_id),
           vehicle_no = COALESCE(${data.vehicle_no ?? null}, vehicle_no),
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),

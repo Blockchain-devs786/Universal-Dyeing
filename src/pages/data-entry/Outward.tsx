@@ -74,6 +74,7 @@ export default function OutwardPage() {
     ms_party_id: "",
     from_party_id: "",
     outward_to_party_id: "",
+    outward_to_party_name: "",
     vehicle_no: "",
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
@@ -218,6 +219,7 @@ export default function OutwardPage() {
       ms_party_id: selectedPartyIdForNew,
       from_party_id: defaultFromParty ? String(defaultFromParty.id) : "",
       outward_to_party_id: "",
+      outward_to_party_name: "",
       vehicle_no: "",
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
@@ -235,6 +237,7 @@ export default function OutwardPage() {
         ms_party_id: String(data.ms_party_id),
         from_party_id: String(data.from_party_id),
         outward_to_party_id: String(data.outward_to_party_id),
+        outward_to_party_name: data.outward_to_party_name || "",
         vehicle_no: data.vehicle_no || "",
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
@@ -285,7 +288,7 @@ export default function OutwardPage() {
     e.preventDefault();
     if (!formData.ms_party_id) return toast.error("MS Party is required");
     if (!formData.from_party_id) return toast.error("From Party is required");
-    if (!formData.outward_to_party_id) return toast.error("Outward To Party is required");
+    if (!formData.outward_to_party_id && !formData.outward_to_party_name) return toast.error("Outward To Party is required");
     if (!formData.date) return toast.error("Date is required");
     if (formData.items.length === 0) return toast.error("At least one item is required");
 
@@ -311,7 +314,8 @@ export default function OutwardPage() {
     const payload = {
       ms_party_id: Number(formData.ms_party_id),
       from_party_id: Number(formData.from_party_id),
-      outward_to_party_id: Number(formData.outward_to_party_id),
+      outward_to_party_id: formData.outward_to_party_id ? Number(formData.outward_to_party_id) : 0,
+      outward_to_party_name: !formData.outward_to_party_id ? formData.outward_to_party_name : undefined,
       vehicle_no: formData.vehicle_no,
       driver_name: formData.driver_name,
       date: formData.date,
@@ -690,22 +694,41 @@ export default function OutwardPage() {
                   <Popover open={outwardToGroupOpen} onOpenChange={setOutwardToGroupOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" role="combobox" className="w-full justify-between font-normal text-orange-600 border-orange-200 hover:bg-orange-50">
-                        <span className="truncate">{selectedOutwardToPartyObj ? selectedOutwardToPartyObj.name : "Select Outward To..."}</span>
+                        <span className="truncate">{formData.outward_to_party_id ? (outwardParties.find(p => String(p.id) === formData.outward_to_party_id)?.name) : (formData.outward_to_party_name || "Select or Type Outward To...")}</span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search party..." />
+                        <CommandInput 
+                          placeholder="Search or type new party..." 
+                          onValueChange={(val) => {
+                            if (!outwardParties.some(p => p.name.toLowerCase() === val.toLowerCase())) {
+                              setFormData({ ...formData, outward_to_party_id: "", outward_to_party_name: val });
+                            }
+                          }}
+                        />
                         <CommandList>
-                          <CommandEmpty>No records found.</CommandEmpty>
+                          <CommandEmpty>
+                            {formData.outward_to_party_name && (
+                              <div 
+                                className="p-2 cursor-pointer hover:bg-muted text-primary font-medium"
+                                onClick={() => {
+                                  setOutwardToGroupOpen(false);
+                                }}
+                              >
+                                Add "{formData.outward_to_party_name}"
+                              </div>
+                            )}
+                            {!formData.outward_to_party_name && "No records found."}
+                          </CommandEmpty>
                           <CommandGroup>
                             {outwardParties.filter(p => p.status === 'active').map((party) => (
                               <CommandItem
                                 key={party.id}
                                 value={party.name}
                                 onSelect={() => {
-                                  setFormData({...formData, outward_to_party_id: String(party.id)});
+                                  setFormData({...formData, outward_to_party_id: String(party.id), outward_to_party_name: party.name});
                                   setOutwardToGroupOpen(false);
                                 }}
                               >

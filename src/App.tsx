@@ -59,13 +59,13 @@ const App = () => (
           <Route path="/user-management" element={<AuthGuard><LayoutWrapper><UserManagement /></LayoutWrapper></AuthGuard>} />
           
           <Route path="/define/ms-parties" element={<AuthGuard><LayoutWrapper><MsParties /></LayoutWrapper></AuthGuard>} />
-          <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} />
+          {/* <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} /> */}
           <Route path="/define/suppliers" element={<AuthGuard><LayoutWrapper><Suppliers /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/items" element={<AuthGuard><LayoutWrapper><Items /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/assets" element={<AuthGuard><LayoutWrapper><Assets /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/expenses" element={<AuthGuard><LayoutWrapper><Expenses /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/accounts" element={<AuthGuard><LayoutWrapper><Accounts /></LayoutWrapper></AuthGuard>} />
-          <Route path="/define/outward-parties" element={<AuthGuard><LayoutWrapper><OutwardParties /></LayoutWrapper></AuthGuard>} />
+          {/* <Route path="/define/outward-parties" element={<AuthGuard><LayoutWrapper><OutwardParties /></LayoutWrapper></AuthGuard>} /> */}
           <Route path="/data-entry/inward" element={<AuthGuard><LayoutWrapper><Inward /></LayoutWrapper></AuthGuard>} />
           <Route path="/data-entry/outward" element={<AuthGuard><LayoutWrapper><Outward /></LayoutWrapper></AuthGuard>} />
           <Route path="/data-entry/transfer" element={<AuthGuard><LayoutWrapper><Transfer /></LayoutWrapper></AuthGuard>} />

@@ -15,6 +15,7 @@ export interface Inward {
   sr_no?: string;
   ms_party_id: number;
   from_party_id: number;
+  from_party_name?: string;
   vehicle_no?: string;
   driver_name?: string;
   date: string;
@@ -78,10 +79,25 @@ export const inwardsService = {
   async create(data: Inward) {
     const sql = getDb();
     
+    // Resolve or create from_party if name is provided
+    let from_party_id = data.from_party_id;
+    if (data.from_party_name) {
+      const party = await sql`
+        INSERT INTO from_parties (name) VALUES (${data.from_party_name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+      `;
+      from_party_id = party[0].id;
+    }
+
+    if (!from_party_id) {
+      throw new Error("From Party ID or Name is required");
+    }
+
     // Insert inward record (without numbers initially)
     const inwardRows = await sql`
       INSERT INTO inwards (ms_party_id, from_party_id, vehicle_no, driver_name, date)
-      VALUES (${data.ms_party_id}, ${data.from_party_id}, ${data.vehicle_no || null}, 
+      VALUES (${data.ms_party_id}, ${from_party_id}, ${data.vehicle_no || null}, 
               ${data.driver_name || null}, ${data.date})
       RETURNING id
     `;
@@ -136,12 +152,23 @@ export const inwardsService = {
        }
     }
 
+    // Resolve or create from_party if name is provided
+    let from_party_id = data.from_party_id;
+    if (data.from_party_name) {
+      const party = await sql`
+        INSERT INTO from_parties (name) VALUES (${data.from_party_name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+      `;
+      from_party_id = party[0].id;
+    }
+
     // Only update core fields if they are provided
-    if (data.ms_party_id || data.from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
+    if (data.ms_party_id || from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo) {
       await sql`
         UPDATE inwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
-          from_party_id = COALESCE(${data.from_party_id ?? null}, from_party_id),
+          from_party_id = COALESCE(${from_party_id ?? null}, from_party_id),
           vehicle_no = COALESCE(${data.vehicle_no ?? null}, vehicle_no),
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),

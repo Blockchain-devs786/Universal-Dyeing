@@ -18,7 +18,6 @@ const routeTitles: Record<string, string> = {
   "/reports/stock-ledger": "Stock Ledger",
   "/reports/cash-ledger": "Cash Ledger",
   "/reports/vouchers": "Vouchers",
-  "/define/outward-parties": "Outward Parties",
   "/settings": "Settings",
 };
 
@@ -38,7 +37,6 @@ const routeBreadcrumbs: Record<string, string[]> = {
   "/reports/stock-ledger": ["Reports", "Stock Ledger"],
   "/reports/cash-ledger": ["Reports", "Cash Ledger"],
   "/reports/vouchers": ["Reports", "Vouchers"],
-  "/define/outward-parties": ["Define", "Outward Parties"],
   "/settings": ["Settings"],
 };
 

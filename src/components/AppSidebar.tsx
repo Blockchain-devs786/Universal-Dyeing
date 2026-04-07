@@ -44,13 +44,11 @@ import {
 
 const defineItems = [
   { title: "MS Parties", url: "/define/ms-parties", icon: Building2 },
-  { title: "From Parties", url: "/define/from-parties", icon: Building2 },
   { title: "Suppliers", url: "/define/suppliers", icon: Truck },
   { title: "Items", url: "/define/items", icon: Package },
   { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },
   { title: "Accounts", url: "/define/accounts", icon: Landmark },
-  { title: "Outward Parties", url: "/define/outward-parties", icon: Truck },
 ];
 
 const dataEntryItems = [

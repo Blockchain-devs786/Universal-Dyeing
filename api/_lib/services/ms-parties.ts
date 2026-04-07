@@ -61,18 +61,6 @@ export const msPartiesService = {
       RETURNING *
     `;
     
-    // Automatically sync to from_parties module
-    try {
-      await sql`
-        INSERT INTO from_parties (name, phone, address, city, opening_balance, status)
-        VALUES (${data.name}, ${data.phone || null}, ${data.address || null}, 
-                ${data.city || null}, ${data.opening_balance || 0}, ${data.status || 'active'})
-        ON CONFLICT (name) DO NOTHING
-      `;
-    } catch (e) {
-      console.error('[Sync Error] Failed to auto-sync ms_party to from_parties', e);
-    }
-
     await logActivity('ms_parties', rows[0].id, 'create', { name: data.name });
     return rows[0];
   },
@@ -106,25 +94,6 @@ export const msPartiesService = {
     `;
     if (rows.length === 0) throw new Error('MS Party not found');
 
-    // Automatically sync updates to from_parties based on exact old name match
-    if (oldName) {
-      try {
-        await sql`
-          UPDATE from_parties SET
-            name = COALESCE(${data.name ?? null}, name),
-            phone = COALESCE(${data.phone ?? null}, phone),
-            address = COALESCE(${data.address ?? null}, address),
-            city = COALESCE(${data.city ?? null}, city),
-            opening_balance = COALESCE(${data.opening_balance ?? null}, opening_balance),
-            status = COALESCE(${data.status ?? null}, status),
-            updated_at = NOW()
-          WHERE name = ${oldName}
-        `;
-      } catch (e) {
-        console.error('[Sync Error] Failed to update from_parties sync', e);
-      }
-    }
-
     await logActivity('ms_parties', id, 'update', data);
     return rows[0];
   },
@@ -148,20 +117,7 @@ export const msPartiesService = {
       throw err;
     }
     if (rows.length === 0) throw new Error('MS Party not found');
-
-    // Automatically sync delete to from_parties based on exact name match
     const deletedName = rows[0].name;
-    if (deletedName.toLowerCase() === 'dyeing') {
-      await logActivity('ms_parties', id, 'delete', { name: deletedName });
-      return { success: true, deleted: rows[0] };
-    }
-
-    try {
-      await sql`DELETE FROM from_parties WHERE name = ${deletedName}`;
-    } catch (e) {
-      // If the from_party delete fails due to foreign key constraints, we just ignore it for the sync
-      console.error('[Sync Error] Failed to delete from_parties sync', e);
-    }
 
     await logActivity('ms_parties', id, 'delete', { name: deletedName });
     return { success: true, deleted: rows[0] };

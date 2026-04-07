@@ -238,7 +238,7 @@ export async function initializeDatabase() {
       sr_no VARCHAR(50),
       ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
       from_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
-      outward_to_party_id INTEGER REFERENCES from_parties(id) ON DELETE RESTRICT,
+      outward_to_party_id INTEGER REFERENCES outward_parties(id) ON DELETE RESTRICT,
       vehicle_no VARCHAR(100),
       driver_name VARCHAR(100),
       date DATE NOT NULL,
