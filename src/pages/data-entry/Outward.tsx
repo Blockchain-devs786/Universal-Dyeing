@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpFromLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -131,11 +131,10 @@ export default function OutwardPage() {
     queryFn: () => reportsApi.getStock("all", "all"),
   });
 
-  // Derived stock data
   const msPartiesWithStock = useMemo(() => {
-    return msParties.filter(party => 
-      stocks.some(s => s.ms_party_id === party.id && s.remaining > 0)
-    );
+    // Filter MS parties that actually have some remaining stock in any item
+    const partiesWithStockIds = new Set(stocks.filter(s => (s.remaining || 0) > 0).map(s => s.ms_party_id));
+    return msParties.filter(p => p.status === 'active' && partiesWithStockIds.has(p.id));
   }, [msParties, stocks]);
 
   const currentPartyId = editingOutward ? String(editingOutward.ms_party_id) : formData.ms_party_id;
