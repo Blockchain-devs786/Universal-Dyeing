@@ -964,8 +964,8 @@ export default function OutwardPage() {
                         <div className="col-span-5 sm:col-span-3">
                           <Input 
                             type="number" 
-                            min="0"
-                            step="0.01"
+                          min="1"
+                          step="1"
                             value={item.quantity === 0 && !editingOutward ? '' : item.quantity} 
                             onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)} 
                             className="border bg-transparent text-right pr-2"
