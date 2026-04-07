@@ -149,6 +149,12 @@ export default function OutwardPage() {
     enabled: !!currentPartyId,
   });
 
+  const { data: references = [] } = useQuery({
+    queryKey: ["inwards_references", currentPartyId],
+    queryFn: () => inwardsApi.getReferences(Number(currentPartyId)),
+    enabled: !!currentPartyId,
+  });
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data: Omit<Outward, "id" | "outward_no" | "gp_no" | "sr_no" | "created_at" | "updated_at">) =>
@@ -847,12 +853,22 @@ export default function OutwardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reference Note</Label>
-                  <Input 
-                    value={formData.reference} 
-                    onChange={e => setFormData({...formData, reference: e.target.value})} 
-                    placeholder="Any other reference..." 
-                  />
+                  <Label>Reference From Party</Label>
+                  <Select 
+                    value={formData.reference || "none"} 
+                    onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Reference..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None / Clear</SelectItem>
+                      {references.map((ref: any) => (
+                        <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
                 </div>
 
                 <div className="space-y-2">

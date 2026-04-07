@@ -107,7 +107,7 @@ export const generateAndPrintHTML = (
     if (doc.reference) {
       html += '<div class="meta-row">' +
         '<div class="meta-item">' +
-          '<span class="meta-label">REF NOTE:</span>' +
+          '<span class="meta-label">REF PARTY:</span>' +
           '<span class="meta-value">' + doc.reference + '</span>' +
         '</div>' +
         '<div class="meta-item"></div>' +
