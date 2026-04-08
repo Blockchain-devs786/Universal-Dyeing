@@ -802,8 +802,8 @@ export default function TransferPage() {
                         <div className="col-span-5 sm:col-span-3">
                           <Input 
                             type="number" 
-                            min="1"
-                            step="1"
+                            min="0"
+                            step="0.001"
                             value={item.quantity === 0 && !editingTransfer ? '' : item.quantity} 
                             onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)} 
                             className="border bg-transparent text-right pr-2"

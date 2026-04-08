@@ -730,8 +730,8 @@ export default function Inward() {
                       <div className="col-span-6 sm:col-span-2">
                         <Input 
                           type="number" 
-                          min="1"
-                          step="1"
+                          min="0"
+                          step="0.001"
                           value={item.quantity === 0 && !editingInward ? '' : item.quantity} 
                           onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)} 
                           className="border-0 shadow-none bg-transparent text-right pr-2"
