@@ -106,6 +106,8 @@ export interface Inward {
   total_qty?: number;
   status: string;
   items?: InwardItem[];
+  ms_party_gp_no?: string;
+  created_by?: string;
   created_at: string;
   updated_at: string;
 }
@@ -140,6 +142,7 @@ export interface Outward {
   inward_gp_no?: string;
   total_qty?: number;
   status: string;
+  created_by?: string;
   items?: OutwardItem[];
   created_at: string;
   updated_at: string;

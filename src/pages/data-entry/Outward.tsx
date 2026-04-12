@@ -338,7 +338,7 @@ export default function OutwardPage() {
     const payload = {
       ms_party_id: Number(formData.ms_party_id),
       from_party_id: Number(formData.from_party_id),
-      outward_to_party_id: formData.outward_to_party_id ? Number(formData.outward_to_party_id) : 0,
+      outward_to_party_id: formData.outward_to_party_id ? Number(formData.outward_to_party_id) : undefined,
       outward_to_party_name: !formData.outward_to_party_id ? formData.outward_to_party_name : undefined,
       vehicle_no: formData.vehicle_no,
       driver_name: formData.driver_name,
@@ -347,6 +347,7 @@ export default function OutwardPage() {
       inward_id: formData.inward_id,
       inward_sr_no: formData.inward_sr_no,
       inward_gp_no: formData.inward_gp_no,
+      created_by: JSON.parse(localStorage.getItem("user") || "{}").username || "Mehmood",
       status: "active",
       items: formData.items.map(item => ({
         item_id: Number(item.item_id),

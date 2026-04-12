@@ -20,6 +20,8 @@ export interface Inward {
   driver_name?: string;
   date: string;
   reference?: string;
+  ms_party_gp_no?: string;
+  created_by?: string;
   items?: InwardItem[];
 }
 
@@ -109,9 +111,10 @@ export const inwardsService = {
 
     // Insert inward record (without numbers initially)
     const inwardRows = await sql`
-      INSERT INTO inwards (ms_party_id, from_party_id, vehicle_no, driver_name, date, reference)
+      INSERT INTO inwards (ms_party_id, from_party_id, vehicle_no, driver_name, date, reference, ms_party_gp_no, created_by)
       VALUES (${data.ms_party_id}, ${from_party_id}, ${data.vehicle_no || null}, 
-              ${data.driver_name || null}, ${data.date}, ${data.reference || null})
+              ${data.driver_name || null}, ${data.date}, ${data.reference || null},
+              ${data.ms_party_gp_no || null}, ${data.created_by || null})
       RETURNING id
     `;
     
@@ -177,7 +180,7 @@ export const inwardsService = {
     }
 
     // Only update core fields if they are provided
-    if (data.ms_party_id || from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined') {
+    if (data.ms_party_id || from_party_id || typeof data.vehicle_no !== 'undefined' || typeof data.driver_name !== 'undefined' || data.date || newSrNo || typeof data.reference !== 'undefined' || typeof data.ms_party_gp_no !== 'undefined') {
       await sql`
         UPDATE inwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
@@ -187,6 +190,7 @@ export const inwardsService = {
           date = COALESCE(${data.date ?? null}, date),
           sr_no = COALESCE(${newSrNo ?? null}, sr_no),
           reference = COALESCE(${data.reference ?? null}, reference),
+          ms_party_gp_no = COALESCE(${data.ms_party_gp_no ?? null}, ms_party_gp_no),
           updated_at = NOW()
         WHERE id = ${id}
       `;

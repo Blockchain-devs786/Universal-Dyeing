@@ -213,17 +213,21 @@ export async function initializeDatabase() {
       driver_name VARCHAR(100),
       date DATE NOT NULL,
       reference VARCHAR(255),
+      ms_party_gp_no VARCHAR(100),
+      created_by VARCHAR(100),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
 
-  // Safety migration for inwards reference
+  // Safety migration for inwards reference and ms_party_gp_no
   try {
     await db`ALTER TABLE inwards ADD COLUMN IF NOT EXISTS reference VARCHAR(255)`;
+    await db`ALTER TABLE inwards ADD COLUMN IF NOT EXISTS ms_party_gp_no VARCHAR(100)`;
+    await db`ALTER TABLE inwards ADD COLUMN IF NOT EXISTS created_by VARCHAR(100)`;
   } catch (err) {
-    console.error("Migration error for inwards reference:", err);
+    console.error("Migration error for inwards extra columns:", err);
   }
 
   // Inward details (items)
@@ -254,6 +258,7 @@ export async function initializeDatabase() {
       inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL,
       inward_sr_no VARCHAR(50),
       inward_gp_no VARCHAR(50),
+      created_by VARCHAR(100),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -266,8 +271,9 @@ export async function initializeDatabase() {
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL`;
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_sr_no VARCHAR(50)`;
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_gp_no VARCHAR(50)`;
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS created_by VARCHAR(100)`;
   } catch (err) {
-    console.error("Migration error for outwards reference and inward links:", err);
+    console.error("Migration error for outwards columns:", err);
   }
 
   // Outward details (items)

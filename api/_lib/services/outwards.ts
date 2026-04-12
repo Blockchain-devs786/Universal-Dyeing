@@ -25,6 +25,7 @@ export interface Outward {
   inward_no?: string;
   inward_sr_no?: string;
   inward_gp_no?: string;
+  created_by?: string;
   items?: OutwardItem[];
 }
 
@@ -100,7 +101,7 @@ export const outwardsService = {
       outward_to_party_id = party[0].id;
     }
 
-    if (!outward_to_party_id) {
+    if (!outward_to_party_id || outward_to_party_id === 0) {
       throw new Error("Outward To Party ID or Name is required");
     }
 
@@ -109,12 +110,13 @@ export const outwardsService = {
       INSERT INTO outwards (
         ms_party_id, from_party_id, outward_to_party_id, 
         vehicle_no, driver_name, date, reference,
-        inward_id, inward_sr_no, inward_gp_no
+        inward_id, inward_sr_no, inward_gp_no, created_by
       )
       VALUES (
         ${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, 
         ${data.vehicle_no || null}, ${data.driver_name || null}, ${data.date}, ${data.reference || null},
-        ${data.inward_id || null}, ${data.inward_sr_no || null}, ${data.inward_gp_no || null}
+        ${data.inward_id || null}, ${data.inward_sr_no || null}, ${data.inward_gp_no || null},
+        ${data.created_by || null}
       )
       RETURNING id
     `;
@@ -182,7 +184,7 @@ export const outwardsService = {
         UPDATE outwards SET
           ms_party_id = COALESCE(${data.ms_party_id ?? null}, ms_party_id),
           from_party_id = COALESCE(${data.from_party_id ?? null}, from_party_id),
-          outward_to_party_id = COALESCE(${outward_to_party_id ?? null}, outward_to_party_id),
+          outward_to_party_id = COALESCE(${outward_to_party_id && outward_to_party_id !== 0 ? outward_to_party_id : null}, outward_to_party_id),
           vehicle_no = COALESCE(${data.vehicle_no ?? null}, vehicle_no),
           driver_name = COALESCE(${data.driver_name ?? null}, driver_name),
           date = COALESCE(${data.date ?? null}, date),

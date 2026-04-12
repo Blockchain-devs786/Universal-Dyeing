@@ -50,6 +50,7 @@ export default function Inward() {
   const [filterMsPartyId, setFilterMsPartyId] = useState<string>("all");
   const [filterInwardNo, setFilterInwardNo] = useState("");
   const [filterGpNo, setFilterGpNo] = useState("");
+  const [filterMsPartyGpNo, setFilterMsPartyGpNo] = useState("");
   const [filterFromDate, setFilterFromDate] = useState("");
   const [filterToDate, setFilterToDate] = useState("");
 
@@ -72,6 +73,7 @@ export default function Inward() {
     vehicle_no: "",
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
+    ms_party_gp_no: "",
     items: [] as InwardItem[],
   });
 
@@ -90,6 +92,7 @@ export default function Inward() {
         ms_party_id: filterMsPartyId !== "all" ? Number(filterMsPartyId) : undefined,
         inward_no: filterInwardNo || undefined,
         gp_no: filterGpNo || undefined,
+        ms_party_gp_no: filterMsPartyGpNo || undefined,
         from_date: filterFromDate || undefined,
         to_date: filterToDate || undefined,
       }),
@@ -186,6 +189,7 @@ export default function Inward() {
       vehicle_no: "",
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
+      ms_party_gp_no: "",
       items: [{ id: 0, inward_id: 0, item_id: 0, measurement: 15, quantity: 0 }],
     });
     setIsDialogOpen(true);
@@ -202,6 +206,7 @@ export default function Inward() {
         vehicle_no: data.vehicle_no || "",
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
+        ms_party_gp_no: data.ms_party_gp_no || "",
         items: data.items || [],
       });
       setIsDialogOpen(true);
@@ -265,6 +270,8 @@ export default function Inward() {
       vehicle_no: formData.vehicle_no,
       driver_name: formData.driver_name,
       date: formData.date,
+      ms_party_gp_no: formData.ms_party_gp_no,
+      created_by: JSON.parse(localStorage.getItem("user") || "{}").username || "Mehmood",
       status: "active",
       items: formData.items.map(item => ({
         item_id: Number(item.item_id),
@@ -409,6 +416,18 @@ export default function Inward() {
           </div>
         </div>
         <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">MS Party GP No</Label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by MS GP..."
+              value={filterMsPartyGpNo}
+              onChange={(e) => setFilterMsPartyGpNo(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">From Date</Label>
           <Input
             type="date"
@@ -445,6 +464,7 @@ export default function Inward() {
                 <TableHead className="whitespace-nowrap">Date</TableHead>
                 <TableHead className="whitespace-nowrap">Inward No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">MS Party GP</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
                 <TableHead className="whitespace-nowrap">MS Party</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">From Party</TableHead>
@@ -483,6 +503,7 @@ export default function Inward() {
                     </TableCell>
                     <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
                     <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column font-bold text-blue-600">{inward.ms_party_gp_no || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
                     <TableCell className="font-medium truncate max-w-[120px]">{inward.ms_party_name || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
@@ -673,6 +694,15 @@ export default function Inward() {
                     type="date"
                     value={formData.date} 
                     onChange={e => setFormData({...formData, date: e.target.value})} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>MS Party Gate Pass No</Label>
+                  <Input 
+                    value={formData.ms_party_gp_no} 
+                    onChange={e => setFormData({...formData, ms_party_gp_no: e.target.value})} 
+                    placeholder="MS Party GP No" 
                   />
                 </div>
               </div>

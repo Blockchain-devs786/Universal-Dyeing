@@ -113,6 +113,16 @@ export const generateAndPrintHTML = (
         '<div class="meta-item"></div>' +
       '</div>';
     }
+    // MS Party GP No (for Inward)
+    if (doc.ms_party_gp_no) {
+      html += '<div class="meta-row">' +
+        '<div class="meta-item">' +
+          '<span class="meta-label">MS PARTY GP:</span>' +
+          '<span class="meta-value">' + doc.ms_party_gp_no + '</span>' +
+        '</div>' +
+        '<div class="meta-item"></div>' +
+      '</div>';
+    }
     
     return html;
   };
@@ -179,6 +189,7 @@ export const generateAndPrintHTML = (
         '<div class="footer" style="margin-top: auto;">' +
           '<div class="site-info">SITE:<br>Small Industrial State, Sargodha Road, Faisalabad</div>' +
           '<div class="contacts">CONTACTS:<br>0321-7651815, 0300-8651815<br>0304-6166663, 0300-8636129</div>' +
+          '<div style="text-align: right; margin-top: 2mm; font-size: 10px; font-weight: bold; color: #333;">CREATED BY: ' + (doc.created_by || 'Mehmood') + '</div>' +
         '</div>' +
       '</div>'
     );
