@@ -140,6 +140,7 @@ export interface Outward {
   inward_no?: string;
   inward_sr_no?: string;
   inward_gp_no?: string;
+  inward_ms_party_gp_no?: string;
   total_qty?: number;
   status: string;
   created_by?: string;

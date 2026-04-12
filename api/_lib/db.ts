@@ -258,6 +258,7 @@ export async function initializeDatabase() {
       inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL,
       inward_sr_no VARCHAR(50),
       inward_gp_no VARCHAR(50),
+      inward_ms_party_gp_no VARCHAR(100),
       created_by VARCHAR(100),
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -271,6 +272,7 @@ export async function initializeDatabase() {
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_id INTEGER REFERENCES inwards(id) ON DELETE SET NULL`;
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_sr_no VARCHAR(50)`;
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_gp_no VARCHAR(50)`;
+    await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS inward_ms_party_gp_no VARCHAR(100)`;
     await db`ALTER TABLE outwards ADD COLUMN IF NOT EXISTS created_by VARCHAR(100)`;
   } catch (err) {
     console.error("Migration error for outwards columns:", err);

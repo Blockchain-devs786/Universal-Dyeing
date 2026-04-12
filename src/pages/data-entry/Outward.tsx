@@ -83,6 +83,7 @@ export default function OutwardPage() {
     inward_id: undefined as number | undefined,
     inward_sr_no: "",
     inward_gp_no: "",
+    inward_ms_party_gp_no: "",
     items: [] as OutwardItem[],
   });
 
@@ -160,6 +161,7 @@ export default function OutwardPage() {
       outwardsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outwards"] });
+      queryClient.invalidateQueries({ queryKey: ["outward_parties"] });
       queryClient.invalidateQueries({ queryKey: ["reports_stock"] });
       toast.success("Outward entry created successfully");
       setIsFormDialogOpen(false);
@@ -262,9 +264,10 @@ export default function OutwardPage() {
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
         reference: data.reference || "",
-        inward_id: data.inward_id,
+        inward_id: data.inward_id || undefined,
         inward_sr_no: data.inward_sr_no || "",
         inward_gp_no: data.inward_gp_no || "",
+        inward_ms_party_gp_no: data.inward_ms_party_gp_no || "",
         items: data.items || [],
       });
       setIsFormDialogOpen(true);
@@ -347,6 +350,7 @@ export default function OutwardPage() {
       inward_id: formData.inward_id,
       inward_sr_no: formData.inward_sr_no,
       inward_gp_no: formData.inward_gp_no,
+      inward_ms_party_gp_no: formData.inward_ms_party_gp_no,
       created_by: JSON.parse(localStorage.getItem("user") || "{}").username || "Mehmood",
       status: "active",
       items: formData.items.map(item => ({
@@ -546,6 +550,7 @@ export default function OutwardPage() {
                 <TableHead className="whitespace-nowrap">Outward To</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Vehicle</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Driver</TableHead>
+                <TableHead className="whitespace-nowrap mobile-hide-column">Inw MS GP</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
                 <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
               </TableRow>
@@ -553,11 +558,11 @@ export default function OutwardPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-10 text-muted-foreground">Loading outward entries...</TableCell>
+                <TableCell colSpan={13} className="text-center py-10 text-muted-foreground">Loading outward entries...</TableCell>
               </TableRow>
             ) : outwards.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <ArrowUpFromLine className="h-8 w-8 text-muted-foreground/40" />
                     <span>No outward entries found.</span>
@@ -600,6 +605,7 @@ export default function OutwardPage() {
                     </TableCell>
                     <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
                     <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
+                    <TableCell className="mobile-hide-column font-bold text-blue-600">{outw.inward_ms_party_gp_no || "-"}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">
                       {Number(outw.total_qty || 0).toLocaleString()}
                     </TableCell>
@@ -834,7 +840,8 @@ export default function OutwardPage() {
                             ...formData, 
                             inward_id: id,
                             inward_sr_no: record?.sr_no || "",
-                            inward_gp_no: record?.gp_no || ""
+                            inward_gp_no: record?.gp_no || "",
+                            inward_ms_party_gp_no: record?.ms_party_gp_no || ""
                           });
                         }}
                       >
@@ -861,11 +868,11 @@ export default function OutwardPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Inward GP#</Label>
+                      <Label>Inward MS GP#</Label>
                       <Input 
-                        value={formData.inward_gp_no} 
-                        onChange={e => setFormData({...formData, inward_gp_no: e.target.value})} 
-                        placeholder="GP No" 
+                        value={formData.inward_ms_party_gp_no} 
+                        onChange={e => setFormData({...formData, inward_ms_party_gp_no: e.target.value})} 
+                        placeholder="MS GP No" 
                         className="bg-white"
                       />
                     </div>

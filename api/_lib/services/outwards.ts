@@ -25,6 +25,7 @@ export interface Outward {
   inward_no?: string;
   inward_sr_no?: string;
   inward_gp_no?: string;
+  inward_ms_party_gp_no?: string;
   created_by?: string;
   items?: OutwardItem[];
 }
@@ -110,13 +111,13 @@ export const outwardsService = {
       INSERT INTO outwards (
         ms_party_id, from_party_id, outward_to_party_id, 
         vehicle_no, driver_name, date, reference,
-        inward_id, inward_sr_no, inward_gp_no, created_by
+        inward_id, inward_sr_no, inward_gp_no, inward_ms_party_gp_no, created_by
       )
       VALUES (
         ${data.ms_party_id}, ${data.from_party_id}, ${outward_to_party_id}, 
         ${data.vehicle_no || null}, ${data.driver_name || null}, ${data.date}, ${data.reference || null},
         ${data.inward_id || null}, ${data.inward_sr_no || null}, ${data.inward_gp_no || null},
-        ${data.created_by || null}
+        ${data.inward_ms_party_gp_no || null}, ${data.created_by || null}
       )
       RETURNING id
     `;
@@ -193,6 +194,7 @@ export const outwardsService = {
           inward_id = COALESCE(${data.inward_id ?? null}, inward_id),
           inward_sr_no = COALESCE(${data.inward_sr_no ?? null}, inward_sr_no),
           inward_gp_no = COALESCE(${data.inward_gp_no ?? null}, inward_gp_no),
+          inward_ms_party_gp_no = COALESCE(${data.inward_ms_party_gp_no ?? null}, inward_ms_party_gp_no),
           updated_at = NOW()
         WHERE id = ${id}
       `;
