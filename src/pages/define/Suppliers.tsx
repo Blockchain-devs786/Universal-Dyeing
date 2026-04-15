@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -37,7 +44,9 @@ export default function Suppliers() {
     phone: "",
     address: "",
     city: "",
+    city: "",
     opening_balance: 0,
+    balance_type: "debit" as "debit" | "credit",
     status: "active",
   });
 
@@ -88,7 +97,8 @@ export default function Suppliers() {
         phone: supplier.phone || "",
         address: supplier.address || "",
         city: supplier.city || "",
-        opening_balance: supplier.opening_balance || 0,
+        opening_balance: Math.abs(supplier.opening_balance || 0),
+        balance_type: (supplier.opening_balance || 0) < 0 ? "credit" : "debit",
         status: supplier.status || "active",
       });
     } else {
@@ -98,7 +108,9 @@ export default function Suppliers() {
         phone: "",
         address: "",
         city: "",
+        city: "",
         opening_balance: 0,
+        balance_type: "debit",
         status: "active",
       });
     }
@@ -114,10 +126,18 @@ export default function Suppliers() {
     e.preventDefault();
     if (!formData.name) return toast.error("Name is required");
 
+    const finalData = {
+      ...formData,
+      opening_balance: formData.balance_type === 'credit' ? -Math.abs(formData.opening_balance) : Math.abs(formData.opening_balance)
+    };
+    
+    // remove balance_type before sending
+    const { balance_type, ...submitData } = finalData;
+
     if (editingSupplier) {
-      updateMutation.mutate({ id: editingSupplier.id, data: formData });
+      updateMutation.mutate({ id: editingSupplier.id, data: submitData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(submitData);
     }
   };
 
@@ -188,15 +208,30 @@ export default function Suppliers() {
                     placeholder="Full address" 
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="opening_balance">Opening Balance</Label>
-                  <Input 
-                    id="opening_balance" 
-                    type="number" 
-                    step="0.01" 
-                    value={formData.opening_balance} 
-                    onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
-                  />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="opening_balance">Opening Balance</Label>
+                    <Input 
+                      id="opening_balance" 
+                      type="number" 
+                      step="0.01" 
+                      min="0"
+                      value={formData.opening_balance} 
+                      onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-1">
+                    <Label htmlFor="balance_type">Type</Label>
+                    <Select value={formData.balance_type} onValueChange={(v: any) => setFormData({...formData, balance_type: v})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="debit">Debit (Dr)</SelectItem>
+                        <SelectItem value="credit">Credit (Cr)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <Label htmlFor="status">Status</Label>
@@ -261,8 +296,13 @@ export default function Suppliers() {
                   <TableCell className="font-medium whitespace-nowrap">{supplier.name}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap">{supplier.phone || "-"}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{supplier.city || "-"}</TableCell>
-                  <TableCell className="text-right font-medium text-emerald-600 whitespace-nowrap">
-                    Rs {Number(supplier.opening_balance || 0).toLocaleString()}
+                  <TableCell className="text-right font-medium whitespace-nowrap">
+                    <span className={Number(supplier.opening_balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
+                      Rs {Math.abs(Number(supplier.opening_balance || 0)).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] ml-1 font-bold text-slate-400">
+                      {Number(supplier.opening_balance || 0) < 0 ? "Cr" : "Dr"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center mobile-hide-column">
                     <Switch 

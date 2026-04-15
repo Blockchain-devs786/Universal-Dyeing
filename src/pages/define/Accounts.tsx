@@ -46,7 +46,9 @@ export default function Accounts() {
     type: "Cash" as "Cash" | "Bank",
     account_number: "",
     bank_name: "",
+    bank_name: "",
     opening_balance: 0,
+    balance_type: "debit" as "debit" | "credit",
     status: "active",
   });
 
@@ -97,7 +99,8 @@ export default function Accounts() {
         type: account.type,
         account_number: account.account_number || "",
         bank_name: account.bank_name || "",
-        opening_balance: account.opening_balance || 0,
+        opening_balance: Math.abs(account.opening_balance || 0),
+        balance_type: (account.opening_balance || 0) < 0 ? "credit" : "debit",
         status: account.status || "active",
       });
     } else {
@@ -107,7 +110,9 @@ export default function Accounts() {
         type: "Cash",
         account_number: "",
         bank_name: "",
+        bank_name: "",
         opening_balance: 0,
+        balance_type: "debit",
         status: "active",
       });
     }
@@ -118,10 +123,18 @@ export default function Accounts() {
     e.preventDefault();
     if (!formData.name) return toast.error("Account name is required");
 
+    const finalData = {
+      ...formData,
+      opening_balance: formData.balance_type === 'credit' ? -Math.abs(formData.opening_balance) : Math.abs(formData.opening_balance)
+    };
+    
+    // remove balance_type before sending
+    const { balance_type, ...submitData } = finalData;
+
     if (editingAccount) {
-      updateMutation.mutate({ id: editingAccount.id, data: formData });
+      updateMutation.mutate({ id: editingAccount.id, data: submitData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(submitData);
     }
   };
 
@@ -218,16 +231,34 @@ export default function Accounts() {
                 )}
 
                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-2">
-                   <Label htmlFor="opening_balance" className="text-emerald-800 font-bold uppercase text-[10px] tracking-widest">Initial Opening Balance</Label>
-                   <Input 
-                    id="opening_balance" 
-                    type="number" 
-                    step="0.01" 
-                    value={formData.opening_balance} 
-                    onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
-                    className="h-12 text-xl font-black bg-white border-emerald-200 focus:ring-emerald-500"
-                    disabled={!!editingAccount} // Prevent changing opening balance after creation for audit integrity
-                  />
+                   <div className="flex justify-between items-center mb-1">
+                     <Label htmlFor="opening_balance" className="text-emerald-800 font-bold uppercase text-[10px] tracking-widest">Initial Opening Balance</Label>
+                   </div>
+                   <div className="flex gap-2">
+                     <Input 
+                      id="opening_balance" 
+                      type="number" 
+                      step="0.01" 
+                      min="0"
+                      value={formData.opening_balance} 
+                      onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
+                      className="h-12 text-xl font-black bg-white border-emerald-200 focus:ring-emerald-500 flex-1"
+                      disabled={!!editingAccount} 
+                    />
+                     <Select 
+                       value={formData.balance_type} 
+                       onValueChange={(v: any) => setFormData({...formData, balance_type: v})}
+                       disabled={!!editingAccount}
+                     >
+                       <SelectTrigger className="w24 h-12 bg-white">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="debit">Dr</SelectItem>
+                         <SelectItem value="credit">Cr</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
                   {editingAccount && <p className="text-[10px] text-emerald-600 font-medium italic">* Opening balance cannot be edited after creation.</p>}
                 </div>
               </div>
