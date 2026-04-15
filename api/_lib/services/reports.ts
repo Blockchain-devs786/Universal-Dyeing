@@ -298,6 +298,7 @@ export const reportsService = {
     const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
     const isMSDyeing = account_type === 'MS Party' && dyeingParty && dyeingParty.id === account_id;
 
+    // We must query ALL transactions up to `to_date` (or without limit) to safely compute balances up to `from_date`.
     const query = await sql`
       WITH entries AS (
         -- 1. Invoices (Only for MS Parties)
@@ -317,8 +318,6 @@ export const reportsService = {
         WHERE 
           ${account_type} = 'MS Party'
           AND (${isMSDyeing} OR i.ms_party_id = ${account_id})
-          AND (${from_date || null}::date IS NULL OR i.date >= ${from_date}::date)
-          AND (${to_date || null}::date IS NULL OR i.date <= ${to_date}::date)
 
         UNION ALL
 
@@ -332,7 +331,6 @@ export const reportsService = {
                 WHEN ve2.account_type = 'Account' THEN 'Acc: ' || acc.name
                 WHEN ve2.account_type = 'Supplier' THEN 'Sup: ' || sup.name
                 WHEN ve2.account_type = 'Expense' THEN 'Exp: ' || exp.name
-                WHEN ve2.account_type = 'Asset' THEN 'Ast: ' || ast.name
                 ELSE ve2.account_type || ': ' || ve2.account_id
               END
             FROM voucher_entries ve2
@@ -340,7 +338,6 @@ export const reportsService = {
             LEFT JOIN accounts acc ON ve2.account_id = acc.id AND ve2.account_type = 'Account'
             LEFT JOIN suppliers sup ON ve2.account_id = sup.id AND ve2.account_type = 'Supplier'
             LEFT JOIN expenses exp ON ve2.account_id = exp.id AND ve2.account_type = 'Expense'
-            LEFT JOIN assets ast ON ve2.account_id = ast.id AND ve2.account_type = 'Asset'
             WHERE ve2.voucher_id = v.id AND ve2.id != ve.id
             LIMIT 1
           ) as particulars,
@@ -354,22 +351,18 @@ export const reportsService = {
         WHERE 
           ve.account_type = ${account_type} 
           AND ve.account_id = ${account_id}
-          AND (${from_date || null}::date IS NULL OR v.date >= ${from_date}::date)
-          AND (${to_date || null}::date IS NULL OR v.date <= ${to_date}::date)
       )
       SELECT * FROM entries 
       ORDER BY date ASC, created_at ASC
     `;
 
-    let balance = 0;
-    // Get opening balance based on account type
+    let baseOpeningBalance = 0;
     let openingTable = '';
     switch(account_type) {
       case 'MS Party': openingTable = 'ms_parties'; break;
       case 'Supplier': openingTable = 'suppliers'; break;
       case 'Account': openingTable = 'accounts'; break;
       case 'Expense': openingTable = 'expenses'; break;
-      case 'Asset': openingTable = 'assets'; break;
     }
 
     if (openingTable) {
@@ -378,23 +371,66 @@ export const reportsService = {
         else if (openingTable === 'suppliers') rows = await sql`SELECT opening_balance FROM suppliers WHERE id = ${account_id}`;
         else if (openingTable === 'accounts') rows = await sql`SELECT opening_balance FROM accounts WHERE id = ${account_id}`;
         else if (openingTable === 'expenses') rows = await sql`SELECT opening_balance FROM expenses WHERE id = ${account_id}`;
-        else if (openingTable === 'assets') rows = await sql`SELECT opening_balance FROM assets WHERE id = ${account_id}`;
         
         if (rows.length > 0) {
-            balance = Number(rows[0].opening_balance || 0);
+          baseOpeningBalance = Number(rows[0].opening_balance || 0);
         }
     }
 
-    return query.map(row => {
+    let broughtForwardBalance = baseOpeningBalance;
+    let ledgerRows = [];
+
+    for (const row of query) {
       const debit = Number(row.debit || 0);
       const credit = Number(row.credit || 0);
-      balance += (debit - credit);
-      return {
-        ...row,
-        debit,
-        credit,
-        balance
-      };
+      const rowDateTimestamp = new Date(row.date).getTime();
+
+      // If there is a from_date, we check if this row is BEFORE from_date
+      let isBeforeFromDate = false;
+      if (from_date) {
+        const fromDateTimestamp = new Date(from_date).getTime();
+        if (rowDateTimestamp < fromDateTimestamp) {
+          isBeforeFromDate = true;
+        }
+      }
+
+      let isAfterToDate = false;
+      if (to_date) {
+        const toDateTimestamp = new Date(to_date).getTime();
+        if (rowDateTimestamp > toDateTimestamp) {
+          isAfterToDate = true;
+        }
+      }
+
+      if (isBeforeFromDate) {
+        broughtForwardBalance += (debit - credit);
+      } else if (!isAfterToDate) {
+        ledgerRows.push({ ...row, debit, credit });
+      }
+    }
+
+    const result = [];
+
+    // Always add Opening Balance at top
+    result.push({
+      date: from_date || '',
+      particulars: 'OPENING BALANCE',
+      ref_no: '-',
+      description: 'Brought Forward Balance',
+      debit: broughtForwardBalance > 0 ? broughtForwardBalance : 0,
+      credit: broughtForwardBalance < 0 ? Math.abs(broughtForwardBalance) : 0,
+      balance: broughtForwardBalance
     });
+
+    let currentBalance = broughtForwardBalance;
+    for (const row of ledgerRows) {
+      currentBalance += (row.debit - row.credit);
+      result.push({
+        ...row,
+        balance: currentBalance
+      });
+    }
+
+    return result;
   }
 };

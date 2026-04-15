@@ -18,7 +18,6 @@ import {
   suppliersApi,
   expensesApi,
   accountsApi,
-  assetsApi,
   settingsApi,
   type MsParty
 } from "@/lib/api-client";
@@ -82,7 +81,6 @@ export default function CashLedger() {
 
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list() });
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list() });
-  const { data: assets = [] } = useQuery({ queryKey: ["assets"], queryFn: () => assetsApi.list() });
   const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: () => expensesApi.list() });
   const { data: settings = [] } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.list() });
 
@@ -142,7 +140,6 @@ export default function CashLedger() {
     ...msParties.map(p => ({ id: String(p.id), name: p.name, type: "MS Party" })),
     ...suppliers.map(v => ({ id: String(v.id), name: v.name, type: "Supplier" })),
     ...accounts.map(a => ({ id: String(a.id), name: a.name, type: "Account" })),
-    ...assets.map(a => ({ id: String(a.id), name: a.name, type: "Asset" })),
     ...expenses.map(e => ({ id: String(e.id), name: e.name, type: "Expense" })),
   ];
 

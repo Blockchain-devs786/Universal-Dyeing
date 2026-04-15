@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { 
   vouchersApi, msPartiesApi, suppliersApi, 
-  expensesApi, accountsApi, assetsApi,
+  expensesApi, accountsApi,
   type Voucher, type VoucherEntry 
 } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -43,7 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
-type AccountType = 'MS Party' | 'Supplier' | 'Expense' | 'Account' | 'Asset';
+type AccountType = 'MS Party' | 'Supplier' | 'Expense' | 'Account';
 
 interface FormEntry {
   account_type: AccountType;
@@ -75,15 +75,13 @@ export default function Vouchers() {
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list() });
   const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: () => expensesApi.list() });
   const { data: bankAccounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list() });
-  const { data: assets = [] } = useQuery({ queryKey: ["assets"], queryFn: () => assetsApi.list() });
 
   const accountOptions = useMemo(() => ({
     'MS Party': msParties,
     'Supplier': suppliers,
     'Expense': expenses,
     'Account': bankAccounts,
-    'Asset': assets,
-  }), [msParties, suppliers, expenses, bankAccounts, assets]);
+  }), [msParties, suppliers, expenses, bankAccounts]);
 
   // Fetch Vouchers
   const { data: vouchers = [], isLoading } = useQuery({
@@ -307,7 +305,6 @@ export default function Vouchers() {
                                                       <SelectItem value="MS Party">MS Party</SelectItem>
                                                       <SelectItem value="Supplier">Supplier</SelectItem>
                                                       <SelectItem value="Expense">Expense</SelectItem>
-                                                      <SelectItem value="Asset">Asset</SelectItem>
                                                   </SelectContent>
                                               </Select>
                                           </TableCell>
@@ -635,8 +632,7 @@ export default function Vouchers() {
                             entry.account_type === 'MS Party' ? msParties.find(p => p.id === entry.account_id)?.name :
                             entry.account_type === 'Supplier' ? suppliers.find(p => p.id === entry.account_id)?.name :
                             entry.account_type === 'Expense' ? expenses.find(p => p.id === entry.account_id)?.name :
-                            entry.account_type === 'Account' ? bankAccounts.find(p => p.id === entry.account_id)?.name :
-                            assets.find(p => p.id === entry.account_id)?.name
+                            bankAccounts.find(p => p.id === entry.account_id)?.name
                         }
                       </TableCell>
                       <TableCell className="text-sm font-bold text-slate-400 uppercase tracking-tighter">{entry.account_type}</TableCell>

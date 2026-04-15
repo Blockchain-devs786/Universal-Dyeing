@@ -10,7 +10,6 @@ import MsParties from "@/pages/define/MsParties";
 import FromParties from "@/pages/define/FromParties";
 import Suppliers from "@/pages/define/Suppliers";
 import Items from "@/pages/define/Items";
-import Assets from "@/pages/define/Assets";
 import Expenses from "@/pages/define/Expenses";
 import Accounts from "@/pages/define/Accounts";
 import OutwardParties from "@/pages/define/OutwardParties";
@@ -62,7 +61,6 @@ const App = () => (
           {/* <Route path="/define/from-parties" element={<AuthGuard><LayoutWrapper><FromParties /></LayoutWrapper></AuthGuard>} /> */}
           <Route path="/define/suppliers" element={<AuthGuard><LayoutWrapper><Suppliers /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/items" element={<AuthGuard><LayoutWrapper><Items /></LayoutWrapper></AuthGuard>} />
-          <Route path="/define/assets" element={<AuthGuard><LayoutWrapper><Assets /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/expenses" element={<AuthGuard><LayoutWrapper><Expenses /></LayoutWrapper></AuthGuard>} />
           <Route path="/define/accounts" element={<AuthGuard><LayoutWrapper><Accounts /></LayoutWrapper></AuthGuard>} />
           {/* <Route path="/define/outward-parties" element={<AuthGuard><LayoutWrapper><OutwardParties /></LayoutWrapper></AuthGuard>} /> */}

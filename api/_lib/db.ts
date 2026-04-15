@@ -120,17 +120,7 @@ export async function initializeDatabase() {
     console.error("Migration error for from_parties:", err);
   }
 
-  // Asset categories table
-  await db`
-    CREATE TABLE IF NOT EXISTS asset_categories (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL UNIQUE,
-      description TEXT,
-      status VARCHAR(20) DEFAULT 'active',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    )
-  `;
+
 
   // Items table
   await db`
@@ -157,48 +147,41 @@ export async function initializeDatabase() {
     )
   `;
 
-  // Assets table
-  await db`
-    CREATE TABLE IF NOT EXISTS assets (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      description TEXT,
-      category_id INTEGER REFERENCES asset_categories(id) ON DELETE SET NULL,
-      value DECIMAL(15,2) DEFAULT 0,
-      location VARCHAR(255),
-      status VARCHAR(20) DEFAULT 'active',
-      purchase_date DATE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      UNIQUE(name, category_id)
-    )
-  `;
 
-  // Expense categories table
+
+  // Expenses table
   await db`
-    CREATE TABLE IF NOT EXISTS expense_categories (
+    CREATE TABLE IF NOT EXISTS expenses (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
-      description TEXT,
+      phone VARCHAR(50),
+      address TEXT,
+      city VARCHAR(100),
+      opening_balance DECIMAL(15,2) DEFAULT 0,
+      debit DECIMAL(15,2) DEFAULT 0,
+      credit DECIMAL(15,2) DEFAULT 0,
       status VARCHAR(20) DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
 
-  // Expenses table (linked to categories, unique name per category)
-  await db`
-    CREATE TABLE IF NOT EXISTS expenses (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      category_id INTEGER NOT NULL REFERENCES expense_categories(id) ON DELETE CASCADE,
-      description TEXT,
-      status VARCHAR(20) DEFAULT 'active',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      UNIQUE(name, category_id)
-    )
-  `;
+  // Safe alter for expenses to convert it to party style
+  try {
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`;
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS address TEXT`;
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS city VARCHAR(100)`;
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS opening_balance DECIMAL(15,2) DEFAULT 0`;
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS debit DECIMAL(15,2) DEFAULT 0`;
+    await db`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS credit DECIMAL(15,2) DEFAULT 0`;
+    await db`ALTER TABLE expenses DROP COLUMN IF EXISTS category_id CASCADE`;
+    await db`ALTER TABLE expenses DROP COLUMN IF EXISTS description CASCADE`;
+    await db`ALTER TABLE IF EXISTS expenses DROP CONSTRAINT IF EXISTS expenses_name_category_id_key`;
+    await db`ALTER TABLE expenses DROP CONSTRAINT IF EXISTS expenses_name_key`;
+    await db`ALTER TABLE expenses ADD CONSTRAINT expenses_name_key UNIQUE (name)`;
+  } catch (err) {
+    console.error("Migration error for expenses:", err);
+  }
 
   // Inwards base table
   await db`

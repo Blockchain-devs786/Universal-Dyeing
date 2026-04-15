@@ -5,7 +5,6 @@ import { fromPartiesService, type FromParty } from './_lib/services/from-parties
 import { suppliersService, type Supplier } from './_lib/services/suppliers.js';
 import { itemsService, type Item } from './_lib/services/items.js';
 import { inwardsService, type Inward } from './_lib/services/inwards.js';
-import { assetsService, type Asset, type AssetCategory } from './_lib/services/assets.js';
 import { expensesService, type ExpenseCategory, type Expense } from './_lib/services/expenses.js';
 import { outwardsService, type Outward } from './_lib/services/outwards.js';
 import { transfersService, type Transfer } from './_lib/services/transfers.js';
@@ -274,45 +273,6 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for transfer_by_names`);
       }
 
-    // ─── Asset Categories ──────────────────────────────────────
-    case 'asset_categories':
-      switch (operation) {
-        case 'list':
-          return assetsService.listCategories(
-            (query.search as string) || data.search
-          );
-        case 'get':
-          return assetsService.getCategoryById(Number(query.id || data.id));
-        case 'create':
-          return assetsService.createCategory(data as AssetCategory);
-        case 'update':
-          return assetsService.updateCategory(Number(data.id), data);
-        case 'delete':
-          return assetsService.deleteCategory(Number(query.id || data.id));
-        default:
-          throw new Error(`Unknown operation: ${operation} for asset_categories`);
-      }
-
-    // ─── Assets ────────────────────────────────────────────────
-    case 'assets':
-      switch (operation) {
-        case 'list':
-          return assetsService.listAssets(
-            query.category_id ? Number(query.category_id) : data.category_id,
-            (query.search as string) || data.search
-          );
-        case 'get':
-          return assetsService.getAssetById(Number(query.id || data.id));
-        case 'create':
-          return assetsService.createAsset(data as Asset);
-        case 'update':
-          return assetsService.updateAsset(Number(data.id), data);
-        case 'delete':
-          return assetsService.deleteAsset(Number(query.id || data.id));
-        default:
-          throw new Error(`Unknown operation: ${operation} for assets`);
-      }
-
     // ─── Expense Categories ────────────────────────────────────
     case 'expense_categories':
       switch (operation) {
@@ -451,7 +411,6 @@ async function routeAction(
           throw new Error(`Unknown operation: ${operation} for settings`);
       }
 
-    default:
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, suppliers, items, inwards, asset_categories, assets, expense_categories, expenses, reports, invoices, accounts, vouchers, settings`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, suppliers, items, inwards, expense_categories, expenses, reports, invoices, accounts, vouchers, settings`);
   }
 }

@@ -46,7 +46,6 @@ const defineItems = [
   { title: "MS Parties", url: "/define/ms-parties", icon: Building2 },
   { title: "Suppliers", url: "/define/suppliers", icon: Truck },
   { title: "Items", url: "/define/items", icon: Package },
-  { title: "Assets", url: "/define/assets", icon: HardDrive },
   { title: "Expenses", url: "/define/expenses", icon: Wallet },
   { title: "Accounts", url: "/define/accounts", icon: Landmark },
 ];
@@ -141,7 +140,6 @@ export function AppSidebar() {
           "/define/from-parties": "define_from_parties",
           "/define/suppliers": "define_suppliers",
           "/define/items": "define_items",
-          "/define/assets": "define_assets",
           "/define/expenses": "define_expenses",
           "/define/accounts": "define_accounts",
           "/define/outward-parties": "define_outward_parties",

@@ -239,47 +239,16 @@ export interface StockLedgerRow {
   description: string;
 }
 
-export interface AssetCategory {
-  id: number;
-  name: string;
-  description?: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Asset {
-  id: number;
-  name: string;
-  category_id?: number | null;
-  category_name?: string;
-  description?: string;
-  value?: number;
-  location?: string;
-  status: string;
-  purchase_date?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ExpenseCategory {
-  id: number;
-  name: string;
-  description?: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Expense {
   id: number;
   name: string;
-  category_id: number;
-  category_name?: string;
-  description?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  opening_balance?: number;
   status: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Account {
@@ -636,79 +605,11 @@ export const inwardsApi = {
       coreRequest<{ success: boolean }>('transfer_by_names.delete', { id }),
   };
 
-// ─── Asset Categories API ────────────────────────────────────────
-
-export const assetCategoriesApi = {
-  list: (search?: string) => {
-    const params: Record<string, string> = {};
-    if (search) params.search = search;
-    return coreRequest<AssetCategory[]>('asset_categories.list', {}, params);
-  },
-  
-  getById: (id: number) => 
-    coreRequest<AssetCategory>('asset_categories.get', { id }),
-  
-  create: (data: Omit<AssetCategory, 'id' | 'created_at' | 'updated_at'>) => 
-    coreRequest<AssetCategory>('asset_categories.create', data),
-  
-  update: (id: number, data: Partial<AssetCategory>) => 
-    coreRequest<AssetCategory>('asset_categories.update', { ...data, id }),
-  
-  delete: (id: number) => 
-    coreRequest<{ success: boolean }>('asset_categories.delete', { id }),
-};
-
-// ─── Assets API ──────────────────────────────────────────────────
-
-export const assetsApi = {
-  list: (categoryId?: number, search?: string) => {
-    const params: Record<string, string> = {};
-    if (categoryId) params.category_id = String(categoryId);
-    if (search) params.search = search;
-    return coreRequest<Asset[]>('assets.list', {}, params);
-  },
-  
-  getById: (id: number) => 
-    coreRequest<Asset>('assets.get', { id }),
-  
-  create: (data: Omit<Asset, 'id' | 'category_name' | 'created_at' | 'updated_at'>) => 
-    coreRequest<Asset>('assets.create', data),
-  
-  update: (id: number, data: Partial<Asset>) => 
-    coreRequest<Asset>('assets.update', { ...data, id }),
-  
-  delete: (id: number) => 
-    coreRequest<{ success: boolean }>('assets.delete', { id }),
-};
-
-// ─── Expense Categories API ──────────────────────────────────────
-
-export const expenseCategoriesApi = {
-  list: (search?: string) => {
-    const params: Record<string, string> = {};
-    if (search) params.search = search;
-    return coreRequest<ExpenseCategory[]>('expense_categories.list', {}, params);
-  },
-  
-  getById: (id: number) => 
-    coreRequest<ExpenseCategory>('expense_categories.get', { id }),
-  
-  create: (data: Omit<ExpenseCategory, 'id' | 'created_at' | 'updated_at'>) => 
-    coreRequest<ExpenseCategory>('expense_categories.create', data),
-  
-  update: (id: number, data: Partial<ExpenseCategory>) => 
-    coreRequest<ExpenseCategory>('expense_categories.update', { ...data, id }),
-  
-  delete: (id: number) => 
-    coreRequest<{ success: boolean }>('expense_categories.delete', { id }),
-};
-
 // ─── Expenses API ────────────────────────────────────────────────
 
 export const expensesApi = {
-  list: (categoryId?: number, search?: string) => {
+  list: (_?: any, search?: string) => {
     const params: Record<string, string> = {};
-    if (categoryId) params.category_id = String(categoryId);
     if (search) params.search = search;
     return coreRequest<Expense[]>('expenses.list', {}, params);
   },
@@ -716,7 +617,7 @@ export const expensesApi = {
   getById: (id: number) => 
     coreRequest<Expense>('expenses.get', { id }),
   
-  create: (data: Omit<Expense, 'id' | 'category_name' | 'created_at' | 'updated_at'>) => 
+  create: (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => 
     coreRequest<Expense>('expenses.create', data),
   
   update: (id: number, data: Partial<Expense>) => 
