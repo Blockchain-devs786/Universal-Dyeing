@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 're_123456789_dummy');
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_prod';
 
 export interface User {
