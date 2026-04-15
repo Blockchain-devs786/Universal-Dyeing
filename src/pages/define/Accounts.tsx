@@ -243,14 +243,12 @@ export default function Accounts() {
                       value={formData.opening_balance} 
                       onChange={e => setFormData({...formData, opening_balance: parseFloat(e.target.value) || 0})} 
                       className="h-12 text-xl font-black bg-white border-emerald-200 focus:ring-emerald-500 flex-1"
-                      disabled={!!editingAccount} 
                     />
                      <Select 
                        value={formData.balance_type} 
                        onValueChange={(v: any) => setFormData({...formData, balance_type: v})}
-                       disabled={!!editingAccount}
                      >
-                       <SelectTrigger className="w24 h-12 bg-white">
+                       <SelectTrigger className="w-24 h-12 bg-white">
                          <SelectValue />
                        </SelectTrigger>
                        <SelectContent>
@@ -259,7 +257,6 @@ export default function Accounts() {
                        </SelectContent>
                      </Select>
                    </div>
-                  {editingAccount && <p className="text-[10px] text-emerald-600 font-medium italic">* Opening balance cannot be edited after creation.</p>}
                 </div>
               </div>
               <DialogFooter className="pt-4 border-t">
