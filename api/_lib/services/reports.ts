@@ -309,7 +309,17 @@ export const reportsService = {
             ELSE 'MS: Dyeing' 
           END as particulars,
           i.invoice_no as ref_no,
-          'Service Income' as description,
+          'Service Income' || 
+          COALESCE(CHR(10) || (
+            SELECT 
+              'Outs: ' || STRING_AGG(DISTINCT o.outward_no, ', ') || CHR(10) ||
+              STRING_AGG(it.name || ' (' || oi.measurement || '): ' || oi.quantity, CHR(10))
+            FROM invoice_items ii
+            JOIN outward_items oi ON ii.outward_id = oi.outward_id
+            JOIN items it ON oi.item_id = it.id
+            JOIN outwards o ON ii.outward_id = o.id
+            WHERE ii.invoice_id = i.id
+          ), '') as description,
           CASE WHEN ${isMSDyeing} THEN 0 ELSE i.total_amount END as debit,
           CASE WHEN ${isMSDyeing} THEN i.total_amount ELSE 0 END as credit,
           i.created_at
