@@ -179,6 +179,7 @@ export default function OutwardPage() {
       queryClient.invalidateQueries({ queryKey: ["outwards"] });
       queryClient.invalidateQueries({ queryKey: ["outward_parties"] });
       queryClient.invalidateQueries({ queryKey: ["reports_stock"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Outward entry created successfully");
       setIsFormDialogOpen(false);
     },
@@ -191,6 +192,7 @@ export default function OutwardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outwards"] });
       queryClient.invalidateQueries({ queryKey: ["reports_stock"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Outward entry updated successfully");
       setIsFormDialogOpen(false);
     },
@@ -202,6 +204,7 @@ export default function OutwardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outwards"] });
       queryClient.invalidateQueries({ queryKey: ["reports_stock"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Outward entry deleted successfully");
     },
     onError: (error: Error) => toast.error(error.message),

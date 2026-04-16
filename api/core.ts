@@ -15,6 +15,7 @@ import { accountsService } from './_lib/services/accounts.js';
 import { vouchersService } from './_lib/services/vouchers.js';
 import { settingsService } from './_lib/services/settings.js';
 import { outwardPartiesService, type OutwardParty } from './_lib/services/outward-parties.js';
+import { fifoService } from './_lib/services/fifo.js';
 
 let dbInitialized = false;
 
@@ -410,7 +411,23 @@ async function routeAction(
         default:
           throw new Error(`Unknown operation: ${operation} for settings`);
       }
+    // ─── FIFO Deductions ──────────────────────────────────────
+    case 'fifo':
+      switch (operation) {
+        case 'run_migration':
+          return fifoService.runFullMigration();
+        case 'inward_breakdown':
+          return fifoService.getInwardItemBreakdown(Number(query.inward_id || data.inward_id));
+        case 'inward_breakdowns_by_party':
+          return fifoService.getInwardBreakdownsByParty(
+            query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id
+          );
+        case 'outward_deductions':
+          return fifoService.getOutwardDeductions(Number(query.outward_id || data.outward_id));
+        default:
+          throw new Error(`Unknown operation: ${operation} for fifo`);
+      }
 
-      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, suppliers, items, inwards, expense_categories, expenses, reports, invoices, accounts, vouchers, settings`);
+      throw new Error(`Unknown entity: ${entity}. Available: ms_parties, from_parties, suppliers, items, inwards, expense_categories, expenses, reports, invoices, accounts, vouchers, settings, fifo`);
   }
 }

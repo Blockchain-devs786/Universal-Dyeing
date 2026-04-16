@@ -697,6 +697,35 @@ export const settingsApi = {
 };
 
 
+// ─── FIFO API ────────────────────────────────────────────────────
+
+export interface InwardItemBreakdown {
+  inward_item_id: number;
+  item_id: number;
+  item_name: string;
+  measurement: number;
+  original_qty: number;
+  deducted_qty: number;
+  remaining_qty: number;
+}
+
+export const fifoApi = {
+  runMigration: () =>
+    coreRequest<{ processed: number; totalDeductions: number }>('fifo.run_migration'),
+  
+  getInwardBreakdown: (inwardId: number) =>
+    coreRequest<InwardItemBreakdown[]>('fifo.inward_breakdown', { inward_id: inwardId }),
+  
+  getInwardBreakdownsByParty: (msPartyId?: number) => {
+    const params: Record<string, string> = {};
+    if (msPartyId) params.ms_party_id = String(msPartyId);
+    return coreRequest<Record<number, InwardItemBreakdown[]>>('fifo.inward_breakdowns_by_party', {}, params);
+  },
+
+  getOutwardDeductions: (outwardId: number) =>
+    coreRequest<any[]>('fifo.outward_deductions', { outward_id: outwardId }),
+};
+
 // ─── Health Check ────────────────────────────────────────────────
 
 export const healthApi = {

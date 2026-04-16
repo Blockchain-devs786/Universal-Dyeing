@@ -1,6 +1,6 @@
 import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
+import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer, ChevronDown, ChevronRight, Package } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -8,8 +8,10 @@ import {
   msPartiesApi,
   fromPartiesApi,
   itemsApi,
+  fifoApi,
   type Inward,
   type InwardItem,
+  type InwardItemBreakdown,
 } from "@/lib/api-client";
 import { generateAndPrintHTML } from "@/lib/printGenerator";
 
@@ -56,6 +58,7 @@ export default function Inward() {
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [isPrinting, setIsPrinting] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingInward, setEditingInward] = useState<Inward | null>(null);
@@ -112,6 +115,14 @@ export default function Inward() {
     queryKey: ["items"],
     queryFn: () => itemsApi.list(),
   });
+
+  // FIFO breakdowns - fetches all breakdowns for the filtered party (or all)
+  const { data: fifoBreakdowns = {} } = useQuery({
+    queryKey: ["fifo_breakdowns", filterMsPartyId],
+    queryFn: () => fifoApi.getInwardBreakdownsByParty(
+      filterMsPartyId !== "all" ? Number(filterMsPartyId) : undefined
+    ),
+  });
   
   const activeItems = useMemo(() => {
     return items.filter(it => it.status === 'active' || formData.items.some(fi => fi.item_id === it.id));
@@ -139,6 +150,7 @@ export default function Inward() {
       inwardsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inwards"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Inward entry created successfully");
       closeDialog();
     },
@@ -150,6 +162,7 @@ export default function Inward() {
       inwardsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inwards"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Inward entry updated successfully");
       closeDialog();
     },
@@ -160,6 +173,7 @@ export default function Inward() {
     mutationFn: (id: number) => inwardsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inwards"] });
+      queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
       toast.success("Inward entry deleted successfully");
     },
     onError: (error: Error) => toast.error(error.message),
@@ -316,6 +330,13 @@ export default function Inward() {
     }
   };
 
+  const toggleExpandRow = (id: number) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
+  };
+
   const toggleSelectRow = (id: number) => {
     const newSet = new Set(selectedRows);
     if (newSet.has(id)) newSet.delete(id);
@@ -336,12 +357,28 @@ export default function Inward() {
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {selectedRows.size > 0 && (
             <Button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white/20 hover:bg-white/30 text-white border-0 shadow-sm backdrop-blur-sm transition-all duration-300 rounded-xl">
               <Printer className="mr-2 h-4 w-4" /> Print Selected ({selectedRows.size})
             </Button>
           )}
+          <Button 
+            variant="outline" 
+            className="bg-amber-500/90 hover:bg-amber-600 text-white border-0 shadow-sm backdrop-blur-sm transition-all duration-300 rounded-xl text-xs"
+            onClick={async () => {
+              if (!confirm('This will re-process all FIFO deductions for all existing outwards. Continue?')) return;
+              try {
+                const result = await fifoApi.runMigration();
+                queryClient.invalidateQueries({ queryKey: ["fifo_breakdowns"] });
+                toast.success(`FIFO Migration Complete: ${result.processed} outwards processed, ${result.totalDeductions} deduction entries created.`);
+              } catch (err: any) {
+                toast.error(`FIFO Migration failed: ${err.message}`);
+              }
+            }}
+          >
+            <Package className="mr-1.5 h-3.5 w-3.5" /> Run FIFO Migration
+          </Button>
           <Button onClick={handleOpenDialog} className="bg-white hover:bg-white/90 text-primary shadow-md transition-all">
             <Plus className="mr-2 h-4 w-4" /> Add Inward
           </Button>
@@ -520,47 +557,105 @@ export default function Inward() {
                         </div>
                       </TableCell>
                     </TableRow>
-                    {group.items.map((inward) => (
-                      <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
-                        <TableCell>
-                          <input 
-                            type="checkbox" 
-                            checked={selectedRows.has(inward.id!)}
-                            onChange={() => toggleSelectRow(inward.id!)}
-                            className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                          />
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className="sm:inline hidden">{format(new Date(inward.date), "MMM dd, yyyy")}</span>
-                          <span className="sm:hidden inline">{format(new Date(inward.date), "dd/MM")}</span>
-                        </TableCell>
-                        <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
-                        <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column font-bold text-blue-600">{inward.ms_party_gp_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
-                        <TableCell className="text-right font-semibold text-emerald-600">
-                          {Number(inward.total_qty || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(inward.id!)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                              if(confirm('Are you sure you want to delete this Inward record?')) {
-                                deleteMutation.mutate(inward.id!);
-                              }
-                            }}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {group.items.map((inward) => {
+                      const breakdown = fifoBreakdowns[inward.id!] || [];
+                      const isExpanded = expandedRows.has(inward.id!);
+                      return (
+                        <Fragment key={inward.id}>
+                          <TableRow className={cn("transition-colors hover:bg-muted/50 group cursor-pointer", isExpanded && "bg-blue-50/40")} onClick={() => toggleExpandRow(inward.id!)}>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedRows.has(inward.id!)}
+                                onChange={() => toggleSelectRow(inward.id!)}
+                                className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                              />
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-blue-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
+                                <span className="sm:inline hidden">{format(new Date(inward.date), "MMM dd, yyyy")}</span>
+                                <span className="sm:hidden inline">{format(new Date(inward.date), "dd/MM")}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
+                            <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
+                            <TableCell className="mobile-hide-column font-bold text-blue-600">{inward.ms_party_gp_no || "-"}</TableCell>
+                            <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
+                            <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
+                            <TableCell className="text-right font-semibold text-emerald-600">
+                              {Number(inward.total_qty || 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(inward.id!)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                                  if(confirm('Are you sure you want to delete this Inward record?')) {
+                                    deleteMutation.mutate(inward.id!);
+                                  }
+                                }}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {/* FIFO Item Breakdown - expandable */}
+                          {isExpanded && breakdown.length > 0 && (
+                            <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                              <TableCell colSpan={9} className="p-0">
+                                <div className="mx-4 my-2 sm:mx-8 sm:ml-12">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Package className="h-3.5 w-3.5 text-slate-500" />
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Item Breakdown (FIFO)</span>
+                                  </div>
+                                  <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="bg-slate-800 text-white">
+                                          <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">Item</th>
+                                          <th className="px-3 py-1.5 text-center font-bold text-[10px] uppercase tracking-wider">MSR</th>
+                                          <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">IN</th>
+                                          <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">OUT</th>
+                                          <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">LEFT</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {breakdown.map((item: InwardItemBreakdown, idx: number) => (
+                                          <tr key={item.inward_item_id} className={idx % 2 === 0 ? '' : 'bg-slate-50'}>
+                                            <td className="px-3 py-1.5 font-semibold text-slate-800">{item.item_name}</td>
+                                            <td className="px-3 py-1.5 text-center text-slate-500">{item.measurement}</td>
+                                            <td className="px-3 py-1.5 text-right font-medium text-blue-700">{item.original_qty.toLocaleString()}</td>
+                                            <td className="px-3 py-1.5 text-right font-medium text-red-600">{item.deducted_qty > 0 ? item.deducted_qty.toLocaleString() : '-'}</td>
+                                            <td className={cn(
+                                              "px-3 py-1.5 text-right font-bold",
+                                              item.remaining_qty <= 0 ? "text-red-700" : "text-emerald-700"
+                                            )}>
+                                              {item.remaining_qty.toLocaleString()}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {isExpanded && breakdown.length === 0 && (
+                            <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                              <TableCell colSpan={9} className="py-3 text-center text-xs text-slate-400 italic">
+                                No FIFO data available. Run migration first.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </Fragment>
                 ))
               )}

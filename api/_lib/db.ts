@@ -272,6 +272,22 @@ export async function initializeDatabase() {
     )
   `;
 
+  // FIFO Deduction Log — tracks which outward items consumed which inward items
+  await db`
+    CREATE TABLE IF NOT EXISTS fifo_deductions (
+      id SERIAL PRIMARY KEY,
+      outward_id INTEGER REFERENCES outwards(id) ON DELETE CASCADE,
+      outward_item_id INTEGER REFERENCES outward_items(id) ON DELETE CASCADE,
+      inward_id INTEGER REFERENCES inwards(id) ON DELETE CASCADE,
+      inward_item_id INTEGER REFERENCES inward_items(id) ON DELETE CASCADE,
+      item_id INTEGER REFERENCES items(id) ON DELETE RESTRICT,
+      measurement INTEGER NOT NULL CHECK (measurement IN (15, 22)),
+      ms_party_id INTEGER REFERENCES ms_parties(id) ON DELETE RESTRICT,
+      deducted_qty DECIMAL(15,2) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
   // Transfers base table
   await db`
     CREATE TABLE IF NOT EXISTS transfers (

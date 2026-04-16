@@ -1,4 +1,5 @@
 import { getDb } from '../db.js';
+import { fifoService } from './fifo.js';
 
 export interface OutwardItem {
   id?: number;
@@ -150,6 +151,9 @@ export const outwardsService = {
       }
     }
     
+    // Process FIFO deductions for this new outward
+    await fifoService.processOutwardFifo(outwardId);
+    
     return this.getById(outwardId);
   },
 
@@ -209,12 +213,16 @@ export const outwardsService = {
         `;
       }
     }
+    // Re-process FIFO deductions after update
+    await fifoService.processOutwardFifo(id);
 
     return this.getById(id);
   },
 
   async delete(id: number) {
     const sql = getDb();
+    // Clear FIFO deductions first (also cleared by CASCADE, but explicit is better)
+    await fifoService.clearOutwardDeductions(id);
     await sql`DELETE FROM outward_items WHERE outward_id = ${id}`;
     const rows = await sql`DELETE FROM outwards WHERE id = ${id} RETURNING id, outward_no`;
     if (rows.length === 0) throw new Error('Outward not found');
