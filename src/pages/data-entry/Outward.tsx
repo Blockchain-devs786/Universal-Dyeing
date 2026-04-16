@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpFromLine, ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
@@ -137,6 +137,22 @@ export default function OutwardPage() {
     const partiesWithStockIds = new Set(stocks.filter(s => (s.remaining || 0) > 0).map(s => s.ms_party_id));
     return msParties.filter(p => p.status === 'active' && partiesWithStockIds.has(p.id));
   }, [msParties, stocks]);
+
+  const groupedOutwards = useMemo(() => {
+    const groups: Record<number, { partyId: number; partyName: string; items: typeof outwards }> = {};
+    outwards.forEach(outward => {
+      const partyId = outward.ms_party_id;
+      if (!groups[partyId]) {
+        groups[partyId] = { 
+          partyId,
+          partyName: outward.ms_party_name || "Unknown Party", 
+          items: [] 
+        };
+      }
+      groups[partyId].items.push(outward);
+    });
+    return Object.values(groups).sort((a, b) => a.partyName.localeCompare(b.partyName));
+  }, [outwards]);
 
   const currentPartyId = editingOutward ? String(editingOutward.ms_party_id) : formData.ms_party_id;
   const currentPartyStocks = useMemo(() => {
@@ -544,7 +560,6 @@ export default function OutwardPage() {
                 <TableHead className="whitespace-nowrap">Outward No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
-                <TableHead className="whitespace-nowrap">MS Party</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">From</TableHead>
                 <TableHead className="whitespace-nowrap">Reference</TableHead>
                 <TableHead className="whitespace-nowrap">Outward To</TableHead>
@@ -560,7 +575,7 @@ export default function OutwardPage() {
               <TableRow>
                 <TableCell colSpan={13} className="text-center py-10 text-muted-foreground">Loading outward entries...</TableCell>
               </TableRow>
-            ) : outwards.length === 0 ? (
+            ) : groupedOutwards.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-3">
@@ -570,65 +585,84 @@ export default function OutwardPage() {
                 </TableCell>
               </TableRow>
               ) : (
-                outwards.map((outw) => (
-                  <TableRow key={outw.id} className="transition-colors hover:bg-muted/50 group">
-                    <TableCell>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedRows.has(outw.id!)}
-                        onChange={() => toggleSelectRow(outw.id!)}
-                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <span className="sm:inline hidden">{format(new Date(outw.date), "MMM dd, yyyy")}</span>
-                      <span className="sm:hidden inline">{format(new Date(outw.date), "dd/MM")}</span>
-                    </TableCell>
-                    <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
-                    <TableCell className="mobile-hide-column">{outw.gp_no || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
-                    <TableCell className="font-medium truncate max-w-[120px]">{outw.ms_party_name || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
-                    <TableCell>
-                      {outw.inward_no ? (
-                        <div className="flex flex-col text-[11px]">
-                          <span className="font-semibold text-blue-700">{outw.inward_no}</span>
-                          {outw.inward_sr_no && <span>SR: {outw.inward_sr_no}</span>}
-                          {outw.inward_gp_no && <span>GP: {outw.inward_gp_no}</span>}
+                groupedOutwards.map((group) => (
+                  <Fragment key={group.partyId}>
+                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-y shadow-sm">
+                      <TableCell colSpan={13} className="py-2.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                             <div className="h-5 w-1 rounded-full bg-blue-600" />
+                             <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">{group.partyName}</span>
+                             <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold">
+                                {group.items.length} Entries
+                             </span>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+                             Subtotal Qty: {group.items.reduce((s, i) => s + (Number(i.total_qty) || 0), 0).toLocaleString()}
+                          </div>
                         </div>
-                      ) : (
-                        outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
-                      {outw.outward_to_party_name || "-"}
-                    </TableCell>
-                    <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column font-bold text-blue-600">{outw.inward_ms_party_gp_no || "-"}</TableCell>
-                    <TableCell className="text-right font-semibold text-emerald-600">
-                      {Number(outw.total_qty || 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(outw.id!)} disabled={isPrinting}>
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(outw.id!)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                        if(confirm('Are you sure you want to delete this Outward record?')) {
-                          deleteMutation.mutate(outw.id!);
-                        }
-                      }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                      </TableCell>
+                    </TableRow>
+                    {group.items.map((outw) => (
+                      <TableRow key={outw.id} className="transition-colors hover:bg-muted/50 group">
+                        <TableCell>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedRows.has(outw.id!)}
+                            onChange={() => toggleSelectRow(outw.id!)}
+                            className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <span className="sm:inline hidden">{format(new Date(outw.date), "MMM dd, yyyy")}</span>
+                          <span className="sm:hidden inline">{format(new Date(outw.date), "dd/MM")}</span>
+                        </TableCell>
+                        <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
+                        <TableCell className="mobile-hide-column">{outw.gp_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
+                        <TableCell>
+                          {outw.inward_no ? (
+                            <div className="flex flex-col text-[11px]">
+                              <span className="font-semibold text-blue-700">{outw.inward_no}</span>
+                              {outw.inward_sr_no && <span>SR: {outw.inward_sr_no}</span>}
+                              {outw.inward_gp_no && <span>GP: {outw.inward_gp_no}</span>}
+                            </div>
+                          ) : (
+                            outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
+                          {outw.outward_to_party_name || "-"}
+                        </TableCell>
+                        <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column font-bold text-blue-600">{outw.inward_ms_party_gp_no || "-"}</TableCell>
+                        <TableCell className="text-right font-semibold text-emerald-600">
+                          {Number(outw.total_qty || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(outw.id!)} disabled={isPrinting}>
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(outw.id!)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                              if(confirm('Are you sure you want to delete this Outward record?')) {
+                                deleteMutation.mutate(outw.id!);
+                              }
+                            }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </Fragment>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
