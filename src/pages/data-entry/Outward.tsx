@@ -1,6 +1,6 @@
 import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpFromLine, ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer, ChevronRight, ChevronDown, Package } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -10,9 +10,10 @@ import {
   itemsApi,
   reportsApi,
   outwardPartiesApi,
-  inwardsApi,
+  fifoApi,
   type Outward,
   type OutwardItem,
+  type OutwardDeductionDetail,
 } from "@/lib/api-client";
 
 import { generateAndPrintHTML } from "@/lib/printGenerator";
@@ -56,6 +57,7 @@ export default function OutwardPage() {
   const [filterToDate, setFilterToDate] = useState("");
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isPrinting, setIsPrinting] = useState(false);
 
   const [isPartyDialogOpen, setIsPartyDialogOpen] = useState(false);
@@ -79,11 +81,6 @@ export default function OutwardPage() {
     vehicle_no: "",
     driver_name: "",
     date: format(new Date(), "yyyy-MM-dd"),
-    reference: "",
-    inward_id: undefined as number | undefined,
-    inward_sr_no: "",
-    inward_gp_no: "",
-    inward_ms_party_gp_no: "",
     items: [] as OutwardItem[],
   });
 
@@ -159,16 +156,11 @@ export default function OutwardPage() {
     return stocks.filter(s => String(s.ms_party_id) === currentPartyId);
   }, [stocks, currentPartyId]);
 
-  const { data: inwardRecords = [] } = useQuery({
-    queryKey: ["inwards_for_party", currentPartyId],
-    queryFn: () => inwardsApi.list({ ms_party_id: Number(currentPartyId) }),
-    enabled: !!currentPartyId,
-  });
-
-  const { data: references = [] } = useQuery({
-    queryKey: ["inwards_references", currentPartyId],
-    queryFn: () => inwardsApi.getReferences(Number(currentPartyId)),
-    enabled: !!currentPartyId,
+  const { data: fifoDeductions = {} } = useQuery({
+    queryKey: ["fifo_deductions_by_party", filterMsPartyId],
+    queryFn: () => fifoApi.getOutwardDeductionsByParty(
+      filterMsPartyId !== "all" ? Number(filterMsPartyId) : undefined
+    ),
   });
 
   // Mutations
@@ -260,10 +252,6 @@ export default function OutwardPage() {
       vehicle_no: "",
       driver_name: "",
       date: format(new Date(), "yyyy-MM-dd"),
-      reference: "",
-      inward_id: undefined,
-      inward_sr_no: "",
-      inward_gp_no: "",
       items: [{ id: 0, outward_id: 0, item_id: 0, measurement: 15, quantity: 0 }],
     });
     setIsPartyDialogOpen(false);
@@ -282,11 +270,6 @@ export default function OutwardPage() {
         vehicle_no: data.vehicle_no || "",
         driver_name: data.driver_name || "",
         date: data.date ? data.date.substring(0, 10) : format(new Date(), "yyyy-MM-dd"),
-        reference: data.reference || "",
-        inward_id: data.inward_id || undefined,
-        inward_sr_no: data.inward_sr_no || "",
-        inward_gp_no: data.inward_gp_no || "",
-        inward_ms_party_gp_no: data.inward_ms_party_gp_no || "",
         items: data.items || [],
       });
       setIsFormDialogOpen(true);
@@ -415,6 +398,13 @@ export default function OutwardPage() {
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setSelectedRows(newSet);
+  };
+
+  const toggleExpandRow = (id: number) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
   };
 
   return (
@@ -563,12 +553,11 @@ export default function OutwardPage() {
                 <TableHead className="whitespace-nowrap">Outward No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
-                <TableHead className="whitespace-nowrap mobile-hide-column">From</TableHead>
+                <TableHead className="whitespace-nowrap">From</TableHead>
                 <TableHead className="whitespace-nowrap">Reference</TableHead>
                 <TableHead className="whitespace-nowrap">Outward To</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Vehicle</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Driver</TableHead>
-                <TableHead className="whitespace-nowrap mobile-hide-column">Inw MS GP</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
                 <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
               </TableRow>
@@ -606,63 +595,123 @@ export default function OutwardPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                    {group.items.map((outw) => (
-                      <TableRow key={outw.id} className="transition-colors hover:bg-muted/50 group">
-                        <TableCell>
-                          <input 
-                            type="checkbox" 
-                            checked={selectedRows.has(outw.id!)}
-                            onChange={() => toggleSelectRow(outw.id!)}
-                            className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                          />
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className="sm:inline hidden">{format(new Date(outw.date), "MMM dd, yyyy")}</span>
-                          <span className="sm:hidden inline">{format(new Date(outw.date), "dd/MM")}</span>
-                        </TableCell>
-                        <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
-                        <TableCell className="mobile-hide-column">{outw.gp_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column">{outw.from_party_name || "-"}</TableCell>
-                        <TableCell>
-                          {outw.inward_no ? (
-                            <div className="flex flex-col text-[11px]">
-                              <span className="font-semibold text-blue-700">{outw.inward_no}</span>
-                              {outw.inward_sr_no && <span>SR: {outw.inward_sr_no}</span>}
-                              {outw.inward_gp_no && <span>GP: {outw.inward_gp_no}</span>}
-                            </div>
-                          ) : (
-                            outw.reference ? <span className="text-blue-600 font-medium">{outw.reference}</span> : "-"
+                    {group.items.map((outw) => {
+                      const isExpanded = expandedRows.has(outw.id!);
+                      const deductions = (fifoDeductions as Record<number, OutwardDeductionDetail[]>)[outw.id!] || [];
+                      
+                      return (
+                        <Fragment key={outw.id}>
+                          <TableRow 
+                            className="transition-colors hover:bg-muted/50 group cursor-pointer"
+                            onClick={() => toggleExpandRow(outw.id!)}
+                          >
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1">
+                                <button className="p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors">
+                                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                </button>
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedRows.has(outw.id!)}
+                                  onChange={() => toggleSelectRow(outw.id!)}
+                                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-1 cursor-pointer"
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className="sm:inline hidden">{format(new Date(outw.date), "MMM dd, yyyy")}</span>
+                              <span className="sm:hidden inline">{format(new Date(outw.date), "dd/MM")}</span>
+                            </TableCell>
+                            <TableCell className="font-medium text-primary">{outw.outward_no}</TableCell>
+                            <TableCell className="mobile-hide-column">{outw.gp_no || "-"}</TableCell>
+                            <TableCell className="mobile-hide-column">{outw.sr_no || "-"}</TableCell>
+                            <TableCell className="whitespace-nowrap">{outw.from_party_name || "-"}</TableCell>
+                            <TableCell>
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                                {deductions.length > 0 ? (
+                                  <span>{deductions.length} Inwards</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
+                              {outw.outward_to_party_name || "-"}
+                            </TableCell>
+                            <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
+                            <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
+                            <TableCell className="text-right font-semibold text-emerald-600">
+                              {Number(outw.total_qty || 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(outw.id!)} disabled={isPrinting}>
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(outw.id!)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                                  if(confirm('Are you sure you want to delete this Outward record?')) {
+                                    deleteMutation.mutate(outw.id!);
+                                  }
+                                }}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {/* Automated FIFO References - Block */}
+                          {isExpanded && deductions.length > 0 && (
+                            <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                              <TableCell colSpan={12} className="p-0">
+                                <div className="mx-4 my-2 sm:mx-8 sm:ml-12 border-l-2 border-indigo-200 pl-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Package className="h-3.5 w-3.5 text-indigo-500" />
+                                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Inward Deductions Source</span>
+                                  </div>
+                                  <div className="bg-white rounded-lg border border-indigo-100 shadow-sm overflow-hidden mb-3">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="bg-indigo-50/80 text-indigo-900 border-b border-indigo-100">
+                                          <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">Item Name</th>
+                                          <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">Inward Ref</th>
+                                          <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider mobile-hide-column">From Party</th>
+                                          <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">Deducted Qty</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {deductions.map((deduct, idx) => (
+                                          <tr key={deduct.id || idx} className={idx % 2 === 0 ? '' : 'bg-slate-50/50'}>
+                                            <td className="px-3 py-2 font-semibold text-slate-800">{deduct.item_name}</td>
+                                            <td className="px-3 py-2 text-slate-600">
+                                              <div className="flex flex-col">
+                                                <span className="font-semibold text-blue-700">{deduct.inward_no}</span>
+                                                <span className="text-[10px] text-muted-foreground font-medium">GP: {deduct.inward_gp_no || '-'} | MS GP: {deduct.inward_ms_party_gp_no || '-'}</span>
+                                              </div>
+                                            </td>
+                                            <td className="px-3 py-2 text-slate-600 mobile-hide-column">{deduct.from_party_name || '-'}</td>
+                                            <td className="px-3 py-2 text-right font-bold text-red-600">-{Number(deduct.deducted_qty).toLocaleString()}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </TableCell>
-                        <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
-                          {outw.outward_to_party_name || "-"}
-                        </TableCell>
-                        <TableCell className="mobile-hide-column">{outw.vehicle_no || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column">{outw.driver_name || "-"}</TableCell>
-                        <TableCell className="mobile-hide-column font-bold text-blue-600">{outw.inward_ms_party_gp_no || "-"}</TableCell>
-                        <TableCell className="text-right font-semibold text-emerald-600">
-                          {Number(outw.total_qty || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(outw.id!)} disabled={isPrinting}>
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(outw.id!)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                              if(confirm('Are you sure you want to delete this Outward record?')) {
-                                deleteMutation.mutate(outw.id!);
-                              }
-                            }}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          {isExpanded && deductions.length === 0 && (
+                            <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                              <TableCell colSpan={12} className="py-4 text-center text-sm text-slate-500">
+                                No inward deductions found for this outward record. Run FIFO Migration if this is old data.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </Fragment>
                 ))
               )}
@@ -861,81 +910,7 @@ export default function OutwardPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center">
-                    <ArrowDownToLine className="w-4 h-4 mr-2" /> Inward Reference
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label>Inward No (Optional)</Label>
-                      <Select 
-                        value={formData.inward_id ? String(formData.inward_id) : "none"} 
-                        onValueChange={(val) => {
-                          const id = val === "none" ? undefined : Number(val);
-                          const record = inwardRecords.find(r => r.id === id);
-                          setFormData({
-                            ...formData, 
-                            inward_id: id,
-                            inward_sr_no: record?.sr_no || "",
-                            inward_gp_no: record?.gp_no || "",
-                            inward_ms_party_gp_no: record?.ms_party_gp_no || ""
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="w-full bg-white">
-                          <SelectValue placeholder="Select Inward..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None / Clear</SelectItem>
-                          {inwardRecords.map((r: any) => (
-                            <SelectItem key={r.id} value={String(r.id)}>{r.inward_no}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Inward SR#</Label>
-                      <Input 
-                        value={formData.inward_sr_no} 
-                        onChange={e => setFormData({...formData, inward_sr_no: e.target.value})} 
-                        placeholder="SR No" 
-                        className="bg-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Inward MS GP#</Label>
-                      <Input 
-                        value={formData.inward_ms_party_gp_no} 
-                        onChange={e => setFormData({...formData, inward_ms_party_gp_no: e.target.value})} 
-                        placeholder="MS GP No" 
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Reference From Party</Label>
-                    <Select 
-                      value={formData.reference || "none"} 
-                      onValueChange={(val) => setFormData({...formData, reference: val === "none" ? "" : val})}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Reference..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None / Clear</SelectItem>
-                        {references.map((ref: any) => (
-                          <SelectItem key={ref.id} value={ref.name}>{ref.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] text-muted-foreground italic">Previous from parties associated with this MS Party</p>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2">
                     <Label>Date *</Label>
                     <Input 

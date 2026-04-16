@@ -709,6 +709,23 @@ export interface InwardItemBreakdown {
   remaining_qty: number;
 }
 
+export interface OutwardDeductionDetail {
+  id: number;
+  outward_id: number;
+  outward_item_id: number;
+  inward_id: number;
+  inward_item_id: number;
+  item_id: number;
+  measurement: number;
+  ms_party_id: number;
+  deducted_qty: number;
+  inward_no: string;
+  inward_gp_no: string;
+  inward_ms_party_gp_no: string;
+  from_party_name: string;
+  item_name: string;
+}
+
 export const fifoApi = {
   runMigration: () =>
     coreRequest<{ processed: number; totalDeductions: number }>('fifo.run_migration'),
@@ -723,7 +740,13 @@ export const fifoApi = {
   },
 
   getOutwardDeductions: (outwardId: number) =>
-    coreRequest<any[]>('fifo.outward_deductions', { outward_id: outwardId }),
+    coreRequest<OutwardDeductionDetail[]>('fifo.outward_deductions', { outward_id: outwardId }),
+    
+  getOutwardDeductionsByParty: (msPartyId?: number) => {
+    const params: Record<string, string> = {};
+    if (msPartyId) params.ms_party_id = String(msPartyId);
+    return coreRequest<Record<number, OutwardDeductionDetail[]>>('fifo.outward_deductions_by_party', {}, params);
+  },
 };
 
 // ─── Health Check ────────────────────────────────────────────────

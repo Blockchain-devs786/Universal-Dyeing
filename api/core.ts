@@ -424,6 +424,10 @@ async function routeAction(
           );
         case 'outward_deductions':
           return fifoService.getOutwardDeductions(Number(query.outward_id || data.outward_id));
+        case 'outward_deductions_by_party':
+          return fifoService.getOutwardDeductionsByParty(
+            query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id
+          );
         default:
           throw new Error(`Unknown operation: ${operation} for fifo`);
       }

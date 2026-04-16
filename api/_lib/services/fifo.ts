@@ -34,6 +34,23 @@ export interface InwardItemBreakdown {
   remaining_qty: number;
 }
 
+export interface OutwardDeductionDetail {
+  id: number;
+  outward_id: number;
+  outward_item_id: number;
+  inward_id: number;
+  inward_item_id: number;
+  item_id: number;
+  measurement: number;
+  ms_party_id: number;
+  deducted_qty: number;
+  inward_no: string;
+  inward_gp_no: string;
+  inward_ms_party_gp_no: string;
+  from_party_name: string;
+  item_name: string;
+}
+
 export const fifoService = {
   /**
    * Process FIFO deductions for a single outward entry.
@@ -241,18 +258,63 @@ export const fifoService = {
   /**
    * Get deduction details for a specific outward (which inwards were consumed).
    */
-  async getOutwardDeductions(outwardId: number) {
+  async getOutwardDeductions(outwardId: number): Promise<OutwardDeductionDetail[]> {
     const sql = getDb();
-    return sql`
+    const rows = await sql`
       SELECT 
         fd.*,
         i.inward_no,
+        i.gp_no as inward_gp_no,
+        i.ms_party_gp_no as inward_ms_party_gp_no,
+        fp.name as from_party_name,
         it.name as item_name
       FROM fifo_deductions fd
       JOIN inwards i ON fd.inward_id = i.id
       JOIN items it ON fd.item_id = it.id
+      LEFT JOIN from_parties fp ON i.from_party_id = fp.id
       WHERE fd.outward_id = ${outwardId}
       ORDER BY i.date ASC
     `;
+    return rows.map(r => ({
+      ...r,
+      deducted_qty: Number(r.deducted_qty),
+      measurement: Number(r.measurement)
+    })) as OutwardDeductionDetail[];
+  },
+
+  /**
+   * Get deduction details for ALL outwards of a given MS Party (bulk query for list view).
+   * Returns a map: outward_id -> OutwardDeductionDetail[]
+   */
+  async getOutwardDeductionsByParty(msPartyId?: number): Promise<Record<number, OutwardDeductionDetail[]>> {
+    const sql = getDb();
+    const rows = await sql`
+      SELECT 
+        fd.*,
+        i.inward_no,
+        i.gp_no as inward_gp_no,
+        i.ms_party_gp_no as inward_ms_party_gp_no,
+        fp.name as from_party_name,
+        it.name as item_name
+      FROM fifo_deductions fd
+      JOIN inwards i ON fd.inward_id = i.id
+      JOIN items it ON fd.item_id = it.id
+      LEFT JOIN from_parties fp ON i.from_party_id = fp.id
+      JOIN outwards o ON fd.outward_id = o.id
+      WHERE (${msPartyId || null}::integer IS NULL OR o.ms_party_id = ${msPartyId || null}::integer)
+      ORDER BY i.date ASC
+    `;
+
+    const result: Record<number, OutwardDeductionDetail[]> = {};
+    for (const r of rows) {
+      const outId = r.outward_id;
+      if (!result[outId]) result[outId] = [];
+      result[outId].push({
+        ...r,
+        deducted_qty: Number(r.deducted_qty),
+        measurement: Number(r.measurement)
+      } as OutwardDeductionDetail);
+    }
+    return result;
   },
 };
