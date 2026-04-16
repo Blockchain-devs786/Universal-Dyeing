@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
 import { format } from "date-fns";
@@ -116,6 +116,22 @@ export default function Inward() {
   const activeItems = useMemo(() => {
     return items.filter(it => it.status === 'active' || formData.items.some(fi => fi.item_id === it.id));
   }, [items, formData.items]);
+
+  const groupedInwards = useMemo(() => {
+    const groups: Record<number, { partyId: number; partyName: string; items: typeof inwards }> = {};
+    inwards.forEach(inward => {
+      const partyId = inward.ms_party_id;
+      if (!groups[partyId]) {
+        groups[partyId] = { 
+          partyId,
+          partyName: inward.ms_party_name || "Unknown Party", 
+          items: [] 
+        };
+      }
+      groups[partyId].items.push(inward);
+    });
+    return Object.values(groups).sort((a, b) => a.partyName.localeCompare(b.partyName));
+  }, [inwards]);
 
   // Mutations
   const createMutation = useMutation({
@@ -466,7 +482,6 @@ export default function Inward() {
                 <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">MS Party GP</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
-                <TableHead className="whitespace-nowrap">MS Party</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">From Party</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
                 <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
@@ -477,7 +492,7 @@ export default function Inward() {
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Loading inward entries...</TableCell>
                 </TableRow>
-              ) : inwards.length === 0 ? (
+              ) : groupedInwards.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     <div className="flex flex-col items-center justify-center space-y-3">
@@ -487,49 +502,68 @@ export default function Inward() {
                   </TableCell>
                 </TableRow>
               ) : (
-                inwards.map((inward) => (
-                  <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
-                    <TableCell>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedRows.has(inward.id!)}
-                        onChange={() => toggleSelectRow(inward.id!)}
-                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <span className="sm:inline hidden">{format(new Date(inward.date), "MMM dd, yyyy")}</span>
-                      <span className="sm:hidden inline">{format(new Date(inward.date), "dd/MM")}</span>
-                    </TableCell>
-                    <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
-                    <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column font-bold text-blue-600">{inward.ms_party_gp_no || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
-                    <TableCell className="font-medium truncate max-w-[120px]">{inward.ms_party_name || "-"}</TableCell>
-                    <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
-                    <TableCell className="text-right font-semibold text-emerald-600">
-                      {Number(inward.total_qty || 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(inward.id!)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                        if(confirm('Are you sure you want to delete this Inward record?')) {
-                          deleteMutation.mutate(inward.id!);
-                        }
-                      }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                groupedInwards.map((group) => (
+                  <Fragment key={group.partyId}>
+                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-y shadow-sm">
+                      <TableCell colSpan={9} className="py-2.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                             <div className="h-5 w-1 rounded-full bg-blue-600" />
+                             <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">{group.partyName}</span>
+                             <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold">
+                                {group.items.length} Entries
+                             </span>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+                             Subtotal Qty: {group.items.reduce((s, i) => s + (Number(i.total_qty) || 0), 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {group.items.map((inward) => (
+                      <TableRow key={inward.id} className="transition-colors hover:bg-muted/50 group">
+                        <TableCell>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedRows.has(inward.id!)}
+                            onChange={() => toggleSelectRow(inward.id!)}
+                            className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <span className="sm:inline hidden">{format(new Date(inward.date), "MMM dd, yyyy")}</span>
+                          <span className="sm:hidden inline">{format(new Date(inward.date), "dd/MM")}</span>
+                        </TableCell>
+                        <TableCell className="font-medium text-primary">{inward.inward_no}</TableCell>
+                        <TableCell className="mobile-hide-column">{inward.gp_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column font-bold text-blue-600">{inward.ms_party_gp_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column">{inward.sr_no || "-"}</TableCell>
+                        <TableCell className="mobile-hide-column">{inward.from_party_name || "-"}</TableCell>
+                        <TableCell className="text-right font-semibold text-emerald-600">
+                          {Number(inward.total_qty || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(inward.id!)} disabled={isPrinting}>
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(inward.id!)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                              if(confirm('Are you sure you want to delete this Inward record?')) {
+                                deleteMutation.mutate(inward.id!);
+                              }
+                            }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </Fragment>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
