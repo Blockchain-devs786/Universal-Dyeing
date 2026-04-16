@@ -621,6 +621,7 @@ export default function Inward() {
                                           <th className="px-3 py-1.5 text-center font-bold text-[10px] uppercase tracking-wider">MSR</th>
                                           <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">IN</th>
                                           <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">OUT</th>
+                                          <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">T.OUT</th>
                                           <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">LEFT</th>
                                         </tr>
                                       </thead>
@@ -630,7 +631,8 @@ export default function Inward() {
                                             <td className="px-3 py-1.5 font-semibold text-slate-800">{item.item_name}</td>
                                             <td className="px-3 py-1.5 text-center text-slate-500">{item.measurement}</td>
                                             <td className="px-3 py-1.5 text-right font-medium text-blue-700">{item.original_qty.toLocaleString()}</td>
-                                            <td className="px-3 py-1.5 text-right font-medium text-red-600">{item.deducted_qty > 0 ? item.deducted_qty.toLocaleString() : '-'}</td>
+                                            <td className="px-3 py-1.5 text-right font-medium text-amber-600">{item.outward_qty > 0 ? item.outward_qty.toLocaleString() : '-'}</td>
+                                            <td className="px-3 py-1.5 text-right font-medium text-red-600">{item.transfer_qty > 0 ? item.transfer_qty.toLocaleString() : '-'}</td>
                                             <td className={cn(
                                               "px-3 py-1.5 text-right font-bold",
                                               item.remaining_qty <= 0 ? "text-red-700" : "text-emerald-700"

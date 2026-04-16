@@ -250,7 +250,9 @@ export const fifoService = {
         it.name as item_name,
         ii.measurement,
         ii.quantity as original_qty,
-        COALESCE(SUM(fd.deducted_qty), 0) as deducted_qty
+        COALESCE(SUM(CASE WHEN fd.outward_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as outward_qty,
+        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
+        COALESCE(SUM(fd.deducted_qty), 0) as total_deducted_qty
       FROM inward_items ii
       JOIN items it ON ii.item_id = it.id
       LEFT JOIN fifo_deductions fd ON fd.inward_item_id = ii.id
@@ -265,8 +267,10 @@ export const fifoService = {
       item_name: r.item_name,
       measurement: Number(r.measurement),
       original_qty: Number(r.original_qty),
-      deducted_qty: Number(r.deducted_qty),
-      remaining_qty: Number(r.original_qty) - Number(r.deducted_qty),
+      deducted_qty: Number(r.total_deducted_qty),
+      outward_qty: Number(r.outward_qty),
+      transfer_qty: Number(r.transfer_qty),
+      remaining_qty: Number(r.original_qty) - Number(r.total_deducted_qty),
     }));
   },
 
@@ -285,7 +289,9 @@ export const fifoService = {
         it.name as item_name,
         ii.measurement,
         ii.quantity as original_qty,
-        COALESCE(SUM(fd.deducted_qty), 0) as deducted_qty
+        COALESCE(SUM(CASE WHEN fd.outward_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as outward_qty,
+        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
+        COALESCE(SUM(fd.deducted_qty), 0) as total_deducted_qty
       FROM inward_items ii
       JOIN items it ON ii.item_id = it.id
       JOIN inwards i ON ii.inward_id = i.id
@@ -305,8 +311,10 @@ export const fifoService = {
         item_name: r.item_name,
         measurement: Number(r.measurement),
         original_qty: Number(r.original_qty),
-        deducted_qty: Number(r.deducted_qty),
-        remaining_qty: Number(r.original_qty) - Number(r.deducted_qty),
+        deducted_qty: Number(r.total_deducted_qty),
+        outward_qty: Number(r.outward_qty),
+        transfer_qty: Number(r.transfer_qty),
+        remaining_qty: Number(r.original_qty) - Number(r.total_deducted_qty),
       });
     }
     return result;

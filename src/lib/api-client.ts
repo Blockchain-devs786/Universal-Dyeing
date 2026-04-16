@@ -706,6 +706,8 @@ export interface InwardItemBreakdown {
   measurement: number;
   original_qty: number;
   deducted_qty: number;
+  outward_qty: number;
+  transfer_qty: number;
   remaining_qty: number;
 }
 
