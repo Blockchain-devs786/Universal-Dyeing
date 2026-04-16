@@ -104,15 +104,21 @@ export const generateAndPrintHTML = (
     }
 
     // Generic reference note
-    if (doc.reference) {
+    if (doc.reference && type !== 'outward') {
       html += '<div class="meta-row">' +
         '<div class="meta-item">' +
-          '<span class="meta-label">REF PARTY:</span>' +
+          '<span class="meta-label">REF:</span>' +
           '<span class="meta-value">' + doc.reference + '</span>' +
         '</div>' +
         '<div class="meta-item"></div>' +
       '</div>';
     }
+    
+    // For Outwards print, just use the automated deductions in the table instead of manual header lines
+    if (type === 'outward') {
+       return ''; // Hide all manual outward reference blocks from header to save space
+    }
+    
     // MS Party GP No (for Inward)
     if (doc.ms_party_gp_no) {
       html += '<div class="meta-row">' +
@@ -133,9 +139,25 @@ export const generateAndPrintHTML = (
 
     let itemRows = '';
     items.forEach((item: any) => {
+      let refText = '';
+      if (type === 'outward' && doc.deductions && doc.deductions.length > 0) {
+        const itemDeducts = doc.deductions.filter((d: any) => d.outward_item_id === item.id);
+        if (itemDeducts.length > 0) {
+          const deductStrings = itemDeducts.map((d: any) => {
+             let text = `INW: ${d.inward_no}`;
+             if (d.inward_gp_no) text += `, GP: ${d.inward_gp_no}`;
+             if (d.inward_ms_party_gp_no) text += `, MS GP: ${d.inward_ms_party_gp_no}`;
+             if (d.from_party_name) text += ` (${d.from_party_name})`;
+             text += ` = Qty: ${Number(d.deducted_qty)}`;
+             return `[${text}]`;
+          });
+          refText = `<div style="font-size: 8px; color: #555; font-weight: normal; margin-top: 1px;">Refs: ${deductStrings.join(' | ')}</div>`;
+        }
+      }
+
       itemRows += '<tr>' +
         '<td>' + (item.quantity || 0) + '</td>' +
-        '<td>' + (item.item_name || '') + '</td>' +
+        '<td style="text-align: left; padding-left: 2mm;"><strong>' + (item.item_name || '') + '</strong>' + refText + '</td>' +
         '<td>' + (item.measurement || '') + '</td>' +
         '</tr>';
     });

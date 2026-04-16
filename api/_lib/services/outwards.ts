@@ -86,7 +86,12 @@ export const outwardsService = {
       WHERE oi.outward_id = ${id}
     `;
     
-    return { ...rows[0], items };
+    let deductions: any[] = [];
+    if (rows[0]) {
+      deductions = await fifoService.getOutwardDeductions(id);
+    }
+    
+    return { ...rows[0], items, deductions };
   },
 
   async create(data: Outward) {
