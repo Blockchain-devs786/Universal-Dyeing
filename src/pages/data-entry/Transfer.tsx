@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpFromLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer } from "lucide-react";
+import { ArrowUpFromLine, Plus, Search, Trash2, Pencil, Check, ChevronsUpDown, Printer, ChevronRight, ChevronDown, Package } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -9,8 +9,10 @@ import {
   fromPartiesApi,
   itemsApi,
   reportsApi,
+  fifoApi,
   type Transfer,
   type TransferItem,
+  type OutwardDeductionDetail,
 } from "@/lib/api-client";
 
 import { generateAndPrintHTML } from "@/lib/printGenerator";
@@ -54,6 +56,7 @@ export default function TransferPage() {
   const [filterToDate, setFilterToDate] = useState("");
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isPrinting, setIsPrinting] = useState(false);
 
   const [isPartyDialogOpen, setIsPartyDialogOpen] = useState(false);
@@ -130,6 +133,29 @@ export default function TransferPage() {
   const currentPartyStocks = useMemo(() => {
     return stocks.filter(s => String(s.ms_party_id) === currentPartyId);
   }, [stocks, currentPartyId]);
+
+  const groupedTransfers = useMemo(() => {
+    const groups: Record<number, { partyId: number; partyName: string; items: typeof transfers }> = {};
+    transfers.forEach(transfer => {
+      const partyId = transfer.ms_party_id;
+      if (!groups[partyId]) {
+        groups[partyId] = { 
+          partyId,
+          partyName: transfer.ms_party_name || "Unknown Party", 
+          items: [] 
+        };
+      }
+      groups[partyId].items.push(transfer);
+    });
+    return Object.values(groups).sort((a, b) => a.partyName.localeCompare(b.partyName));
+  }, [transfers]);
+
+  const { data: fifoDeductions = {} } = useQuery({
+    queryKey: ["fifo_deductions_by_party_transfers", filterMsPartyId],
+    queryFn: () => fifoApi.getTransferDeductionsByParty(
+      filterMsPartyId !== "all" ? Number(filterMsPartyId) : undefined
+    ),
+  });
 
   // Mutations
   const createMutation = useMutation({
@@ -355,6 +381,13 @@ export default function TransferPage() {
     setSelectedRows(newSet);
   };
 
+  const toggleExpandRow = (id: number) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 page-header-gradient p-6 rounded-2xl text-white shadow-elevated">
@@ -496,27 +529,27 @@ export default function TransferPage() {
                   className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
                 />
               </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Transfer No</TableHead>
-              <TableHead>GP No</TableHead>
-              <TableHead>Sr No</TableHead>
-              <TableHead>MS Party</TableHead>
-              <TableHead>From</TableHead>
-              <TableHead>Transfer To</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead className="text-right">Total Qty</TableHead>
-              <TableHead className="text-center w-28">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Date</TableHead>
+              <TableHead className="whitespace-nowrap">Transfer No</TableHead>
+              <TableHead className="whitespace-nowrap mobile-hide-column">GP No</TableHead>
+              <TableHead className="whitespace-nowrap mobile-hide-column">Sr No</TableHead>
+              <TableHead className="whitespace-nowrap">From</TableHead>
+              <TableHead className="whitespace-nowrap">Reference</TableHead>
+              <TableHead className="whitespace-nowrap">Transfer To</TableHead>
+              <TableHead className="whitespace-nowrap mobile-hide-column">Vehicle</TableHead>
+              <TableHead className="whitespace-nowrap mobile-hide-column">Driver</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Total Qty</TableHead>
+              <TableHead className="text-center w-28 whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-10 text-muted-foreground">Loading transfer entries...</TableCell>
+                <TableCell colSpan={13} className="text-center py-10 text-muted-foreground">Loading transfer entries...</TableCell>
               </TableRow>
-            ) : transfers.length === 0 ? (
+            ) : groupedTransfers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <ArrowUpFromLine className="h-8 w-8 text-muted-foreground/40" />
                     <span>No transfer entries found.</span>
@@ -524,48 +557,142 @@ export default function TransferPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              transfers.map((trans) => (
-                <TableRow key={trans.id} className="transition-colors hover:bg-muted/50 group">
-                  <TableCell>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedRows.has(trans.id!)}
-                      onChange={() => toggleSelectRow(trans.id!)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-2 cursor-pointer"
-                    />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(trans.date), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell className="font-medium text-primary">{trans.transfer_no}</TableCell>
-                  <TableCell>{trans.gp_no || "-"}</TableCell>
-                  <TableCell>{trans.sr_no || "-"}</TableCell>
-                  <TableCell className="font-medium">{trans.ms_party_name || "-"}</TableCell>
-                  <TableCell>{trans.from_party_name || "-"}</TableCell>
-                  <TableCell className="font-medium text-orange-600">{trans.transfer_to_party_name || "-"}</TableCell>
-                  <TableCell>{trans.vehicle_no || "-"}</TableCell>
-                  <TableCell>{trans.driver_name || "-"}</TableCell>
-                  <TableCell className="text-right font-semibold text-emerald-600">
-                    {Number(trans.total_qty || 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(trans.id!)} disabled={isPrinting}>
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(trans.id!)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
-                        if(confirm('Are you sure you want to delete this Transfer record?')) {
-                          deleteMutation.mutate(trans.id!);
-                        }
-                      }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+              groupedTransfers.map((group) => (
+                <Fragment key={group.partyId}>
+                  <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-y shadow-sm">
+                    <TableCell colSpan={13} className="py-2.5 px-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <div className="h-5 w-1 rounded-full bg-blue-600" />
+                           <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">{group.partyName}</span>
+                           <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold">
+                              {group.items.length} Entries
+                           </span>
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+                           Subtotal Qty: {group.items.reduce((s, i) => s + (Number(i.total_qty) || 0), 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {group.items.map((trans) => {
+                    const isExpanded = expandedRows.has(trans.id!);
+                    const deductions = (fifoDeductions as Record<number, OutwardDeductionDetail[]>)[trans.id!] || [];
+                    
+                    return (
+                      <Fragment key={trans.id}>
+                        <TableRow 
+                          className="transition-colors hover:bg-muted/50 group cursor-pointer"
+                          onClick={() => toggleExpandRow(trans.id!)}
+                        >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1">
+                              <button className="p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors">
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </button>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedRows.has(trans.id!)}
+                                onChange={() => toggleSelectRow(trans.id!)}
+                                className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 ml-1 cursor-pointer"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <span className="sm:inline hidden">{format(new Date(trans.date), "MMM dd, yyyy")}</span>
+                            <span className="sm:hidden inline">{format(new Date(trans.date), "dd/MM")}</span>
+                          </TableCell>
+                          <TableCell className="font-medium text-primary">{trans.transfer_no}</TableCell>
+                          <TableCell className="mobile-hide-column">{trans.gp_no || "-"}</TableCell>
+                          <TableCell className="mobile-hide-column">{trans.sr_no || "-"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{trans.from_party_name || "-"}</TableCell>
+                          <TableCell>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                              {deductions.length > 0 ? (
+                                <span>{deductions.length} Inwards</span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-orange-600 truncate max-w-[120px]">
+                            {trans.transfer_to_party_name || "-"}
+                          </TableCell>
+                          <TableCell className="mobile-hide-column">{trans.vehicle_no || "-"}</TableCell>
+                          <TableCell className="mobile-hide-column">{trans.driver_name || "-"}</TableCell>
+                          <TableCell className="text-right font-semibold text-emerald-600">
+                            {Number(trans.total_qty || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-center gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handlePrintSingle(trans.id!)} disabled={isPrinting}>
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenEdit(trans.id!)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                                if(confirm('Are you sure you want to delete this Transfer record?')) {
+                                  deleteMutation.mutate(trans.id!);
+                                }
+                              }}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Automated FIFO References - Block */}
+                        {isExpanded && deductions.length > 0 && (
+                          <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                            <TableCell colSpan={13} className="p-0">
+                              <div className="mx-4 my-2 sm:mx-8 sm:ml-12 border-l-2 border-indigo-200 pl-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Package className="h-3.5 w-3.5 text-indigo-500" />
+                                  <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Inward Deductions Source</span>
+                                </div>
+                                <div className="bg-white rounded-lg border border-indigo-100 shadow-sm overflow-hidden mb-3">
+                                  <table className="w-full text-xs">
+                                    <thead>
+                                      <tr className="bg-indigo-50/80 text-indigo-900 border-b border-indigo-100">
+                                        <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">Item Name</th>
+                                        <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">Inward Ref</th>
+                                        <th className="px-3 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider mobile-hide-column">From Party</th>
+                                        <th className="px-3 py-1.5 text-right font-bold text-[10px] uppercase tracking-wider">Deducted Qty</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {deductions.map((deduct, idx) => (
+                                        <tr key={deduct.id || idx} className={idx % 2 === 0 ? '' : 'bg-slate-50/50'}>
+                                          <td className="px-3 py-2 font-semibold text-slate-800">{deduct.item_name}</td>
+                                          <td className="px-3 py-2 text-slate-600">
+                                            <div className="flex flex-col">
+                                              <span className="font-semibold text-blue-700">{deduct.inward_no}</span>
+                                              <span className="text-[10px] text-muted-foreground font-medium">GP: {deduct.inward_gp_no || '-'} | MS GP: {deduct.inward_ms_party_gp_no || '-'}</span>
+                                            </div>
+                                          </td>
+                                          <td className="px-3 py-2 text-slate-600 mobile-hide-column">{deduct.from_party_name || '-'}</td>
+                                          <td className="px-3 py-2 text-right font-bold text-red-600">-{Number(deduct.deducted_qty).toLocaleString()}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {isExpanded && deductions.length === 0 && (
+                          <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+                            <TableCell colSpan={13} className="py-4 text-center text-sm text-slate-500">
+                              No inward deductions found for this transfer record. Run FIFO Migration if this is old data.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </Fragment>
               ))
             )}
           </TableBody>

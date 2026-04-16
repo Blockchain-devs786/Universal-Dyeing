@@ -114,8 +114,8 @@ export const generateAndPrintHTML = (
       '</div>';
     }
     
-    // For Outwards print, just use the automated deductions in the table instead of manual header lines
-    if (type === 'outward') {
+    // For Outwards/Transfers print, just use the automated deductions in the table instead of manual header lines
+    if (type === 'outward' || type === 'transfer') {
        return ''; // Hide all manual outward reference blocks from header to save space
     }
     
@@ -140,8 +140,8 @@ export const generateAndPrintHTML = (
     let itemRows = '';
     items.forEach((item: any) => {
       let refText = '';
-      if (type === 'outward' && doc.deductions && doc.deductions.length > 0) {
-        const itemDeducts = doc.deductions.filter((d: any) => d.outward_item_id === item.id);
+      if ((type === 'outward' || type === 'transfer') && doc.deductions && doc.deductions.length > 0) {
+        const itemDeducts = doc.deductions.filter((d: any) => (type === 'outward' ? d.outward_item_id : d.transfer_item_id) === item.id);
         if (itemDeducts.length > 0) {
           const deductStrings = itemDeducts.map((d: any) => {
              let text = `INW: ${d.inward_no}`;

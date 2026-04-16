@@ -278,6 +278,8 @@ export async function initializeDatabase() {
       id SERIAL PRIMARY KEY,
       outward_id INTEGER REFERENCES outwards(id) ON DELETE CASCADE,
       outward_item_id INTEGER REFERENCES outward_items(id) ON DELETE CASCADE,
+      transfer_id INTEGER REFERENCES transfers(id) ON DELETE CASCADE,
+      transfer_item_id INTEGER REFERENCES transfer_items(id) ON DELETE CASCADE,
       inward_id INTEGER REFERENCES inwards(id) ON DELETE CASCADE,
       inward_item_id INTEGER REFERENCES inward_items(id) ON DELETE CASCADE,
       item_id INTEGER REFERENCES items(id) ON DELETE RESTRICT,

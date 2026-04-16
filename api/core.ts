@@ -428,6 +428,12 @@ async function routeAction(
           return fifoService.getOutwardDeductionsByParty(
             query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id
           );
+        case 'transfer_deductions':
+          return fifoService.getTransferDeductions(Number(query.transfer_id || data.transfer_id));
+        case 'transfer_deductions_by_party':
+          return fifoService.getTransferDeductionsByParty(
+            query.ms_party_id ? Number(query.ms_party_id) : data.ms_party_id
+          );
         default:
           throw new Error(`Unknown operation: ${operation} for fifo`);
       }

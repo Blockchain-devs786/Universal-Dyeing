@@ -1,4 +1,5 @@
 import { getDb } from '../db.js';
+import { fifoService } from './fifo.js';
 
 export interface TransferItem {
   id?: number;
@@ -73,7 +74,12 @@ export const transfersService = {
       WHERE oi.transfer_id = ${id}
     `;
     
-    return { ...rows[0], items };
+    let deductions: any[] = [];
+    if (rows[0]) {
+      deductions = await fifoService.getTransferDeductions(id);
+    }
+    
+    return { ...rows[0], items, deductions };
   },
 
   async create(data: Transfer) {
@@ -114,6 +120,8 @@ export const transfersService = {
         `;
       }
     }
+    
+    await fifoService.processTransferFifo(transferId);
     
     return this.getById(transferId);
   },
@@ -158,12 +166,15 @@ export const transfersService = {
         `;
       }
     }
+    
+    await fifoService.processTransferFifo(id);
 
     return this.getById(id);
   },
 
   async delete(id: number) {
     const sql = getDb();
+    await fifoService.clearTransferDeductions(id);
     await sql`DELETE FROM transfer_items WHERE transfer_id = ${id}`;
     const rows = await sql`DELETE FROM transfers WHERE id = ${id} RETURNING id, transfer_no`;
     if (rows.length === 0) throw new Error('Transfer not found');

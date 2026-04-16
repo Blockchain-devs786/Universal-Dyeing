@@ -747,6 +747,12 @@ export const fifoApi = {
     if (msPartyId) params.ms_party_id = String(msPartyId);
     return coreRequest<Record<number, OutwardDeductionDetail[]>>('fifo.outward_deductions_by_party', {}, params);
   },
+
+  getTransferDeductionsByParty: (msPartyId?: number) => {
+    const params: Record<string, string> = {};
+    if (msPartyId) params.ms_party_id = String(msPartyId);
+    return coreRequest<Record<number, OutwardDeductionDetail[]>>('fifo.transfer_deductions_by_party', {}, params);
+  },
 };
 
 // ─── Health Check ────────────────────────────────────────────────
