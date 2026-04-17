@@ -1,4 +1,6 @@
 import { getDb } from '../db.js';
+import { fifoService } from './fifo.js';
+import { inwardsService } from './inwards.js';
 
 export interface TransferByNameItem {
   id?: number;
@@ -73,7 +75,12 @@ export const transferByNamesService = {
       WHERE oi.tbn_id = ${id}
     `;
     
-    return { ...rows[0], items };
+    let deductions: any[] = [];
+    if (rows[0]) {
+      deductions = await fifoService.getTbnDeductions(id);
+    }
+    
+    return { ...rows[0], items, deductions };
   },
 
   async create(data: TransferByName) {
@@ -117,6 +124,23 @@ export const transferByNamesService = {
           VALUES (${tbnId}, ${item.item_id}, ${item.measurement}, ${item.quantity})
         `;
       }
+    }
+    
+    await fifoService.processTbnFifo(tbnId);
+
+    // Auto-create connected inward record for the receiving party
+    const newInward = await inwardsService.create({
+      ms_party_id: data.transfer_to_party_id,
+      from_party_id: data.from_party_id,
+      date: data.date,
+      reference: tbnNo,
+      vehicle_no: data.vehicle_no,
+      driver_name: data.driver_name,
+      items: data.items,
+    });
+    
+    if (newInward) {
+      await sql`UPDATE inwards SET inward_no = '(TRBN)' || inward_no WHERE id = ${newInward.id}`;
     }
     
     return this.getById(tbnId);
@@ -166,12 +190,34 @@ export const transferByNamesService = {
         `;
       }
     }
+    
+    const tbnRec = await this.getById(id);
+    if (tbnRec) {
+      await fifoService.processTbnFifo(id);
+      
+      const existingInward = await sql`SELECT id FROM inwards WHERE reference = ${tbnRec.tbn_no}`;
+      if (existingInward.length > 0) {
+        await inwardsService.update(existingInward[0].id, {
+          ms_party_id: data.transfer_to_party_id ?? tbnRec.transfer_to_party_id,
+          from_party_id: data.from_party_id ?? tbnRec.from_party_id,
+          date: data.date ?? tbnRec.date,
+          vehicle_no: typeof data.vehicle_no !== 'undefined' ? data.vehicle_no : tbnRec.vehicle_no,
+          driver_name: typeof data.driver_name !== 'undefined' ? data.driver_name : tbnRec.driver_name,
+          items: data.items ?? tbnRec.items,
+        });
+      }
+    }
 
-    return this.getById(id);
+    return tbnRec;
   },
 
   async delete(id: number) {
     const sql = getDb();
+    const tbnRec = await this.getById(id);
+    await fifoService.clearTbnDeductions(id);
+    if (tbnRec) {
+       await sql`DELETE FROM inwards WHERE reference = ${tbnRec.tbn_no}`;
+    }
     await sql`DELETE FROM transfer_bn_items WHERE tbn_id = ${id}`;
     const rows = await sql`DELETE FROM transfer_by_names WHERE id = ${id} RETURNING id, tbn_no`;
     if (rows.length === 0) throw new Error('TransferByName not found');

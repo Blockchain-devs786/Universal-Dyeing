@@ -251,7 +251,7 @@ export const fifoService = {
         ii.measurement,
         ii.quantity as original_qty,
         COALESCE(SUM(CASE WHEN fd.outward_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as outward_qty,
-        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
+        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL OR fd.tbn_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
         COALESCE(SUM(fd.deducted_qty), 0) as total_deducted_qty
       FROM inward_items ii
       JOIN items it ON ii.item_id = it.id
@@ -290,7 +290,7 @@ export const fifoService = {
         ii.measurement,
         ii.quantity as original_qty,
         COALESCE(SUM(CASE WHEN fd.outward_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as outward_qty,
-        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
+        COALESCE(SUM(CASE WHEN fd.transfer_id IS NOT NULL OR fd.tbn_id IS NOT NULL THEN fd.deducted_qty ELSE 0 END), 0) as transfer_qty,
         COALESCE(SUM(fd.deducted_qty), 0) as total_deducted_qty
       FROM inward_items ii
       JOIN items it ON ii.item_id = it.id
@@ -333,8 +333,9 @@ export const fifoService = {
 
     const allOutwards = await sql`SELECT id, date, 'outward' as type FROM outwards`;
     const allTransfers = await sql`SELECT id, date, 'transfer' as type FROM transfers`;
+    const allTbns = await sql`SELECT id, date, 'tbn' as type FROM transfer_by_names`;
     
-    const combined = [...allOutwards, ...allTransfers].sort(
+    const combined = [...allOutwards, ...allTransfers, ...allTbns].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.id - b.id
     );
 
@@ -344,8 +345,11 @@ export const fifoService = {
       if (doc.type === 'outward') {
         const deductions = await this.processOutwardFifo(doc.id);
         totalDeductions += deductions.length;
-      } else {
+      } else if (doc.type === 'transfer') {
         const deductions = await this.processTransferFifo(doc.id);
+        totalDeductions += deductions.length;
+      } else {
+        const deductions = await this.processTbnFifo(doc.id);
         totalDeductions += deductions.length;
       }
     }
@@ -464,6 +468,145 @@ export const fifoService = {
       const transId = r.transfer_id;
       if (!result[transId]) result[transId] = [];
       result[transId].push({
+        ...r,
+        deducted_qty: Number(r.deducted_qty),
+        measurement: Number(r.measurement)
+      } as OutwardDeductionDetail);
+    }
+    return result;
+  },
+
+  async processTbnFifo(tbnId: number) {
+    const sql = getDb();
+
+    const rows = await sql`
+      SELECT id, ms_party_id, date FROM transfer_by_names WHERE id = ${tbnId}
+    `;
+    if (rows.length === 0) return [];
+
+    const tbn = rows[0];
+
+    const tbnItems = await sql`
+      SELECT id as tbn_item_id, item_id, measurement, quantity
+      FROM transfer_bn_items WHERE tbn_id = ${tbnId}
+    `;
+
+    await sql`DELETE FROM fifo_deductions WHERE tbn_id = ${tbnId}`;
+
+    const deductions: FifoDeduction[] = [];
+
+    for (const ti of tbnItems) {
+      let remainingToDeduct = Number(ti.quantity);
+      if (remainingToDeduct <= 0) continue;
+
+      const matchingInwardItems = await sql`
+        SELECT 
+          ii.id as inward_item_id, 
+          ii.inward_id,
+          ii.item_id,
+          ii.measurement,
+          ii.quantity as original_qty,
+          COALESCE(
+            (SELECT SUM(fd.deducted_qty) FROM fifo_deductions fd WHERE fd.inward_item_id = ii.id),
+            0
+          ) as already_deducted
+        FROM inward_items ii
+        JOIN inwards i ON ii.inward_id = i.id
+        WHERE i.ms_party_id = ${tbn.ms_party_id}
+          AND ii.item_id = ${ti.item_id}
+          AND ii.measurement = ${ti.measurement}
+        ORDER BY i.date ASC, i.id ASC
+      `;
+
+      for (const inItem of matchingInwardItems) {
+        if (remainingToDeduct <= 0) break;
+
+        const available = Number(inItem.original_qty) - Number(inItem.already_deducted);
+        if (available <= 0) continue;
+
+        const deductAmount = Math.min(remainingToDeduct, available);
+
+        await sql`
+          INSERT INTO fifo_deductions (
+            tbn_id, tbn_item_id, inward_id, inward_item_id,
+            item_id, measurement, ms_party_id, deducted_qty
+          ) VALUES (
+            ${tbnId}, ${ti.tbn_item_id}, ${inItem.inward_id}, ${inItem.inward_item_id},
+            ${ti.item_id}, ${ti.measurement}, ${tbn.ms_party_id}, ${deductAmount}
+          )
+        `;
+
+        deductions.push({
+          tbn_id: tbnId,
+          tbn_item_id: ti.tbn_item_id,
+          inward_id: inItem.inward_id,
+          inward_item_id: inItem.inward_item_id,
+          item_id: ti.item_id,
+          measurement: ti.measurement,
+          ms_party_id: tbn.ms_party_id,
+          deducted_qty: deductAmount,
+        });
+
+        remainingToDeduct -= deductAmount;
+      }
+    }
+
+    return deductions;
+  },
+
+  async clearTbnDeductions(tbnId: number) {
+    const sql = getDb();
+    await sql`DELETE FROM fifo_deductions WHERE tbn_id = ${tbnId}`;
+  },
+
+  async getTbnDeductions(tbnId: number): Promise<OutwardDeductionDetail[]> {
+    const sql = getDb();
+    const rows = await sql`
+      SELECT 
+        fd.*,
+        i.inward_no,
+        i.gp_no as inward_gp_no,
+        i.ms_party_gp_no as inward_ms_party_gp_no,
+        fp.name as from_party_name,
+        it.name as item_name
+      FROM fifo_deductions fd
+      JOIN inwards i ON fd.inward_id = i.id
+      JOIN items it ON fd.item_id = it.id
+      LEFT JOIN from_parties fp ON i.from_party_id = fp.id
+      WHERE fd.tbn_id = ${tbnId}
+      ORDER BY i.date ASC
+    `;
+    return rows.map(r => ({
+      ...r,
+      deducted_qty: Number(r.deducted_qty),
+      measurement: Number(r.measurement)
+    })) as OutwardDeductionDetail[];
+  },
+
+  async getTbnDeductionsByParty(msPartyId?: number): Promise<Record<number, OutwardDeductionDetail[]>> {
+    const sql = getDb();
+    const rows = await sql`
+      SELECT 
+        fd.*,
+        i.inward_no,
+        i.gp_no as inward_gp_no,
+        i.ms_party_gp_no as inward_ms_party_gp_no,
+        fp.name as from_party_name,
+        it.name as item_name
+      FROM fifo_deductions fd
+      JOIN inwards i ON fd.inward_id = i.id
+      JOIN items it ON fd.item_id = it.id
+      LEFT JOIN from_parties fp ON i.from_party_id = fp.id
+      JOIN transfer_by_names t ON fd.tbn_id = t.id
+      WHERE (${msPartyId || null}::integer IS NULL OR t.ms_party_id = ${msPartyId || null}::integer)
+      ORDER BY i.date ASC
+    `;
+
+    const result: Record<number, OutwardDeductionDetail[]> = {};
+    for (const r of rows) {
+      const tId = r.tbn_id;
+      if (!result[tId]) result[tId] = [];
+      result[tId].push({
         ...r,
         deducted_qty: Number(r.deducted_qty),
         measurement: Number(r.measurement)

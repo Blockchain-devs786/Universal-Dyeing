@@ -280,6 +280,8 @@ export async function initializeDatabase() {
       outward_item_id INTEGER REFERENCES outward_items(id) ON DELETE CASCADE,
       transfer_id INTEGER REFERENCES transfers(id) ON DELETE CASCADE,
       transfer_item_id INTEGER REFERENCES transfer_items(id) ON DELETE CASCADE,
+      tbn_id INTEGER REFERENCES transfer_by_names(id) ON DELETE CASCADE,
+      tbn_item_id INTEGER REFERENCES transfer_bn_items(id) ON DELETE CASCADE,
       inward_id INTEGER REFERENCES inwards(id) ON DELETE CASCADE,
       inward_item_id INTEGER REFERENCES inward_items(id) ON DELETE CASCADE,
       item_id INTEGER REFERENCES items(id) ON DELETE RESTRICT,
