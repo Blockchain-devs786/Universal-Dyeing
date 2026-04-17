@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { invoicesApi, msPartiesApi, type Invoice } from "@/lib/api-client";
+import { invoicesApi, msPartiesApi, accountsApi, type Invoice } from "@/lib/api-client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,12 +62,18 @@ export default function Invoice() {
   const [rate22, setRate22] = useState(0);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [type, setType] = useState<'credit'|'debit'>('credit');
+  const [cashAccountId, setCashAccountId] = useState<string>("");
+  const [invoiceDays, setInvoiceDays] = useState<number | ''>("");
 
   // Edit State
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [editRate15, setEditRate15] = useState(0);
   const [editRate22, setEditRate22] = useState(0);
   const [editDiscountPercent, setEditDiscountPercent] = useState(0);
+  const [editType, setEditType] = useState<'credit'|'debit'>('credit');
+  const [editCashAccountId, setEditCashAccountId] = useState<string>("");
+  const [editInvoiceDays, setEditInvoiceDays] = useState<number | ''>("");
 
   // Queries
   const { data: invoices = [], isLoading, refetch } = useQuery({
@@ -78,6 +84,11 @@ export default function Invoice() {
   const { data: msParties = [] } = useQuery({
     queryKey: ["ms_parties"],
     queryFn: () => msPartiesApi.list(),
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => accountsApi.list(),
   });
 
   const { data: availableOutwards = [], isLoading: isLoadingOutwards } = useQuery({
@@ -125,6 +136,9 @@ export default function Invoice() {
     setRate22(0);
     setDiscountPercent(0);
     setDate(format(new Date(), 'yyyy-MM-dd'));
+    setType('credit');
+    setCashAccountId("");
+    setInvoiceDays("");
   };
 
   // Calculations
@@ -168,6 +182,9 @@ export default function Invoice() {
       total_amount: totalAmount,
       rate_15: rate15,
       rate_22: rate22,
+      type,
+      cash_account_id: type === 'debit' && cashAccountId ? Number(cashAccountId) : undefined,
+      invoice_days: type === 'credit' && invoiceDays ? Number(invoiceDays) : undefined,
       outward_ids: selectedOutwardIds,
       created_by: 'Momin'
     });
@@ -179,6 +196,9 @@ export default function Invoice() {
     setEditRate15(Number(data.rate_15));
     setEditRate22(Number(data.rate_22));
     setEditDiscountPercent(Number(data.discount_percent));
+    setEditType(data.type || 'credit');
+    setEditCashAccountId(data.cash_account_id ? String(data.cash_account_id) : "");
+    setEditInvoiceDays(data.invoice_days !== null && data.invoice_days !== undefined ? Number(data.invoice_days) : "");
     setIsEditOpen(true);
   };
 
@@ -192,6 +212,9 @@ export default function Invoice() {
         sub_total: editSubTotal,
         discount_amount: editDiscountAmount,
         total_amount: editTotalAmount,
+        type: editType,
+        cash_account_id: editType === 'debit' && editCashAccountId ? Number(editCashAccountId) : null,
+        invoice_days: editType === 'credit' && editInvoiceDays ? Number(editInvoiceDays) : null,
         edited_by: 'Momin'
       }
     });
@@ -268,6 +291,7 @@ export default function Invoice() {
                 </TableHead>
                 <TableHead className="whitespace-nowrap">Invoice #</TableHead>
                 <TableHead className="whitespace-nowrap">MS Party</TableHead>
+                <TableHead className="whitespace-nowrap">Type</TableHead>
                 <TableHead className="text-center whitespace-nowrap mobile-hide-column">Items</TableHead>
                 <TableHead className="text-right whitespace-nowrap mobile-hide-column">Discount</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
@@ -289,6 +313,17 @@ export default function Invoice() {
                   </TableCell>
                   <TableCell className="font-bold">{invoice.invoice_no}</TableCell>
                   <TableCell className="font-medium truncate max-w-[120px]">{invoice.ms_party_name}</TableCell>
+                  <TableCell>
+                     {invoice.type === 'debit' ? (
+                       <span className="bg-red-100 text-red-800 text-[10px] uppercase font-bold py-1 px-2 rounded-md">
+                         Debit (Cash)
+                       </span>
+                     ) : (
+                       <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold py-1 px-2 rounded-md">
+                         Credit {invoice.invoice_days ? `(${invoice.invoice_days} Days)` : ''}
+                       </span>
+                     )}
+                  </TableCell>
                   <TableCell className="text-center mobile-hide-column">{invoice.item_count}</TableCell>
                   <TableCell className="text-right text-orange-600 font-medium mobile-hide-column">{Number(invoice.discount_amount).toLocaleString()}</TableCell>
                   <TableCell className="text-right font-black text-blue-600 sm:text-lg">{Number(invoice.total_amount).toLocaleString()}</TableCell>
@@ -358,12 +393,49 @@ export default function Invoice() {
                     </PopoverContent>
                    </Popover>
                 </div>
-                <div className="space-y-2">
-                   <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">2. Invoice Date</Label>
-                   <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-12 bg-slate-50" />
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">2. Invoice Type</Label>
+                    <select 
+                      value={type} 
+                      onChange={e => setType(e.target.value as 'credit' | 'debit')}
+                      className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-slate-50 px-3 py-2 text-sm shadow-inner ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="credit">Credit Invoice</option>
+                      <option value="debit">Cash / Debit Invoice</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">3. Invoice Date</Label>
+                    <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-12 bg-slate-50 shadow-inner" />
+                  </div>
                 </div>
+
+                {type === 'credit' && (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">Invoice Days (Credit)</Label>
+                    <Input type="number" placeholder="Enter days... (e.g. 30)" value={invoiceDays} onChange={e => setInvoiceDays(e.target.value ? parseInt(e.target.value) : '')} className="h-12 bg-slate-50 shadow-inner" />
+                  </div>
+                )}
+
+                {type === 'debit' && (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label className="text-sm font-bold uppercase tracking-widest text-slate-500">Receiving Cash Account</Label>
+                    <select 
+                      value={cashAccountId} 
+                      onChange={e => setCashAccountId(e.target.value)}
+                      className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-slate-50 px-3 py-2 text-sm shadow-inner ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="">Select Cash Account...</option>
+                      {accounts.map((acc: any) => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex justify-end pt-6">
-                   <Button onClick={() => setStep(2)} disabled={msPartyId === "all"} className="px-10 h-12 bg-blue-600 hover:bg-blue-700 shadow-lg font-bold">
+                   <Button onClick={() => setStep(2)} disabled={msPartyId === "all" || (type === "debit" && !cashAccountId)} className="px-10 h-12 bg-blue-600 hover:bg-blue-700 shadow-lg font-bold">
                      Next Step <ChevronRight className="ml-2 h-4 w-4" />
                    </Button>
                 </div>
@@ -518,7 +590,44 @@ export default function Invoice() {
                  <Input type="number" value={editDiscountPercent} onChange={e => setEditDiscountPercent(parseFloat(e.target.value) || 0)} className="h-12 text-xl font-black text-red-600" />
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border flex justify-between items-center shadow-inner">
+              <div className="border-t pt-4 mt-6">
+                <Label className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-2 block">Invoice Type & Terms</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                     <Label className="text-xs font-bold text-slate-400 uppercase">Type</Label>
+                     <select 
+                       value={editType} 
+                       onChange={e => setEditType(e.target.value as 'credit' | 'debit')}
+                       className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm"
+                     >
+                       <option value="credit">Credit</option>
+                       <option value="debit">Debit (Cash)</option>
+                     </select>
+                  </div>
+                  {editType === 'credit' ? (
+                    <div className="space-y-2">
+                       <Label className="text-xs font-bold text-slate-400 uppercase">Invoice Days</Label>
+                       <Input type="number" placeholder="none" value={editInvoiceDays} onChange={e => setEditInvoiceDays(e.target.value ? parseInt(e.target.value) : '')} className="h-12 font-bold" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                       <Label className="text-xs font-bold text-slate-400 uppercase">Cash Account</Label>
+                       <select 
+                         value={editCashAccountId} 
+                         onChange={e => setEditCashAccountId(e.target.value)}
+                         className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm"
+                       >
+                         <option value="">Select Account...</option>
+                         {accounts.map((acc: any) => (
+                           <option key={acc.id} value={acc.id}>{acc.name}</option>
+                         ))}
+                       </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border flex justify-between items-center shadow-inner mt-4">
                  <div className="space-y-1">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">New Total Amount</p>
                     <p className="text-3xl font-black text-slate-900 leading-none">Rs {editTotalAmount.toLocaleString()}</p>

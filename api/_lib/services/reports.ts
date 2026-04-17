@@ -38,6 +38,7 @@ export interface FinancialLedgerRow {
   debit: number;
   credit: number;
   balance?: number;
+  invoice_days?: number | null;
 }
 
 export const reportsService = {
@@ -301,7 +302,7 @@ export const reportsService = {
     // We must query ALL transactions up to `to_date` (or without limit) to safely compute balances up to `from_date`.
     const query = await sql`
       WITH entries AS (
-        -- 1. Invoices (Only for MS Parties)
+        -- 1a. Invoices (Credit/Default) for MS Parties
         SELECT 
           i.date,
           CASE 
@@ -322,12 +323,67 @@ export const reportsService = {
           ), '') as description,
           CASE WHEN ${isMSDyeing} THEN 0 ELSE i.total_amount END as debit,
           CASE WHEN ${isMSDyeing} THEN i.total_amount ELSE 0 END as credit,
-          i.created_at
+          i.created_at,
+          i.invoice_days
         FROM invoices i
         JOIN ms_parties m ON i.ms_party_id = m.id
         WHERE 
           ${account_type} = 'MS Party'
+          AND (i.type = 'credit' OR i.type IS NULL)
           AND (${isMSDyeing} OR i.ms_party_id = ${account_id})
+
+        UNION ALL
+
+        -- 1b. Invoices (Debit) for MS Parties (Customer Only - Credits MS Party)
+        SELECT 
+          i.date,
+          'Acc: ' || a.name as particulars,
+          i.invoice_no as ref_no,
+          'Cash/Debit Invoice' || 
+          COALESCE(CHR(10) || (
+            SELECT 
+              'Outs: ' || STRING_AGG(DISTINCT o.outward_no, ', ')
+            FROM invoice_items ii
+            JOIN outwards o ON ii.outward_id = o.id
+            WHERE ii.invoice_id = i.id
+          ), '') as description,
+          0 as debit,
+          i.total_amount as credit,
+          i.created_at,
+          NULL as invoice_days
+        FROM invoices i
+        JOIN ms_parties m ON i.ms_party_id = m.id
+        LEFT JOIN accounts a ON i.cash_account_id = a.id
+        WHERE 
+          ${account_type} = 'MS Party'
+          AND i.type = 'debit'
+          AND i.ms_party_id = ${account_id}
+
+        UNION ALL
+
+        -- 1c. Invoices (Debit) for Accounts (Cash Account Only - Debits Account)
+        SELECT 
+          i.date,
+          'MS: ' || m.name as particulars,
+          i.invoice_no as ref_no,
+          'Cash Receipt / Debit Invoice' || 
+          COALESCE(CHR(10) || (
+            SELECT 
+              'Outs: ' || STRING_AGG(DISTINCT o.outward_no, ', ')
+            FROM invoice_items ii
+            JOIN outwards o ON ii.outward_id = o.id
+            WHERE ii.invoice_id = i.id
+          ), '') as description,
+          i.total_amount as debit,
+          0 as credit,
+          i.created_at,
+          NULL as invoice_days
+        FROM invoices i
+        JOIN ms_parties m ON i.ms_party_id = m.id
+        WHERE 
+          ${account_type} = 'Account'
+          AND i.type = 'debit'
+          AND i.cash_account_id = ${account_id}
 
         UNION ALL
 
@@ -355,7 +411,8 @@ export const reportsService = {
           ve.description,
           ve.debit,
           ve.credit,
-          v.created_at
+          v.created_at,
+          NULL as invoice_days
         FROM voucher_entries ve
         JOIN vouchers v ON ve.voucher_id = v.id
         WHERE 

@@ -286,6 +286,10 @@ export interface Invoice {
   total_amount: number;
   rate_15: number;
   rate_22: number;
+  type?: 'credit' | 'debit';
+  cash_account_id?: number | null;
+  cash_account_name?: string | null;
+  invoice_days?: number | null;
   status: string;
   created_by?: string;
   edited_by?: string;

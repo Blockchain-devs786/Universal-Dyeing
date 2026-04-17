@@ -11,6 +11,9 @@ export interface Invoice {
   total_amount: number;
   rate_15: number;
   rate_22: number;
+  type?: 'credit' | 'debit';
+  cash_account_id?: number | null;
+  invoice_days?: number | null;
   status?: string;
   created_by?: string;
   edited_by?: string;
@@ -21,10 +24,11 @@ export const invoicesService = {
   async list(search?: string) {
     const sql = getDb();
     const query = sql`
-      SELECT i.*, m.name as ms_party_name,
+      SELECT i.*, m.name as ms_party_name, a.name as cash_account_name,
       (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
       FROM invoices i
       JOIN ms_parties m ON i.ms_party_id = m.id
+      LEFT JOIN accounts a ON i.cash_account_id = a.id
       ${search ? sql`WHERE i.invoice_no ILIKE ${'%' + search + '%'} OR m.name ILIKE ${'%' + search + '%'}` : sql``}
       ORDER BY i.date DESC, i.id DESC
     `;
@@ -34,9 +38,10 @@ export const invoicesService = {
   async getById(id: number) {
     const sql = getDb();
     const rows = await sql`
-      SELECT i.*, m.name as ms_party_name
+      SELECT i.*, m.name as ms_party_name, a.name as cash_account_name
       FROM invoices i
       JOIN ms_parties m ON i.ms_party_id = m.id
+      LEFT JOIN accounts a ON i.cash_account_id = a.id
       WHERE i.id = ${id}
     `;
     if (rows.length === 0) return null;
@@ -98,11 +103,12 @@ export const invoicesService = {
       INSERT INTO invoices (
         invoice_no, ms_party_id, date, sub_total, 
         discount_percent, discount_amount, total_amount, 
-        rate_15, rate_22, created_by
+        rate_15, rate_22, type, cash_account_id, invoice_days, created_by
       ) VALUES (
         ${nextNo}, ${data.ms_party_id}, ${data.date}, ${data.sub_total},
         ${data.discount_percent}, ${data.discount_amount}, ${data.total_amount},
-        ${data.rate_15}, ${data.rate_22}, ${data.created_by || 'system'}
+        ${data.rate_15}, ${data.rate_22}, ${data.type || 'credit'}, 
+        ${data.cash_account_id || null}, ${data.invoice_days || null}, ${data.created_by || 'system'}
       ) RETURNING *
     `;
 
@@ -112,10 +118,16 @@ export const invoicesService = {
     }
 
     // --- ACCCOUNTING ENTRIES ---
-    // 1. Debit the customer (MS Party)
-    await sql`UPDATE ms_parties SET debit = debit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
-    // 2. Credit the factory (Dyeing MS Party)
-    await sql`UPDATE ms_parties SET credit = credit + ${data.total_amount} WHERE id = ${dyeingParty.id}`;
+    if (data.type === 'debit' && data.cash_account_id) {
+       // MS Party gets Credit 
+       await sql`UPDATE ms_parties SET credit = credit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
+       // Cash Account gets Debit (balance calculation)
+       await sql`UPDATE accounts SET balance = balance + ${data.total_amount} WHERE id = ${data.cash_account_id}`;
+    } else {
+       // Standard Credit Invoice
+       await sql`UPDATE ms_parties SET debit = debit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
+       await sql`UPDATE ms_parties SET credit = credit + ${data.total_amount} WHERE id = ${dyeingParty.id}`;
+    }
 
     return this.getById(invoice.id);
   },
@@ -125,6 +137,17 @@ export const invoicesService = {
     const old = await this.getById(id);
     if (!old) throw new Error('Invoice not found');
     
+    // 1. REVERSE OLD ACCOUNTING
+    const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
+    if (old.type === 'debit' && old.cash_account_id) {
+       await sql`UPDATE ms_parties SET credit = credit - ${old.total_amount} WHERE id = ${old.ms_party_id}`;
+       await sql`UPDATE accounts SET balance = balance - ${old.total_amount} WHERE id = ${old.cash_account_id}`;
+    } else {
+       await sql`UPDATE ms_parties SET debit = debit - ${old.total_amount} WHERE id = ${old.ms_party_id}`;
+       if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${old.total_amount} WHERE id = ${dyeingParty.id}`;
+    }
+
+    // 2. UPDATE RECORD
     const [invoice] = await sql`
       UPDATE invoices SET
         sub_total = COALESCE(${data.sub_total ?? null}, sub_total),
@@ -133,18 +156,22 @@ export const invoicesService = {
         total_amount = COALESCE(${data.total_amount ?? null}, total_amount),
         rate_15 = COALESCE(${data.rate_15 ?? null}, rate_15),
         rate_22 = COALESCE(${data.rate_22 ?? null}, rate_22),
+        type = COALESCE(${data.type ?? null}, type),
+        cash_account_id = ${data.cash_account_id !== undefined ? data.cash_account_id : sql`cash_account_id`},
+        invoice_days = ${data.invoice_days !== undefined ? data.invoice_days : sql`invoice_days`},
         edited_by = ${data.edited_by || 'system'},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
 
-    // Update balances if amount changed
-    if (data.total_amount !== undefined && data.total_amount !== old.total_amount) {
-        const diff = data.total_amount - old.total_amount;
-        const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
-        await sql`UPDATE ms_parties SET debit = debit + ${diff} WHERE id = ${old.ms_party_id}`;
-        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit + ${diff} WHERE id = ${dyeingParty.id}`;
+    // 3. APPLY NEW ACCOUNTING
+    if (invoice.type === 'debit' && invoice.cash_account_id) {
+       await sql`UPDATE ms_parties SET credit = credit + ${invoice.total_amount} WHERE id = ${invoice.ms_party_id}`;
+       await sql`UPDATE accounts SET balance = balance + ${invoice.total_amount} WHERE id = ${invoice.cash_account_id}`;
+    } else {
+       await sql`UPDATE ms_parties SET debit = debit + ${invoice.total_amount} WHERE id = ${invoice.ms_party_id}`;
+       if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit + ${invoice.total_amount} WHERE id = ${dyeingParty.id}`;
     }
 
     return this.getById(id);
@@ -152,13 +179,18 @@ export const invoicesService = {
 
   async delete(id: number) {
     const sql = getDb();
-    const invoice = await sql`SELECT ms_party_id, total_amount FROM invoices WHERE id = ${id}`;
-    if (invoice.length > 0) {
-        const { ms_party_id, total_amount } = invoice[0];
+    const invoiceRow = await sql`SELECT ms_party_id, total_amount, type, cash_account_id FROM invoices WHERE id = ${id}`;
+    if (invoiceRow.length > 0) {
+        const { ms_party_id, total_amount, type, cash_account_id } = invoiceRow[0];
         const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
-        // Reverse
-        await sql`UPDATE ms_parties SET debit = debit - ${total_amount} WHERE id = ${ms_party_id}`;
-        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${dyeingParty.id}`;
+        
+        if (type === 'debit' && cash_account_id) {
+           await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${ms_party_id}`;
+           await sql`UPDATE accounts SET balance = balance - ${total_amount} WHERE id = ${cash_account_id}`;
+        } else {
+           await sql`UPDATE ms_parties SET debit = debit - ${total_amount} WHERE id = ${ms_party_id}`;
+           if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${dyeingParty.id}`;
+        }
     }
 
     // invoice_items will be deleted automatically due to ON DELETE CASCADE

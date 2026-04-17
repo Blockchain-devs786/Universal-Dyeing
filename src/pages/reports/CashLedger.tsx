@@ -330,6 +330,7 @@ export default function CashLedger() {
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider w-[100px] whitespace-nowrap print:text-black print:font-bold">Date</TableHead>
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap print:text-black print:font-bold">Particulars</TableHead>
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap mobile-hide-column print:text-black print:font-bold">Invoice/Voucher</TableHead>
+                  <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap mobile-hide-column print:text-black print:font-bold">Days</TableHead>
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider whitespace-nowrap mobile-hide-column print:text-black print:font-bold">Description</TableHead>
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right whitespace-nowrap print:text-black print:font-bold">Debit</TableHead>
                   <TableHead className="text-white text-[10px] font-black uppercase tracking-wider text-right whitespace-nowrap print:text-black print:font-bold">Credit</TableHead>
@@ -351,6 +352,7 @@ export default function CashLedger() {
                         </TableCell>
                         <TableCell className="font-bold text-slate-900 uppercase text-[10px] sm:text-xs print:py-2">{row.particulars}</TableCell>
                         <TableCell className="font-bold text-blue-600 text-[10px] sm:text-xs mobile-hide-column print:py-2">{row.ref_no}</TableCell>
+                        <TableCell className="text-center font-bold text-slate-500 text-[10px] sm:text-xs mobile-hide-column print:py-2">{row.invoice_days || '-'}</TableCell>
                         <TableCell className="text-slate-500 text-[10px] sm:text-xs min-w-[200px] whitespace-pre-wrap mobile-hide-column print:whitespace-normal print:py-2">{row.description}</TableCell>
                         <TableCell className="text-right font-bold text-blue-700 text-[10px] sm:text-sm print:py-2">
                             {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
@@ -419,6 +421,7 @@ export default function CashLedger() {
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Date</th>
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Particulars</th>
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Invoice/Voucher</th>
+                <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'center' }}>Days</th>
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'left' }}>Description</th>
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'right' }}>Debit (PKR)</th>
                 <th style={{ border: '1px solid #e2e8f0', padding: '10px 10px', textAlign: 'right' }}>Credit (PKR)</th>
@@ -431,6 +434,7 @@ export default function CashLedger() {
                   <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#475569' }}>{row.date ? format(new Date(row.date), 'yyyy-MM-dd') : 'N/A'}</td>
                   <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', fontWeight: '600', textTransform: 'uppercase' }}>{row.particulars}</td>
                   <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#2563eb' }}>{row.ref_no}</td>
+                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'center', color: '#64748b' }}>{row.invoice_days || '-'}</td>
                   <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', color: '#64748b', whiteSpace: 'pre-wrap' }}>{row.description}</td>
                   <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#1d4ed8', fontWeight: '600' }}>
                     {(row.debit || 0) > 0 ? (row.debit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "-"}
@@ -444,7 +448,7 @@ export default function CashLedger() {
                 </tr>
               ))}
               <tr style={{ background: '#f1f5f9', fontWeight: '700' }}>
-                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px' }} colSpan={4}>TOTALS</td>
+                <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px' }} colSpan={5}>TOTALS</td>
                 <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#1d4ed8' }}>{totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                 <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right', color: '#dc2626' }}>{totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                 <td style={{ border: '1px solid #e2e8f0', padding: '8px 10px', textAlign: 'right' }}>{finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
