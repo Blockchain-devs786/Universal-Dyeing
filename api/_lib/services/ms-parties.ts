@@ -20,9 +20,14 @@ async function logActivity(entityType: string, entityId: number | null, action: 
 export const msPartiesService = {
   async list(search?: string, status?: string) {
     const sql = getDb();
+    const baseQuery = sql`
+      SELECT *, (opening_balance + debit - credit) as balance
+      FROM ms_parties
+    `;
+
     if (search && status) {
       return sql`
-        SELECT * FROM ms_parties 
+        ${baseQuery}
         WHERE (name ILIKE ${'%' + search + '%'} OR city ILIKE ${'%' + search + '%'})
         AND status = ${status}
         ORDER BY name ASC
@@ -30,15 +35,19 @@ export const msPartiesService = {
     }
     if (search) {
       return sql`
-        SELECT * FROM ms_parties 
+        ${baseQuery}
         WHERE name ILIKE ${'%' + search + '%'} OR city ILIKE ${'%' + search + '%'}
         ORDER BY name ASC
       `;
     }
     if (status) {
-      return sql`SELECT * FROM ms_parties WHERE status = ${status} ORDER BY name ASC`;
+      return sql`
+        ${baseQuery}
+        WHERE status = ${status} 
+        ORDER BY name ASC
+      `;
     }
-    return sql`SELECT * FROM ms_parties ORDER BY name ASC`;
+    return sql`${baseQuery} ORDER BY name ASC`;
   },
 
   async getById(id: number) {

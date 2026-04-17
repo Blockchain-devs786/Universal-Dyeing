@@ -123,6 +123,15 @@ export const vouchersService = {
         `;
         break;
       }
+      case 'Expense':
+        await db`
+          UPDATE expenses SET 
+            debit = debit + ${debit}, 
+            credit = credit + ${credit},
+            updated_at = NOW()
+          WHERE id = ${entry.account_id}
+        `;
+        break;
       // Expenses usually don't track a running balance in this simple schema, 
       // but we record them in voucher_entries for reports.
     }

@@ -326,11 +326,11 @@ export default function MsParties() {
                   <TableCell className="text-muted-foreground whitespace-nowrap">{party.phone || "-"}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{party.city || "-"}</TableCell>
                   <TableCell className="text-right font-medium whitespace-nowrap mobile-hide-column">
-                    <span className={Number(party.opening_balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
-                      Rs {Math.abs(Number(party.opening_balance || 0)).toLocaleString()}
+                    <span className={Number(party.balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
+                      Rs {Math.abs(Number(party.balance || 0)).toLocaleString()}
                     </span>
                     <span className="text-[10px] ml-1 font-bold text-slate-400">
-                      {Number(party.opening_balance || 0) < 0 ? "Cr" : "Dr"}
+                      {Number(party.balance || 0) < 0 ? "Cr" : "Dr"}
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-medium whitespace-nowrap">

@@ -26,6 +26,7 @@ export interface MsParty {
   opening_balance?: number;
   debit?: number;
   credit?: number;
+  balance?: number;
   status: string;
   rate_15?: number;
   rate_22?: number;
@@ -57,6 +58,7 @@ export interface Supplier {
   opening_balance?: number;
   debit?: number;
   credit?: number;
+  balance?: number;
   status: string;
   created_at: string;
   updated_at: string;
@@ -246,6 +248,9 @@ export interface Expense {
   address?: string;
   city?: string;
   opening_balance?: number;
+  debit?: number;
+  credit?: number;
+  balance?: number;
   status: string;
   created_at?: string;
   updated_at?: string;

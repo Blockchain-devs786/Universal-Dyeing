@@ -297,11 +297,11 @@ export default function Suppliers() {
                   <TableCell className="text-muted-foreground whitespace-nowrap">{supplier.phone || "-"}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{supplier.city || "-"}</TableCell>
                   <TableCell className="text-right font-medium whitespace-nowrap">
-                    <span className={Number(supplier.opening_balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
-                      Rs {Math.abs(Number(supplier.opening_balance || 0)).toLocaleString()}
+                    <span className={Number(supplier.balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
+                      Rs {Math.abs(Number(supplier.balance || 0)).toLocaleString()}
                     </span>
                     <span className="text-[10px] ml-1 font-bold text-slate-400">
-                      {Number(supplier.opening_balance || 0) < 0 ? "Cr" : "Dr"}
+                      {Number(supplier.balance || 0) < 0 ? "Cr" : "Dr"}
                     </span>
                   </TableCell>
                   <TableCell className="text-center mobile-hide-column">

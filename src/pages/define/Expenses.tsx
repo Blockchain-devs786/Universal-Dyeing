@@ -276,7 +276,7 @@ export default function Expenses() {
                 <TableHead className="whitespace-nowrap">Name</TableHead>
                 <TableHead className="whitespace-nowrap">Contact</TableHead>
                 <TableHead className="whitespace-nowrap mobile-hide-column">City</TableHead>
-                <TableHead className="text-right whitespace-nowrap">Opening Balance</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
                 <TableHead className="text-center whitespace-nowrap mobile-hide-column">Status</TableHead>
                 <TableHead className="text-center whitespace-nowrap">Actions</TableHead>
               </TableRow>
@@ -297,11 +297,11 @@ export default function Expenses() {
                     <TableCell className="text-muted-foreground whitespace-nowrap">{expense.phone || "-"}</TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap mobile-hide-column">{expense.city || "-"}</TableCell>
                     <TableCell className="text-right font-medium whitespace-nowrap">
-                      <span className={Number(expense.opening_balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
-                        Rs {Math.abs(Number(expense.opening_balance || 0)).toLocaleString()}
+                      <span className={Number(expense.balance || 0) < 0 ? "text-red-600" : "text-emerald-600"}>
+                        Rs {Math.abs(Number(expense.balance || 0)).toLocaleString()}
                       </span>
                       <span className="text-[10px] ml-1 font-bold text-slate-400">
-                        {Number(expense.opening_balance || 0) < 0 ? "Cr" : "Dr"}
+                        {Number(expense.balance || 0) < 0 ? "Cr" : "Dr"}
                       </span>
                     </TableCell>
                     <TableCell className="text-center mobile-hide-column">
