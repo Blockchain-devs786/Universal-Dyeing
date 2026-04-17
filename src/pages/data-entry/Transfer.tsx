@@ -287,13 +287,14 @@ export default function TransferPage() {
   };
 
   const handleItemChange = (index: number, field: keyof TransferItem, value: any) => {
-    const newItems = [...formData.items];
-    (newItems[index] as any)[field] = value;
-    
-    if (field === 'item_id' || field === 'measurement') {
-      newItems[index].quantity = 0;
-    }
-    
+    const newItems = formData.items.map((item, i) => {
+      if (i !== index) return item;
+      const updated = { ...item, [field]: value };
+      if (field === 'item_id' || field === 'measurement') {
+        updated.quantity = 0;
+      }
+      return updated;
+    });
     setFormData({ ...formData, items: newItems });
   };
 
@@ -945,9 +946,7 @@ export default function TransferPage() {
                             value={item.quantity === 0 && !editingTransfer ? '' : item.quantity} 
                             onChange={(e) => {
                               const val = e.target.value.replace(/-/g, '');
-                              const parsed = parseFloat(val) || 0;
-                              const maxAllowed = item.item_id ? getAvailableStock(item.item_id, item.measurement, 0) : 0;
-                              handleItemChange(idx, 'quantity', Math.min(parsed, maxAllowed));
+                              handleItemChange(idx, 'quantity', parseFloat(val) || 0);
                             }}
                             onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
                             className="border bg-transparent text-right pr-2"
