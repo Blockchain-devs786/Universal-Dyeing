@@ -301,17 +301,22 @@ export default function OutwardPage() {
   const handleItemChange = (index: number, field: keyof OutwardItem, value: any) => {
     const newItems = [...formData.items];
     (newItems[index] as any)[field] = value;
+    
+    if (field === 'item_id' || field === 'measurement') {
+      newItems[index].quantity = 0;
+    }
+    
     setFormData({ ...formData, items: newItems });
   };
 
   const getAvailableStock = (itemId: number, measurement: number) => {
     const stockRec = currentPartyStocks.find(s => s.item_id === itemId && s.msr === measurement);
-    let stock = stockRec ? stockRec.remaining : 0;
+    let stock = stockRec ? Number(stockRec.remaining) : 0;
     
     if (editingOutward && editingOutward.items) {
       const originalItem = editingOutward.items.find(i => i.item_id === itemId && i.measurement === measurement);
       if (originalItem) {
-        stock += originalItem.quantity;
+        stock += Number(originalItem.quantity);
       }
     }
     return stock;
