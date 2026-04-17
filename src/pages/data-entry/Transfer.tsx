@@ -945,7 +945,9 @@ export default function TransferPage() {
                             value={item.quantity === 0 && !editingTransfer ? '' : item.quantity} 
                             onChange={(e) => {
                               const val = e.target.value.replace(/-/g, '');
-                              handleItemChange(idx, 'quantity', parseFloat(val) || 0);
+                              const parsed = parseFloat(val) || 0;
+                              const maxAllowed = item.item_id ? getAvailableStock(item.item_id, item.measurement, 0) : 0;
+                              handleItemChange(idx, 'quantity', Math.min(parsed, maxAllowed));
                             }}
                             onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
                             className="border bg-transparent text-right pr-2"
