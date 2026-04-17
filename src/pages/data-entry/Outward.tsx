@@ -205,11 +205,13 @@ export default function OutwardPage() {
   // Handlers
   const handlePrintSelected = async () => {
     if (selectedRows.size === 0) return;
+    const includeRefs = window.confirm("Include Inward FIFO references in the print layout?");
     setIsPrinting(true);
     try {
       const documentsToPrint = [];
       for (const id of Array.from(selectedRows)) {
         const fullDoc = await outwardsApi.getById(id);
+        if (!includeRefs) fullDoc.deductions = [];
         documentsToPrint.push(fullDoc);
       }
       generateAndPrintHTML('outward', documentsToPrint);
@@ -222,9 +224,11 @@ export default function OutwardPage() {
   };
 
   const handlePrintSingle = async (id: number) => {
+    const includeRefs = window.confirm("Include Inward FIFO references in the print layout?");
     setIsPrinting(true);
     try {
       const fullDoc = await outwardsApi.getById(id);
+      if (!includeRefs) fullDoc.deductions = [];
       generateAndPrintHTML('outward', [fullDoc]);
     } catch (err) {
       toast.error("Failed to generate print document");
