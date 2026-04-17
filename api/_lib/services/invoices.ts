@@ -122,7 +122,7 @@ export const invoicesService = {
        // MS Party gets Credit 
        await sql`UPDATE ms_parties SET credit = credit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
        // Cash Account gets Debit (balance calculation)
-       await sql`UPDATE accounts SET balance = balance + ${data.total_amount} WHERE id = ${data.cash_account_id}`;
+       await sql`UPDATE accounts SET current_balance = current_balance + ${data.total_amount} WHERE id = ${data.cash_account_id}`;
     } else {
        // Standard Credit Invoice
        await sql`UPDATE ms_parties SET debit = debit + ${data.total_amount} WHERE id = ${data.ms_party_id}`;
@@ -141,7 +141,7 @@ export const invoicesService = {
     const [dyeingParty] = await sql`SELECT id FROM ms_parties WHERE LOWER(name) = 'dyeing'`;
     if (old.type === 'debit' && old.cash_account_id) {
        await sql`UPDATE ms_parties SET credit = credit - ${old.total_amount} WHERE id = ${old.ms_party_id}`;
-       await sql`UPDATE accounts SET balance = balance - ${old.total_amount} WHERE id = ${old.cash_account_id}`;
+       await sql`UPDATE accounts SET current_balance = current_balance - ${old.total_amount} WHERE id = ${old.cash_account_id}`;
     } else {
        await sql`UPDATE ms_parties SET debit = debit - ${old.total_amount} WHERE id = ${old.ms_party_id}`;
        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${old.total_amount} WHERE id = ${dyeingParty.id}`;
@@ -168,7 +168,7 @@ export const invoicesService = {
     // 3. APPLY NEW ACCOUNTING
     if (invoice.type === 'debit' && invoice.cash_account_id) {
        await sql`UPDATE ms_parties SET credit = credit + ${invoice.total_amount} WHERE id = ${invoice.ms_party_id}`;
-       await sql`UPDATE accounts SET balance = balance + ${invoice.total_amount} WHERE id = ${invoice.cash_account_id}`;
+       await sql`UPDATE accounts SET current_balance = current_balance + ${invoice.total_amount} WHERE id = ${invoice.cash_account_id}`;
     } else {
        await sql`UPDATE ms_parties SET debit = debit + ${invoice.total_amount} WHERE id = ${invoice.ms_party_id}`;
        if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit + ${invoice.total_amount} WHERE id = ${dyeingParty.id}`;
@@ -186,7 +186,7 @@ export const invoicesService = {
         
         if (type === 'debit' && cash_account_id) {
            await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${ms_party_id}`;
-           await sql`UPDATE accounts SET balance = balance - ${total_amount} WHERE id = ${cash_account_id}`;
+           await sql`UPDATE accounts SET current_balance = current_balance - ${total_amount} WHERE id = ${cash_account_id}`;
         } else {
            await sql`UPDATE ms_parties SET debit = debit - ${total_amount} WHERE id = ${ms_party_id}`;
            if (dyeingParty) await sql`UPDATE ms_parties SET credit = credit - ${total_amount} WHERE id = ${dyeingParty.id}`;
