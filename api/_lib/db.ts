@@ -349,6 +349,16 @@ export async function initializeDatabase() {
     )
   `;
 
+  // Safety migrations for fifo_deductions (production DB may have old schema)
+  try {
+    await db`ALTER TABLE fifo_deductions ADD COLUMN IF NOT EXISTS transfer_id INTEGER REFERENCES transfers(id) ON DELETE CASCADE`;
+    await db`ALTER TABLE fifo_deductions ADD COLUMN IF NOT EXISTS transfer_item_id INTEGER REFERENCES transfer_items(id) ON DELETE CASCADE`;
+    await db`ALTER TABLE fifo_deductions ADD COLUMN IF NOT EXISTS tbn_id INTEGER REFERENCES transfer_by_names(id) ON DELETE CASCADE`;
+    await db`ALTER TABLE fifo_deductions ADD COLUMN IF NOT EXISTS tbn_item_id INTEGER REFERENCES transfer_bn_items(id) ON DELETE CASCADE`;
+  } catch (err) {
+    console.error("Migration error for fifo_deductions:", err);
+  }
+
   // Activity log table
   await db`
     CREATE TABLE IF NOT EXISTS activity_log (
@@ -385,6 +395,15 @@ export async function initializeDatabase() {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Safety migrations for invoices (production DB may have old schema)
+  try {
+    await db`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'credit'`;
+    await db`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cash_account_id INTEGER REFERENCES accounts(id) ON DELETE RESTRICT`;
+    await db`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_days INTEGER`;
+  } catch (err) {
+    console.error("Migration error for invoices:", err);
+  }
 
   // Invoice Items table (linking to outwards)
   await db`
