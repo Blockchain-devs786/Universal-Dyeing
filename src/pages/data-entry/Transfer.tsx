@@ -297,17 +297,17 @@ export default function TransferPage() {
     setFormData({ ...formData, items: newItems });
   };
 
-  const getAvailableStock = (itemId: number, measurement: number) => {
+  const getAvailableStock = (itemId: number, measurement: number, currentFormQty: number = 0) => {
     const stockRec = currentPartyStocks.find(s => s.item_id === itemId && s.msr === measurement);
-    let stock = stockRec ? Number(stockRec.remaining) : 0;
+    let maxPool = stockRec ? Number(stockRec.remaining) : 0;
     
     if (editingTransfer && editingTransfer.items) {
       const originalItem = editingTransfer.items.find(i => i.item_id === itemId && i.measurement === measurement);
       if (originalItem) {
-        stock += Number(originalItem.quantity);
+        maxPool += Number(originalItem.quantity);
       }
     }
-    return stock;
+    return maxPool - Number(currentFormQty);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -323,11 +323,13 @@ export default function TransferPage() {
     for (let i = 0; i < formData.items.length; i++) {
       const item = formData.items[i];
       if (!item.item_id) return toast.error(`Item name is required for row ${i + 1}`);
+      const available = getAvailableStock(item.item_id, item.measurement, item.quantity);
+      if (item.quantity <= 0 && available <= 0) {
+        return toast.error(`Row ${i + 1}: Both quantity and available stock are 0. Remove this row or select a different item.`);
+      }
       if (item.quantity <= 0) return toast.error(`Quantity must be greater than 0 for row ${i + 1}`);
-      
-      const available = getAvailableStock(item.item_id, item.measurement);
-      if (item.quantity > available) {
-        return toast.error(`Row ${i + 1}: Transfer quantity (${item.quantity}) exceeds available stock (${available})`);
+      if (available < 0) {
+        return toast.error(`Row ${i + 1}: Transfer quantity (${item.quantity}) exceeds available stock.`);
       }
 
       const key = `${item.item_id}-${item.measurement}`;
@@ -895,7 +897,7 @@ export default function TransferPage() {
                   </div>
 
                   {formData.items.map((item, idx) => {
-                    const availableStock = item.item_id ? getAvailableStock(item.item_id, item.measurement) : 0;
+                    const availableStock = item.item_id ? getAvailableStock(item.item_id, item.measurement, item.quantity) : 0;
                     return (
                       <div key={idx} className="grid grid-cols-12 gap-2 sm:gap-3 items-center bg-white p-2 rounded-lg border border-blue-50 shadow-sm relative">
                         <div className="col-span-12 sm:col-span-4">
@@ -930,8 +932,8 @@ export default function TransferPage() {
                         </div>
 
                         <div className="col-span-3 sm:col-span-2 text-center flex items-center justify-center">
-                          <span className="font-semibold text-blue-600 bg-blue-50 py-1 px-3 rounded-md w-full text-sm">
-                            {item.item_id ? availableStock : "-"}
+                          <span className={`font-semibold py-1 px-3 rounded-md w-full text-sm ${item.item_id && availableStock <= 0 ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50'}`}>
+                            {item.item_id ? availableStock.toFixed(2) : "-"}
                           </span>
                         </div>
 
@@ -941,7 +943,11 @@ export default function TransferPage() {
                             min="0"
                             step="0.001"
                             value={item.quantity === 0 && !editingTransfer ? '' : item.quantity} 
-                            onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/-/g, '');
+                              handleItemChange(idx, 'quantity', parseFloat(val) || 0);
+                            }}
+                            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
                             className="border bg-transparent text-right pr-2"
                             placeholder="Qty..."
                           />
