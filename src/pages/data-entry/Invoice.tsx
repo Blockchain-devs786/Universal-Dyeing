@@ -53,6 +53,12 @@ export default function Invoice() {
   const [selectedInvoicesForPrint, setSelectedInvoicesForPrint] = useState<any[]>([]);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<number[]>([]);
 
+  // Get current user
+  const currentUser = useMemo(() => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : { username: 'System' };
+  }, []);
+
   // Form State for Creation
   const [step, setStep] = useState(1);
   const [msPartyId, setMsPartyId] = useState<string>("all");
@@ -186,7 +192,7 @@ export default function Invoice() {
       cash_account_id: type === 'debit' && cashAccountId ? Number(cashAccountId) : undefined,
       invoice_days: type === 'credit' && invoiceDays ? Number(invoiceDays) : undefined,
       outward_ids: selectedOutwardIds,
-      created_by: 'Momin'
+      created_by: currentUser.username
     });
   };
 
@@ -215,7 +221,7 @@ export default function Invoice() {
         type: editType,
         cash_account_id: editType === 'debit' && editCashAccountId ? Number(editCashAccountId) : null,
         invoice_days: editType === 'credit' && editInvoiceDays ? Number(editInvoiceDays) : null,
-        edited_by: 'Momin'
+        edited_by: currentUser.username
       }
     });
   };
@@ -657,12 +663,7 @@ export default function Invoice() {
             )}>
               <div className="w-[195mm] min-h-[280mm] border-[2px] border-slate-200 rounded-xl relative font-sans box-border flex flex-col bg-white overflow-hidden shadow-sm">
                 
-                {/* Background Watermark Layer */}
-                <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
-                   <img src="/logo.png" className="w-[80%] max-w-[500px] object-contain" alt="Watermark" />
-                </div>
-
-                <div className="p-8 flex flex-col flex-1 relative z-10 h-full">
+                <div className="p-8 flex flex-col flex-1 relative z-10 h-full bg-transparent">
                   {/* Header */}
                   <div className="text-center space-y-4 mb-8">
                      <h1 className="text-3xl font-black tracking-tighter text-blue-900 uppercase pt-2">
@@ -798,6 +799,11 @@ export default function Invoice() {
                    <p className="text-[10.5px] font-black uppercase text-center tracking-widest text-slate-400 mt-2">
                       Branches: <span className="text-white font-medium ml-2">100/2 and 150/2, quality yarn</span>
                    </p>
+                </div>
+
+                {/* Background Watermark Layer (Now on top of everything) */}
+                <div className="absolute inset-0 z-50 flex items-center justify-center opacity-[0.05] pointer-events-none select-none">
+                   <img src="/logo.png" className="w-[80%] max-w-[500px] object-contain" alt="Watermark" />
                 </div>
 
               </div>

@@ -47,6 +47,12 @@ import { cn } from "@/lib/utils";
 
 export default function Inward() {
   const queryClient = useQueryClient();
+  
+  // Get current user
+  const currentUser = useMemo(() => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : { username: 'System' };
+  }, []);
 
   // Filters State
   const [filterMsPartyId, setFilterMsPartyId] = useState<string>("all");
@@ -301,7 +307,7 @@ export default function Inward() {
       driver_name: formData.driver_name,
       date: formData.date,
       ms_party_gp_no: formData.ms_party_gp_no,
-      created_by: JSON.parse(localStorage.getItem("user") || "{}").username || "Mehmood",
+      created_by: currentUser.username,
       status: "active",
       items: formData.items.map(item => ({
         item_id: Number(item.item_id),
