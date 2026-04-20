@@ -652,109 +652,154 @@ export default function Invoice() {
       <div id="invoice-print" className="hidden print:block bg-white text-black p-0">
           {selectedInvoicesForPrint.map((invoice, idx) => (
             <div key={invoice.id} className={cn(
-               "w-[210mm] mx-auto box-border bg-white mb-20",
+               "w-[210mm] min-h-[297mm] mx-auto box-border bg-transparent mb-10 flex flex-col items-center py-4 relative",
                idx < selectedInvoicesForPrint.length - 1 && "page-break-after-always"
             )}>
-              <div className="w-[195mm] mx-auto border-[4px] border-blue-600 rounded-xl p-8 relative font-sans box-border flex flex-col">
-                {/* Logo Area */}
-                <div className="absolute top-12 right-12 w-32 h-32 opacity-90 rotate-12">
-                   <img src="/logo.png" className="w-full" />
+              <div className="w-[195mm] min-h-[280mm] border-[2px] border-slate-200 rounded-xl relative font-sans box-border flex flex-col bg-white overflow-hidden shadow-sm">
+                
+                {/* Background Watermark Layer */}
+                <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
+                   <img src="/logo.png" className="w-[80%] max-w-[500px] object-contain" alt="Watermark" />
                 </div>
 
-                {/* Header */}
-                <div className="text-center space-y-4 mb-10 relative z-10">
-                   <h1 className="text-4xl font-black tracking-tighter text-blue-700 uppercase">MOMINA LACE DYEING</h1>
-                   <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Owner: GHULAM MUSTAFA</p>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">GM : Shahid, Naveed</p>
-                   </div>
-                   <h2 className="inline-block text-xl font-black border-b-2 border-red-600 text-red-600 px-6 py-0.5 mx-auto uppercase mt-2">INVOICE</h2>
-                </div>
+                <div className="p-8 flex flex-col flex-1 relative z-10 h-full">
+                  {/* Header */}
+                  <div className="text-center space-y-4 mb-8">
+                     <h1 className="text-3xl font-black tracking-tighter text-blue-900 uppercase pt-2">
+                       Momina lace Dyeing & Universal Dyeing
+                     </h1>
+                     <div className="space-y-1">
+                        <p className="text-sm font-bold text-slate-800 uppercase tracking-widest">
+                          GHULAM MUSTAFA <span className="text-slate-300 mx-2">|</span> Shahid, Naveed
+                        </p>
+                        <div className="text-xs font-bold text-slate-600 tracking-wider flex justify-center gap-4 flex-wrap mt-2">
+                          <span className="text-slate-400">Contact #:</span>
+                          <span>0321-7651815</span>
+                          <span>0300-8651815</span>
+                          <span>0304-6166663</span>
+                          <span>0300-5479191</span>
+                        </div>
+                     </div>
+                     <div className="mt-4">
+                       <h2 className="inline-block text-xl font-black bg-blue-50 border-2 border-blue-600 text-blue-800 px-8 py-1 rounded-full uppercase shadow-sm tracking-widest">
+                         INVOICE
+                       </h2>
+                     </div>
+                  </div>
 
-                {/* Meta Grid */}
-                <div className="grid grid-cols-2 gap-x-20 mb-8 px-10">
-                   <div className="space-y-2">
-                      <div className="grid grid-cols-[100px_1fr] items-center">
-                         <span className="text-[10px] font-black text-blue-700 uppercase">Invoice #:</span>
-                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.invoice_no}</span>
-                      </div>
-                      <div className="grid grid-cols-[100px_1fr] items-center">
-                         <span className="text-[10px] font-black text-blue-700 uppercase">MS Party:</span>
-                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.ms_party_name}</span>
-                      </div>
-                      <div className="grid grid-cols-[100px_1fr] items-center">
-                         <span className="text-[10px] font-black text-blue-700 uppercase">Date:</span>
-                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">
-                           {invoice.date ? format(new Date(invoice.date), 'yyyy-MM-dd') : ''}
-                         </span>
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <div className="grid grid-cols-[100px_1fr] items-center">
-                         <span className="text-[10px] font-black text-blue-700 uppercase">Created By:</span>
-                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.created_by || 'momin'}</span>
-                      </div>
-                      <div className="grid grid-cols-[100px_1fr] items-center">
-                         <span className="text-[10px] font-black text-blue-700 uppercase">Edited By:</span>
-                         <span className="text-sm font-bold border-b border-slate-900 pb-0.5">{invoice.edited_by || 'None'}</span>
-                      </div>
-                   </div>
-                </div>
+                  {/* Meta Bar */}
+                  <div className="flex justify-between items-center bg-blue-50/80 border-y-2 border-blue-600 py-3 px-8 mb-8 rounded-sm">
+                     <div className="space-y-1">
+                        <div className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Invoice #</div>
+                        <div className="text-sm font-bold text-slate-900">{invoice.invoice_no}</div>
+                     </div>
+                     <div className="space-y-1 text-center">
+                        <div className="text-[10px] font-black text-blue-800 uppercase tracking-wider">MS Party</div>
+                        <div className="text-lg font-black text-slate-900 uppercase">{invoice.ms_party_name}</div>
+                     </div>
+                     <div className="space-y-1 text-right">
+                        <div className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Date</div>
+                        <div className="text-sm font-bold text-slate-900">
+                          {invoice.date ? format(new Date(invoice.date), 'dd MMM yyyy') : ''}
+                        </div>
+                     </div>
+                  </div>
 
-                {/* Items Table */}
-                <div className="w-full px-4 mb-16">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 italic">Outward Documents Information</p>
-                  <div className="border border-green-700 rounded-sm overflow-hidden bg-white">
-                      <table className="w-full text-left border-collapse">
-                          <thead className="bg-[#f0f9f1] border-b border-green-700">
-                             <tr className="[&>th]:p-3 [&>th]:text-[10px] [&>th]:font-black [&>th]:text-slate-500 [&>th]:uppercase [&>th]:tracking-tight [&>th]:border-r [&>th]:border-green-700 last:[&>th]:border-0">
-                                <th>Outward#/Transfer#</th>
-                                <th className="text-center">GP #</th>
-                                <th>Item Name</th>
-                                <th className="text-center">Yards</th>
-                                <th className="text-right">Quantity</th>
-                                <th className="text-right">Rate</th>
-                                <th className="text-right">Amount</th>
-                             </tr>
-                          </thead>
-                          <tbody>
-                             {invoice.items?.map((item: any, i: number) => (
-                               <tr key={i} className="border-b border-slate-100 last:border-0 [&>td]:p-3 [&>td]:text-xs [&>td]:font-bold [&>td]:border-r [&>td]:border-slate-100 last:[&>td]:border-0">
-                                  <td>{item.outward_no}</td>
-                                  <td className="text-center">{item.gp_no}</td>
-                                  <td>{item.item_name}</td>
-                                  <td className="text-center underline underline-offset-4 decoration-slate-300">{item.measurement}</td>
-                                  <td className="text-right">{Number(item.quantity).toFixed(2)}</td>
-                                  <td className="text-right">{Number(item.measurement === 15 ? invoice.rate_15 : invoice.rate_22).toFixed(2)}</td>
-                                  <td className="text-right font-black">{Number(item.quantity * (item.measurement === 15 ? invoice.rate_15 : invoice.rate_22)).toFixed(2)}</td>
+                  {/* Items Table */}
+                  <div className="w-full mb-8 flex-1">
+                    <div className="border-2 border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-[#f0f4f8] border-b-2 border-slate-300">
+                               <tr className="[&>th]:p-3 [&>th]:text-[11px] [&>th]:font-black [&>th]:text-slate-700 [&>th]:uppercase [&>th]:tracking-wider [&>th]:border-r last:[&>th]:border-0 border-slate-200">
+                                  <th className="text-center w-20">Qty</th>
+                                  <th>Detail</th>
+                                  <th className="text-right w-24">Rate</th>
+                                  <th className="text-right w-32">Amount</th>
                                </tr>
-                             ))}
-                          </tbody>
-                      </table>
+                            </thead>
+                            <tbody className="text-slate-800">
+                               {invoice.items?.map((item: any, i: number) => {
+                                 const rate = Number(item.measurement === 15 ? invoice.rate_15 : invoice.rate_22);
+                                 const outDate = item.outward_date ? format(new Date(item.outward_date), 'dd-MM-yyyy') : '';
+                                 return (
+                                   <tr key={i} className="border-b border-slate-100 last:border-0 [&>td]:p-3 [&>td]:text-xs [&>td]:font-bold [&>td]:border-r [&>td]:border-slate-100 last:[&>td]:border-0">
+                                      <td className="text-center text-sm">{Number(item.quantity).toFixed(2)}</td>
+                                      <td>
+                                        <div className="text-sm font-black text-slate-900 mb-0.5">{item.item_name}</div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wide flex flex-wrap gap-x-3 gap-y-1 items-center">
+                                          <span><strong className="text-slate-700">MSR:</strong> {item.measurement}</span>
+                                          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                          <span><strong className="text-slate-700">OUTWARD #:</strong> {item.outward_no}</span>
+                                          {outDate && (
+                                            <>
+                                              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                              <span><strong className="text-slate-700">DATE:</strong> {outDate}</span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="text-right">{rate.toFixed(2)}</td>
+                                      <td className="text-right font-black text-sm">{Number(item.quantity * rate).toFixed(2)}</td>
+                                   </tr>
+                                 );
+                               })}
+                            </tbody>
+                        </table>
+                    </div>
+                  </div>
+
+                  {/* Bottom Totals */}
+                  <div className="flex justify-end mb-16 w-full">
+                    <div className="w-[320px] border-2 border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                       <div className="p-2 border-b border-slate-100 flex justify-between items-center px-4 bg-slate-50/50">
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex-1">Sub Total</span>
+                          <span className="text-sm font-black text-slate-800">{Number(invoice.sub_total).toFixed(2)}</span>
+                       </div>
+                       {Number(invoice.discount_amount) > 0 && (
+                         <div className="p-2 border-b border-slate-100 flex justify-between items-center px-4 bg-red-50/10">
+                            <span className="text-[10px] font-black text-red-400 uppercase tracking-wider flex-1">Discount</span>
+                            <span className="text-sm font-black text-red-600">-{Number(invoice.discount_amount).toFixed(2)}</span>
+                         </div>
+                       )}
+                       <div className="p-3 bg-[#eef2f6] flex justify-between items-center px-4 border-t border-slate-200">
+                          <span className="text-sm font-black text-blue-900 uppercase tracking-widest flex-1">Total Amount</span>
+                          <span className="text-xl font-black text-blue-700">{Number(invoice.total_amount).toFixed(2)}</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-auto page-break-inside-avoid w-full">
+                      {/* Signatures */}
+                      <div className="flex justify-between items-end mb-8 px-4">
+                         <div className="text-center w-48">
+                            <div className="border-t border-slate-400 mb-2"></div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Customer Signature</p>
+                         </div>
+                         <div className="text-center w-48">
+                            <div className="border-t border-slate-400 mb-2"></div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorized Signature</p>
+                         </div>
+                      </div>
+                      
+                      {/* Created/Edited By */}
+                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase mb-4 px-2">
+                         <p>Created By: <span className="text-slate-700 ml-1">{invoice.created_by || 'Mehmood'}</span></p>
+                         <p>Edited By: <span className="text-slate-700 ml-1">{invoice.edited_by || 'None'}</span></p>
+                      </div>
                   </div>
                 </div>
 
-                {/* Bottom Totals */}
-                <div className="w-[400px] ml-auto border-2 border-amber-400 rounded-lg overflow-hidden mb-16 shadow-sm bg-white">
-                   <div className="p-3 border-b border-amber-200 flex justify-between items-center px-6">
-                      <span className="text-[10px] font-black text-slate-500 uppercase">Sub Total:</span>
-                      <span className="text-sm font-black text-blue-700">{Number(invoice.sub_total).toFixed(2)}</span>
-                   </div>
-                   <div className="p-3 border-b-4 border-red-600 flex justify-between items-center px-6">
-                      <span className="text-[10px] font-black text-slate-500 uppercase">Discount:</span>
-                      <span className="text-sm font-black text-blue-700">{Number(invoice.discount_amount).toFixed(2)}</span>
-                   </div>
-                   <div className="p-4 bg-white flex justify-between items-center px-6">
-                      <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total Amount:</span>
-                      <span className="text-xl font-black text-blue-700">{Number(invoice.total_amount).toFixed(2)}</span>
-                   </div>
+                {/* Bottom Address Box */}
+                <div className="bg-slate-900 text-white p-4 relative z-10 w-full mt-auto">
+                   <p className="text-[10.5px] font-black uppercase text-center tracking-widest text-slate-400">
+                      Address: <span className="text-white font-medium ml-2">Punjab Small Industries Estate, Ground Floor, Faisalabad</span>
+                   </p>
+                   <p className="text-[10.5px] font-black uppercase text-center tracking-widest text-slate-400 mt-2">
+                      Branches: <span className="text-white font-medium ml-2">100/2 and 150/2, quality yarn</span>
+                   </p>
                 </div>
 
-                {/* Footer */}
-                <div className="mt-8 pt-4 border-t border-slate-100 space-y-1 page-break-inside-avoid">
-                    <p className="text-[9px] font-black text-blue-800 uppercase">SITE: <span className="text-slate-500 font-medium">Small Industrial State, Sargodha Road, Faisalabad</span></p>
-                    <p className="text-[9px] font-black text-blue-800 uppercase">CONTACTS: <span className="text-slate-500 font-medium">0321-7651815, 0300-8651815, 0304-6166663, 0300-8636129</span></p>
-                </div>
               </div>
             </div>
           ))}
@@ -763,11 +808,15 @@ export default function Invoice() {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body * { visibility: hidden; }
-          #invoice-print, #invoice-print * { visibility: visible; }
+          #invoice-print, #invoice-print * { 
+            visibility: visible; 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           #invoice-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
           .page-break-after-always { page-break-after: always; display: block; }
           .page-break-inside-avoid { page-break-inside: avoid; }
-          @page { margin: 0; size: A4; }
+          @page { margin: 0; size: A4 portrait; }
         }
       `}} />
 

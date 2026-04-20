@@ -48,7 +48,7 @@ export const invoicesService = {
 
     const items = await sql`
       SELECT 
-        o.id as outward_id, o.outward_no, o.gp_no, o.sr_no, it.name as item_name,
+        o.id as outward_id, o.outward_no, o.gp_no, o.sr_no, o.date as outward_date, it.name as item_name,
         oi.measurement, oi.quantity
       FROM invoice_items ii
       JOIN outwards o ON ii.outward_id = o.id
